@@ -1,13 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
 :root {
-  --mascara: #0E3B2E;
-  --mascara-clara: #12483A;
-  --serigrafia: #F2EFE6;
-  --cobre: #C17A3D;
-  --cobre-claro: #E2A870;
-  --gris-pista: #8B9A94;
-  --linea: rgba(242, 239, 230, 0.16);
+  /* Paleta clara (antes verde oscuro de PCB) */
+  --mascara: #F4F6F9;
+  --mascara-clara: #FFFFFF;
+  --serigrafia: #16202C;
+  --cobre: #1D5FB4;
+  --cobre-claro: #1D5FB4;
+  --gris-pista: #6B7686;
+  --linea: rgba(22, 32, 44, 0.10);
 }
 
 * { box-sizing: border-box; }
@@ -21,8 +22,8 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   line-height: 1.55;
   background-image:
-    linear-gradient(var(--linea) 1px, transparent 1px),
-    linear-gradient(90deg, var(--linea) 1px, transparent 1px);
+    linear-gradient(rgba(22,32,44,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22,32,44,0.035) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -147,7 +148,7 @@ section.bloque .conteo {
   width: 100%;
   border: none;
   display: block;
-  background: #000;
+  background: #fff;
 }
 
 .vacio {
