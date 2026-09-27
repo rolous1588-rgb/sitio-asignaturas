@@ -346,3 +346,7 @@ table.tabla { width: 100%; border-collapse: collapse; font-size: .85rem; backgro
 .pres-grid.ampliado { grid-template-columns: minmax(0, 1fr); }
 .pres-grid.ampliado .pres-lado { display: none; }
 .boton-ampliar { position: fixed; right: 18px; top: 90px; z-index: 30; }
+
+/* evita que un diagrama ancho empuje toda la página hacia los lados en el celular */
+.diag-2col > *, .lazo-grid > *, .medicion-grid > *, .pres-grid > * { min-width: 0; }
+html, body { overflow-x: hidden; }
