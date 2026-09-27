@@ -106,6 +106,7 @@
     const act = actividadDePaso(paso);
     if (act) D.actividad = act;
     pintar();
+    if (D.pestana === 'control') window.scrollTo({ top: 0, behavior: 'smooth' });
     const r = await II.fijarPaso(SES, paso.id);
     if (!r.ok) aviso('No se pudo cambiar el paso: ' + r.error);
   };
@@ -137,6 +138,10 @@
         <button class="boton grande" data-acc="ant" ${i === 0 ? 'disabled' : ''}>◀ Anterior</button>
         <button class="boton primario grande" data-acc="sig" ${i === S.pasos.length - 1 ? 'disabled' : ''}>Siguiente ▶</button>
       </div>
+      ${p.guion ? `<div class="tarjeta guion">
+        <div class="controles" style="justify-content:space-between;margin-bottom:6px"><span class="etiqueta">Guion docente · qué decir y en qué orden</span>${p.guion.min ? `<span class="chip">⏱ ${p.guion.min} min</span>` : ''}</div>
+        <ol>${p.guion.puntos.map((t) => `<li>${t}</li>`).join('')}</ol>
+      </div>` : ''}
       <div class="tarjeta" style="padding:14px">
         <div class="controles" style="margin-bottom:8px">
           <a class="boton chico" href="presentar.html?s=${SES}" target="_blank" rel="noopener">Abrir presentación ↗</a>

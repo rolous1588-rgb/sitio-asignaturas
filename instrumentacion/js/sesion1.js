@@ -280,6 +280,121 @@
     ]
   };
 
+
+  // ---------- Guion docente: qué decir y en qué orden (solo se ve en el panel del celular) ----------
+  const GUION = {
+    inicio: { min: 15, puntos: [
+      'Saluda, preséntate y presenta el módulo: 6 sesiones, 14 horas, del 27/09 al 07/10.',
+      'Explica la dinámica: <b>no hay diapositivas</b>; cada uno trabaja en su dispositivo. Ciclo: <b>explico → exploran → reto → revisamos</b>.',
+      'Pide que escaneen el QR o abran el enlace del chat de Zoom con <b>nombre y carnet</b>. Mira "Conectados" en tu panel.',
+      'Aclara: los retos tienen <b>valores distintos por carnet</b>, hay 2 intentos y deben marcar "seguro / tengo dudas" con honestidad: así sabes a quién ayudar.',
+      'Cuando la mayoría esté conectada → <b>Siguiente</b>.'
+    ] },
+    diagnostico: { min: 10, puntos: [
+      '"Cinco preguntas rápidas, <b>no tienen nota</b>: me sirven para saber desde dónde empezar."',
+      'Dales 4–5 minutos. Mira en <b>Pizarra → Diagnóstico</b> cuántos respondieron.',
+      'Fíjate qué pregunta tiene el porcentaje más bajo: ahí pon más énfasis hoy.',
+      'No des las respuestas todavía: "lo vamos a descubrir durante la clase".'
+    ] },
+    'c1-explica': { min: 12, puntos: [
+      'Pregunta de arranque: <b>"¿Cómo sabe un operador cuánta agua hay en un tanque que no puede ver por dentro?"</b> Deja que respondan 2–3 en el chat.',
+      'Recorre la planta: tanque TK-100, entrada con válvula, calentador y bomba de salida. Eso es el <b>proceso</b>.',
+      'Haz clic en <b>LT-101</b> (nivel), luego <b>TT-102</b>, <b>PT-103</b> y <b>FT-104</b>: las 4 variables son temperatura, presión, nivel y flujo. Pide un ejemplo de su industria para cada una.',
+      'Clic en la <b>bomba</b>: "¿es un instrumento?" No: es equipo. El transmisor <b>informa</b>; la bomba actúa sobre el fluido.',
+      'Pulsa <b>"Resaltar señales"</b>: la línea punteada lleva información (señal eléctrica); la gruesa lleva el fluido.',
+      'Cierra con la idea fuerza: <b>"lo que no se mide, no se puede controlar"</b>. Medir → transmitir → mostrar → controlar.'
+    ] },
+    'c1-explora': { min: 7, puntos: [
+      '"Ahora ustedes: abran el diagrama en su dispositivo y respondan las 4 preguntas de la guía."',
+      'Mientras exploran, lee el chat. Respuesta de la 2: <b>LIC-101</b> (la raya horizontal indica sala de control).',
+      'Pregunta en voz alta a 1 o 2 estudiantes qué encontraron.',
+      'Avisa "1 minuto" → <b>Siguiente</b>.'
+    ] },
+    'c1-reto': { min: 9, puntos: [
+      '"Cada uno tiene 5 situaciones distintas: identifiquen qué variable hay que medir."',
+      'Recuerda: marcar seguro / tengo dudas antes de enviar; hay 2 intentos.',
+      'Mira la <b>Pizarra</b>: rojo = se equivocó estando seguro. Toca un nombre para ver qué confundió.',
+      'Cuando ~80 % haya enviado, avisa "1 minuto" → <b>Siguiente</b>.'
+    ] },
+    'c1-revisa': { min: 5, puntos: [
+      'La pantalla muestra los resultados sola: comenta el porcentaje de correctas.',
+      'Error frecuente: <b>nivel vs. flujo</b>. Ejemplo: el balde lleno es nivel (lo acumulado); el grifo abierto es flujo (lo que pasa por segundo).',
+      'Comenta 1 o 2 casos de la pizarra <b>sin decir nombres</b>.',
+      'Pide que revisen en su pantalla la solución con sus propios valores.'
+    ] },
+    'c2-explica': { min: 12, puntos: [
+      'Empieza en <b>Automático</b>, todo estable. Presenta el diagrama de bloques: <b>sensor/transmisor → controlador → elemento final → proceso</b>.',
+      'Cambia a <b>Manual</b> (lazo abierto) y pulsa <b>"Perturbación +2 L/s"</b>: el nivel baja y nadie corrige. Pregunta: "¿qué hace falta?"',
+      'Pulsa <b>Reiniciar</b>, vuelve a <b>Automático</b> y repite la perturbación: la válvula abre sola y el nivel vuelve al setpoint. Señala la tendencia (azul = nivel, naranja = válvula).',
+      'Sube el <b>setpoint</b> de 50 a 70 %: muestra cómo el nivel lo sigue.',
+      'Define <b>setpoint, perturbación y realimentación</b>. Ejemplo cotidiano: el termostato o la ducha.',
+      'Si hay tiempo: falla <b>"Sensor congelado"</b>. El controlador "cree" que todo está bien → medir bien es clave (enlaza con el Ciclo 3).'
+    ] },
+    'c2-explora': { min: 7, puntos: [
+      'Pide que hagan las 4 experiencias de la guía en su dispositivo.',
+      'Pregunta para discutir: <b>¿por qué con el sensor congelado el controlador no corrige?</b>',
+      'Avisa "1 minuto" → <b>Siguiente</b>.'
+    ] },
+    'c2-reto': { min: 9, puntos: [
+      '"La parte a) es un cálculo: velocidad del nivel en cm/min. Las partes b) y c): qué elemento del lazo explica cada situación."',
+      'Pista que puedes dar en voz alta: <b>ΔQ ÷ área</b> y cuidar unidades (L → m³ ÷ 1000; s → min × 60).',
+      'Toca un nombre en rojo en la pizarra: casi siempre el error es de unidades.'
+    ] },
+    'c2-revisa': { min: 5, puntos: [
+      'Comenta los resultados en pantalla.',
+      'Resuelve un caso genérico en voz alta: ΔQ = 2 L/s, A = 2 m² → 0,002 ÷ 2 = 0,001 m/s = <b>6 cm/min</b>. Atajo: <b>ΔQ × 6 ÷ A</b>.',
+      'Repasa las 4 categorías de falla con un ejemplo de cada una.'
+    ] },
+    pausa: { min: 10, puntos: [
+      'Anuncia 10 minutos de pausa: el reloj corre en la pantalla y en sus dispositivos.',
+      'Aprovecha para mirar <b>Reporte</b>: quién no ha enviado los retos.',
+      'Al volver → <b>Siguiente</b>.'
+    ] },
+    'c3-explica': { min: 12, puntos: [
+      'Pregunta de arranque: <b>"Si un termómetro siempre marca 2 °C de más, pero siempre lo mismo, ¿es bueno o malo?"</b> (es la pregunta 3 del diagnóstico).',
+      'Pestaña <b>"Exactitud y precisión"</b>: pulsa los 4 casos en orden — Exacto y preciso → Preciso, no exacto → Exacto, no preciso → Ni exacto ni preciso. En cada uno señala la <b>cruz naranja</b> (promedio) y qué tan juntos están los puntos.',
+      'Define: <b>exactitud</b> = el promedio cerca del valor verdadero (error sistemático o sesgo). <b>Precisión</b> = lecturas juntas entre sí (error aleatorio). Muestra abajo la recta del termómetro: lo mismo con números.',
+      'Remata: lo "preciso pero no exacto" se corrige <b>calibrando</b> (Sesión 5); la falta de precisión no se arregla calibrando.',
+      'Pestaña <b>"Rango y span"</b>: preset Presión 0–10 bar → span 10 bar. Luego Temperatura −20 a 180 °C → span = 180 − (−20) = <b>200 °C</b> (resalta el signo).',
+      'Mueve el valor: la salida se expresa en <b>% del span</b>. Llévalo fuera de rango → la señal se satura: por eso el rango se elige según el proceso.',
+      'Exactitud ±0,5 % del span = <b>±1 °C</b>; cámbiala a ±1 % → ±2 °C. Idea clave: <b>el error se expresa respecto al span, no a la lectura</b>.'
+    ] },
+    'c3-explora': { min: 7, puntos: [
+      'Pide las 4 experiencias de la guía.',
+      'Verifica en el chat: el span de −20 a 180 °C es <b>200 °C</b>.',
+      'Avisa "1 minuto" → <b>Siguiente</b>.'
+    ] },
+    'c3-reto': { min: 9, puntos: [
+      '"Cada uno tiene un transmisor distinto: calculen span, error máximo, error en % y digan si cumple."',
+      'Recuerda: el % se calcula <b>sobre el span</b>; no redondear de más.',
+      'En la pizarra, los errores típicos aparecen en la pregunta c).'
+    ] },
+    'c3-revisa': { min: 5, puntos: [
+      'Comenta los resultados en pantalla.',
+      'Resuelve uno genérico: 0–10 bar, ±0,5 % → ±0,05 bar. Patrón 5,00 bar, indica 5,04 → 0,04 ÷ 10 × 100 = 0,4 % ≤ 0,5 % → <b>cumple</b>.',
+      'Error frecuente: dividir entre la lectura o entre el URV en vez del span.'
+    ] },
+    integrador: { min: 20, puntos: [
+      '"Reto final que junta todo lo de hoy; vale <b>20 puntos</b>."',
+      'Sugiere resolver por partes: 1–2 identificar, 3–5 medición, 6 cálculo de tiempo.',
+      'Da 15 minutos; avisa a los 12.',
+      'Mira la pizarra para decidir qué parte explicar en la revisión.'
+    ] },
+    'integrador-revisa': { min: 7, puntos: [
+      'Comenta los resultados.',
+      'Resuelve la parte 6 genérica: velocidad = ΔQ × 6 ÷ A (cm/min); tiempo = altura que baja ÷ velocidad.',
+      'Pregunta: <b>"¿qué fue lo más difícil hoy?"</b> Anota para la Sesión 2.'
+    ] },
+    cierre: { min: 8, puntos: [
+      'Repasa las 4 ideas que aparecen en pantalla.',
+      'Cada estudiante ve su puntaje de hoy en su dispositivo.',
+      'Anuncia la <b>Sesión 2 (martes 29/09, 20:00)</b>: sensores de temperatura y presión. Pide traer un ejemplo de su trabajo.',
+      'Recuerda el <b>modo repaso</b> para estudiar después.',
+      'Después de clase: <b>Reporte → Descargar para Excel</b>.'
+    ] }
+  };
+  II.SESIONES['ii-s1'].pasos.forEach((p) => { p.guion = GUION[p.id]; });
+
   II.OPCIONES_INGRESO = {
     area: ['Minería', 'Petróleo y gas', 'Alimentos y bebidas', 'Energía eléctrica', 'Manufactura / industria', 'Agua y saneamiento', 'Construcción', 'Docencia / investigación', 'Estudiante', 'Otro'],
     experiencia: ['Nunca he trabajado con instrumentos', 'Un poco (los he visto o usado a veces)', 'Trabajo con ellos con frecuencia']
