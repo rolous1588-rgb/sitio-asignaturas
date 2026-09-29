@@ -21,7 +21,9 @@ Carpeta `instrumentacion/`. Clase virtual síncrona por Zoom: el docente compart
 | `js/config.js` | URL y *publishable key* de Supabase (públicas por diseño; nunca poner la secret key) |
 | `js/nucleo.js` | Utilidades, azar reproducible por carnet, sincronización del paso (Realtime + consulta cada 4 s), cola de envíos con reintento |
 | `js/diagramas.js` | `II.diagramas.planta`, `.lazo` (simulación de nivel PI con fallas), `.medicion` (diana + rango/span). Cada uno devuelve `{ destruir() }` |
-| `js/sesion1.js` | Contenido de la Sesión 1: 18 pasos, diagnóstico, 3 retos + integrador con generadores por carnet |
+| `js/sesion1.js` | Contenido de la Sesión 1: 18 pasos, diagnóstico, 3 retos + integrador con generadores por carnet. Define también `II.OPCIONES_INGRESO` (cargarlo siempre) |
+| `js/diagramas2.js` | `II.diagramas.temperatura` (Pt100 con 2/3/4 hilos, termopar K con unión fría, NTC) y `.presion` (absoluta/manométrica por ciudad de Bolivia + tanque con PT y DP) |
+| `js/sesion2.js` | Sesión 2 (sensores de T y P, plantilla 2 h): 14 pasos, repaso+diagnóstico, 2 retos + integrador sobre el TK-100 |
 | `css/ii.css` | Estilos (usa container queries para que los diagramas se adapten) |
 | `supabase/estructura.sql` | Esquema de la base de datos (ya ejecutado en Supabase) |
 
@@ -44,5 +46,5 @@ Tablas `docentes`, `estado_sesion` (paso actual; filas `ii-s1` … `ii-s6`), `in
 S1 Dom 27/09 09–12 · S2 Mar 29/09 20–22 (sensores T y P) · S3 Mié 30/09 20–22 (nivel y flujo) · S4 Dom 04/10 09–12 (4–20 mA, HART, P&ID/ISA) · S5 Mar 06/10 20–22 (calibración) · S6 Mié 07/10 20–22 (caso integrado P&ID + evaluación final).
 
 ## Pendiente
-- Sesiones 2 a 6.
+- Sesiones 3 a 6.
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
