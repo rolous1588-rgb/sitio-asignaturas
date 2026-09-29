@@ -138,10 +138,7 @@
         <button class="boton grande" data-acc="ant" ${i === 0 ? 'disabled' : ''}>◀ Anterior</button>
         <button class="boton primario grande" data-acc="sig" ${i === S.pasos.length - 1 ? 'disabled' : ''}>Siguiente ▶</button>
       </div>
-      ${p.guion ? `<div class="tarjeta guion">
-        <div class="controles" style="justify-content:space-between;margin-bottom:6px"><span class="etiqueta">Guion docente · qué decir y en qué orden</span>${p.guion.min ? `<span class="chip">⏱ ${p.guion.min} min</span>` : ''}</div>
-        <ol>${p.guion.puntos.map((t) => `<li>${t}</li>`).join('')}</ol>
-      </div>` : ''}
+      ${p.guion ? guionHTML(p.guion) : ''}
       <div class="tarjeta" style="padding:14px">
         <div class="controles" style="margin-bottom:8px">
           <a class="boton chico" href="presentar.html?s=${SES}" target="_blank" rel="noopener">Abrir presentación ↗</a>
@@ -150,6 +147,21 @@
         <div class="nota" style="word-break:break-all">${II.esc(II.urlClase(SES))}</div>
       </div>
       <ul class="lista-pasos" style="margin-top:14px">${lista}</ul>`;
+  };
+
+  // guion: formato simple (puntos) o extenso (objetivo, pasos, preguntas, dudas, transición)
+  const guionHTML = (g) => {
+    const lista = (items, ordenada) => `${ordenada ? '<ol>' : '<ul style="margin:0;padding-left:20px;display:grid;gap:9px">'}${items.map((t) => `<li>${t}</li>`).join('')}${ordenada ? '</ol>' : '</ul>'}`;
+    const sec = (titulo, cuerpo) => `<div class="etiqueta" style="margin:14px 0 6px">${titulo}</div>${cuerpo}`;
+    return `<div class="tarjeta guion">
+      <div class="controles" style="justify-content:space-between;margin-bottom:6px"><span class="etiqueta">Guion docente · qué hacer y qué decir</span>${g.min ? `<span class="chip">⏱ ${g.min} min</span>` : ''}</div>
+      ${g.objetivo ? `<p style="margin:0 0 4px;font-size:.95rem"><b>Objetivo:</b> ${g.objetivo}</p>` : ''}
+      ${g.puntos ? lista(g.puntos, true) : ''}
+      ${g.pasos ? sec('Paso a paso', lista(g.pasos, true)) : ''}
+      ${g.preguntas ? sec('Pregunta al grupo (y respuesta esperada)', lista(g.preguntas)) : ''}
+      ${g.dudas ? sec('Si preguntan…', lista(g.dudas)) : ''}
+      ${g.transicion ? sec('Para pasar al siguiente', `<p style="margin:0;font-size:.95rem">${g.transicion}</p>`) : ''}
+    </div>`;
   };
 
   // ---------- pizarra ----------
