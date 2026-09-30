@@ -8,6 +8,7 @@
   const libre = II.params.get('modo') === 'libre' || !II.configurado;
   let alumno = II.leer('ii-alumno');
   let pasoActual = null, filaEstado = null, diagrama = null, idxLibre = 0, relojInt = null;
+  let limiteLibre = S.pasos.length - 1; // hasta dónde deja avanzar el modo repaso
 
   const main = II.$('#principal');
   const clave = (tipo, extra = '') => `ii-${tipo}-${SES}-${alumno ? alumno.carnet : 'x'}${extra ? '-' + extra : ''}`;
@@ -317,10 +318,13 @@
     }
     II.$('#nl-pos').textContent = `${idxLibre + 1} / ${S.pasos.length}`;
     II.$('#nl-ant').disabled = idxLibre === 0;
-    II.$('#nl-sig').disabled = idxLibre === S.pasos.length - 1;
+    II.$('#nl-sig').disabled = idxLibre >= limiteLibre;
+    if (idxLibre >= limiteLibre && limiteLibre < S.pasos.length - 1) {
+      main.insertAdjacentHTML('beforeend', `<div class="contenido angosto" style="padding-top:0"><div class="aviso info" style="margin:0"><b>Hasta aquí llegó la clase.</b> Los temas siguientes se abrirán en el repaso cuando los veamos en clase.</div></div>`);
+    }
   };
   const irLibre = (i) => {
-    idxLibre = Math.max(0, Math.min(S.pasos.length - 1, i));
+    idxLibre = Math.max(0, Math.min(limiteLibre, i));
     II.guardar(clave('libre'), idxLibre);
     mostrarPaso(S.pasos[idxLibre]);
   };
@@ -330,6 +334,10 @@
     pintarBarra();
     if (!alumno) return pintarIngreso();
     if (libre) {
+      main.innerHTML = '<div class="contenido angosto"><div class="tarjeta"><p class="sub" style="margin:0">Cargando el repaso…</p></div></div>';
+      const hasta = await II.leerLimiteRepaso(SES);
+      const j = hasta ? II.indicePaso(SES, hasta) : -1;
+      limiteLibre = j >= 0 ? j : S.pasos.length - 1;
       idxLibre = II.leer(clave('libre'), 0) || 0;
       return irLibre(idxLibre);
     }

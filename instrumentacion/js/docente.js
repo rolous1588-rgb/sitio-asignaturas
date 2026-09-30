@@ -138,6 +138,16 @@
         <button class="boton grande" data-acc="ant" ${i === 0 ? 'disabled' : ''}>◀ Anterior</button>
         <button class="boton primario grande" data-acc="sig" ${i === S.pasos.length - 1 ? 'disabled' : ''}>Siguiente ▶</button>
       </div>
+      ${(() => {
+        const hasta = D.fila && D.fila.extra ? D.fila.extra.repaso_hasta : null;
+        const jh = hasta ? II.indicePaso(SES, hasta) : -1;
+        return `<div class="tarjeta" style="padding:12px 14px;margin-bottom:12px">
+          <div class="nota">Modo repaso de los estudiantes: <b>${jh >= 0 ? `liberado hasta el paso ${jh + 1} · ${II.esc(S.pasos[jh].titulo)}` : 'toda la sesión abierta'}</b></div>
+          <div class="controles" style="margin-top:8px">
+            <button class="boton chico" data-acc="liberar" ${jh === i ? 'disabled' : ''}>Liberar repaso hasta este paso</button>
+            ${jh >= 0 ? '<button class="boton chico" data-acc="liberar-todo">Abrir toda la sesión</button>' : ''}
+          </div></div>`;
+      })()}
       ${p.guion ? guionHTML(p.guion) : ''}
       <div class="tarjeta" style="padding:14px">
         <div class="controles" style="margin-bottom:8px">
@@ -309,6 +319,13 @@
       const acc = b.dataset.acc;
       if (acc === 'sig') ir(pasoIdx() + 1);
       else if (acc === 'ant') ir(pasoIdx() - 1);
+      else if (acc === 'liberar' || acc === 'liberar-todo') {
+        b.disabled = true;
+        const r = await II.fijarRepaso(SES, acc === 'liberar' ? S.pasos[pasoIdx()].id : null, D.fila ? D.fila.extra : {});
+        if (!r.ok) { aviso('No se pudo cambiar el repaso: ' + r.error); b.disabled = false; return; }
+        D.fila = { ...(D.fila || {}), extra: r.extra };
+        pintar();
+      }
       else if (acc === 'csv') descargarCSV();
       else if (acc === 'recargar') cargar();
       else if (acc === 'borrar') borrar(b);

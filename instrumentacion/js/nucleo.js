@@ -132,6 +132,27 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) leer(); });
   };
 
+  // límite del modo repaso: el docente lo fija con "Liberar repaso hasta este paso" (estado_sesion.extra.repaso_hasta)
+  II.leerLimiteRepaso = async (sesion) => {
+    const k = 'ii-repaso-hasta-' + sesion;
+    if (!II.sb) return II.leer(k, null);
+    try {
+      const { data, error } = await II.sb.from('estado_sesion').select('*').eq('sesion', sesion).maybeSingle();
+      if (error) throw error;
+      const v = data && data.extra && data.extra.repaso_hasta ? data.extra.repaso_hasta : null;
+      II.guardar(k, v);
+      return v;
+    } catch (e) { return II.leer(k, null); }
+  };
+
+  II.fijarRepaso = async (sesion, pasoId, extraActual = {}) => {
+    const extra = { ...(extraActual || {}), repaso_hasta: pasoId };
+    const { data, error } = await II.sb.from('estado_sesion').update({ extra }).eq('sesion', sesion).select();
+    if (error) return { ok: false, error: error.message };
+    if (!data || !data.length) return { ok: false, error: 'Tu cuenta no tiene permiso de docente.' };
+    return { ok: true, extra };
+  };
+
   II.fijarPaso = async (sesion, paso) => {
     const { data, error } = await II.sb
       .from('estado_sesion')
