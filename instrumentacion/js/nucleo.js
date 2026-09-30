@@ -132,21 +132,24 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) leer(); });
   };
 
-  // límite del modo repaso: el docente lo fija con "Liberar repaso hasta este paso" (estado_sesion.extra.repaso_hasta)
-  II.leerLimiteRepaso = async (sesion) => {
-    const k = 'ii-repaso-hasta-' + sesion;
-    if (!II.sb) return II.leer(k, null);
+  // modo repaso controlado por el docente (estado_sesion.extra):
+  //   repaso_hasta   → id del último paso que se puede repasar (null = toda la sesión)
+  //   repaso_cerrado → true = el repaso de la sesión está cerrado
+  II.leerRepaso = async (sesion) => {
+    const k = 'ii-repaso-' + sesion;
+    if (!II.sb) return II.leer(k, { hasta: null, cerrado: false });
     try {
       const { data, error } = await II.sb.from('estado_sesion').select('*').eq('sesion', sesion).maybeSingle();
       if (error) throw error;
-      const v = data && data.extra && data.extra.repaso_hasta ? data.extra.repaso_hasta : null;
+      const ex = (data && data.extra) || {};
+      const v = { hasta: ex.repaso_hasta || null, cerrado: !!ex.repaso_cerrado };
       II.guardar(k, v);
       return v;
-    } catch (e) { return II.leer(k, null); }
+    } catch (e) { return II.leer(k, { hasta: null, cerrado: false }); }
   };
 
-  II.fijarRepaso = async (sesion, pasoId, extraActual = {}) => {
-    const extra = { ...(extraActual || {}), repaso_hasta: pasoId };
+  II.fijarExtra = async (sesion, cambios, extraActual = {}) => {
+    const extra = { ...(extraActual || {}), ...cambios };
     const { data, error } = await II.sb.from('estado_sesion').update({ extra }).eq('sesion', sesion).select();
     if (error) return { ok: false, error: error.message };
     if (!data || !data.length) return { ok: false, error: 'Tu cuenta no tiene permiso de docente.' };
@@ -178,16 +181,30 @@
     if (!II.sb || vaciando) return { ok: false };
     vaciando = true;
     let cola = II.leer(CLAVE_COLA, []);
-    let ok = true;
+    let ok = true, rechazadas = 0;
     while (cola.length) {
       const { error } = await II.sb.from('respuestas').insert(cola[0]);
-      if (error) { ok = false; II.marcarConexion(false); break; }
+      if (error) {
+        // la base de datos rechazó la respuesta porque la actividad ya está cerrada:
+        // se descarta para no bloquear las siguientes (queda una copia local)
+        if (error.code === '42501' || /row-level security/i.test(error.message || '')) {
+          const rech = II.leer('ii-cola-rechazadas', []);
+          rech.push(cola[0]);
+          II.guardar('ii-cola-rechazadas', rech.slice(-50));
+          cola.shift();
+          II.guardar(CLAVE_COLA, cola);
+          rechazadas++;
+          II.marcarConexion(true);
+          continue;
+        }
+        ok = false; II.marcarConexion(false); break;
+      }
       cola.shift();
       II.guardar(CLAVE_COLA, cola);
       II.marcarConexion(true);
     }
     vaciando = false;
-    return { ok, pendientes: cola.length };
+    return { ok: ok && rechazadas === 0, pendientes: cola.length, rechazadas };
   };
   setInterval(() => { if (II.leer(CLAVE_COLA, []).length) II.vaciarCola(); }, 5000);
 

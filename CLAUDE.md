@@ -38,6 +38,8 @@ Ciclo por concepto (~35 min): **explica → explora → reto → revisa**.
 
 ### Base de datos (Supabase)
 Tablas `docentes`, `estado_sesion` (paso actual; filas `ii-s1` … `ii-s6`), `ingresos`, `respuestas`. RLS: estudiantes (anon) solo insertan; solo el docente (email en `docentes`) lee respuestas y cambia el paso. `resumen_actividad(sesion, actividad)` devuelve conteos anónimos para proyectar.
+- **Respuestas solo con la actividad abierta**: la política de inserción usa `actividad_abierta(sesion, actividad)`: se acepta si `estado_sesion.paso` es esa actividad, o si el paso cambió hace menos de 15 min (envíos atrasados), o si es `ingreso`. Un rechazo llega como error 42501: `nucleo.js` lo descarta de la cola (copia en `ii-cola-rechazadas`) y el estudiante ve "Este reto ya está cerrado". **Al terminar una clase, dejar el paso fuera de un reto.**
+- **Control del modo repaso** en `estado_sesion.extra`: `repaso_hasta` (id del último paso repasable; null = todo) y `repaso_cerrado` (true = repaso cerrado). Se manejan desde el panel: "Liberar repaso hasta este paso", "Abrir toda la sesión", "Cerrar el repaso".
 
 ### Cómo agregar una sesión nueva
 1. Crear `js/sesion2.js` registrando `II.SESIONES['ii-s2'] = { id, numero, titulo, fecha, siguiente, retos, diagnostico, pasos }` (copiar la forma de `sesion1.js`).
@@ -48,5 +50,6 @@ Tablas `docentes`, `estado_sesion` (paso actual; filas `ii-s1` … `ii-s6`), `in
 S1 Dom 27/09 09–12 · S2 Mar 29/09 20–22 (sensores T y P) · S3 Mié 30/09 20–22 (nivel y flujo) · S4 Dom 04/10 09–12 (4–20 mA, HART, P&ID/ISA) · S5 Mar 06/10 20–22 (calibración) · S6 Mié 07/10 20–22 (caso integrado P&ID + evaluación final).
 
 ## Pendiente
+- Sesión 2: falta dar el Ciclo 2 (presión, pasos 9–17) en la próxima clase; el repaso de la Sesión 2 está liberado hasta "Revisión del Reto 1".
 - Sesiones 3 a 6.
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.

@@ -246,7 +246,8 @@
         II.$('#r-enviar').disabled = true;
         if (!libre) {
           const r = await II.enviar({ sesion: SES, actividad: paso.reto, carnet: alumno.carnet, nombre: alumno.nombre, respuesta: { valores, aciertos: ver.aciertos, total: ver.total }, correcta: ver.todo, intento, confianza, puntaje: pts });
-          if (!r.ok) II.$('#r-sol').innerHTML = '<div class="aviso duda">Sin conexión en este momento: tu respuesta quedó guardada y se enviará sola al reconectar.</div>';
+          if (r.rechazadas) II.$('#r-sol').innerHTML = '<div class="aviso mal">Este reto ya está cerrado: tu respuesta <b>no</b> se registró.</div>';
+          else if (!r.ok) II.$('#r-sol').innerHTML = '<div class="aviso duda">Sin conexión en este momento: tu respuesta quedó guardada y se enviará sola al reconectar.</div>';
         }
         II.$('#r-enviar').disabled = false;
         pintarEstado();
@@ -335,8 +336,16 @@
     if (!alumno) return pintarIngreso();
     if (libre) {
       main.innerHTML = '<div class="contenido angosto"><div class="tarjeta"><p class="sub" style="margin:0">Cargando el repaso…</p></div></div>';
-      const hasta = await II.leerLimiteRepaso(SES);
-      const j = hasta ? II.indicePaso(SES, hasta) : -1;
+      const rep = await II.leerRepaso(SES);
+      if (rep.cerrado) {
+        main.innerHTML = `<div class="contenido angosto"><div class="tarjeta" style="text-align:center">
+          <span class="chip duda">Modo repaso</span>
+          <h2 style="margin-top:10px">El repaso de esta sesión está cerrado</h2>
+          <p class="sub">El docente lo cerró por el momento. Vuelve a intentarlo más tarde.</p>
+          <a class="boton" href="index.html">Volver al módulo</a></div></div>`;
+        return;
+      }
+      const j = rep.hasta ? II.indicePaso(SES, rep.hasta) : -1;
       limiteLibre = j >= 0 ? j : S.pasos.length - 1;
       idxLibre = II.leer(clave('libre'), 0) || 0;
       return irLibre(idxLibre);

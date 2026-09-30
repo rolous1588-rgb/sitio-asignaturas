@@ -87,9 +87,24 @@ create policy "docente lee ingresos" on public.ingresos
 create policy "docente borra ingresos" on public.ingresos
   for delete to authenticated using (public.es_docente());
 
+-- Solo se aceptan respuestas de la actividad que la clase tiene abierta
+-- (o durante 15 minutos después de cualquier cambio de paso, para no perder envíos atrasados).
+create or replace function public.actividad_abierta(p_sesion text, p_actividad text)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select p_actividad = 'ingreso' or exists (
+    select 1 from public.estado_sesion e
+    where e.sesion = p_sesion
+      and (e.paso = p_actividad or e.actualizado > now() - interval '15 minutes')
+  );
+$$;
+grant execute on function public.actividad_abierta(text, text) to anon, authenticated;
+
 create policy "estudiantes envian respuestas" on public.respuestas
   for insert to anon, authenticated
-  with check (char_length(carnet) between 3 and 20 and intento between 1 and 5 and puntaje between 0 and 100);
+  with check (char_length(carnet) between 3 and 20 and intento between 1 and 5 and puntaje between 0 and 100
+              and public.actividad_abierta(sesion, actividad));
 create policy "docente lee respuestas" on public.respuestas
   for select to authenticated using (public.es_docente());
 create policy "docente borra respuestas" on public.respuestas

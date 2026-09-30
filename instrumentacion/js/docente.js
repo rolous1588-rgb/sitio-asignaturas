@@ -139,13 +139,16 @@
         <button class="boton primario grande" data-acc="sig" ${i === S.pasos.length - 1 ? 'disabled' : ''}>Siguiente ▶</button>
       </div>
       ${(() => {
-        const hasta = D.fila && D.fila.extra ? D.fila.extra.repaso_hasta : null;
-        const jh = hasta ? II.indicePaso(SES, hasta) : -1;
+        const ex = (D.fila && D.fila.extra) || {};
+        const jh = ex.repaso_hasta ? II.indicePaso(SES, ex.repaso_hasta) : -1;
+        const estado = ex.repaso_cerrado ? '<b style="color:var(--mal)">cerrado</b>'
+          : jh >= 0 ? `<b>liberado hasta el paso ${jh + 1} · ${II.esc(S.pasos[jh].titulo)}</b>` : '<b>toda la sesión abierta</b>';
         return `<div class="tarjeta" style="padding:12px 14px;margin-bottom:12px">
-          <div class="nota">Modo repaso de los estudiantes: <b>${jh >= 0 ? `liberado hasta el paso ${jh + 1} · ${II.esc(S.pasos[jh].titulo)}` : 'toda la sesión abierta'}</b></div>
+          <div class="nota">Modo repaso de los estudiantes: ${estado}</div>
           <div class="controles" style="margin-top:8px">
-            <button class="boton chico" data-acc="liberar" ${jh === i ? 'disabled' : ''}>Liberar repaso hasta este paso</button>
-            ${jh >= 0 ? '<button class="boton chico" data-acc="liberar-todo">Abrir toda la sesión</button>' : ''}
+            <button class="boton chico" data-acc="liberar" ${!ex.repaso_cerrado && jh === i ? 'disabled' : ''}>Liberar repaso hasta este paso</button>
+            ${jh >= 0 || ex.repaso_cerrado ? '<button class="boton chico" data-acc="liberar-todo">Abrir toda la sesión</button>' : ''}
+            ${ex.repaso_cerrado ? '' : '<button class="boton chico peligro" data-acc="cerrar-repaso">Cerrar el repaso</button>'}
           </div></div>`;
       })()}
       ${p.guion ? guionHTML(p.guion) : ''}
@@ -319,9 +322,11 @@
       const acc = b.dataset.acc;
       if (acc === 'sig') ir(pasoIdx() + 1);
       else if (acc === 'ant') ir(pasoIdx() - 1);
-      else if (acc === 'liberar' || acc === 'liberar-todo') {
+      else if (acc === 'liberar' || acc === 'liberar-todo' || acc === 'cerrar-repaso') {
         b.disabled = true;
-        const r = await II.fijarRepaso(SES, acc === 'liberar' ? S.pasos[pasoIdx()].id : null, D.fila ? D.fila.extra : {});
+        const cambios = acc === 'cerrar-repaso' ? { repaso_cerrado: true }
+          : { repaso_cerrado: false, repaso_hasta: acc === 'liberar' ? S.pasos[pasoIdx()].id : null };
+        const r = await II.fijarExtra(SES, cambios, D.fila ? D.fila.extra : {});
         if (!r.ok) { aviso('No se pudo cambiar el repaso: ' + r.error); b.disabled = false; return; }
         D.fila = { ...(D.fila || {}), extra: r.extra };
         pintar();
