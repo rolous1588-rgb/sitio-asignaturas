@@ -89,9 +89,68 @@
         <h1 class="pres-titulo" style="margin-top:14px;font-size:2.4rem">${II.esc(r.titulo)}</h1>
         <p style="font-size:1.3rem;color:var(--texto-2)">${II.esc(r.general)}</p>
         <div class="aviso info" style="font-size:1.05rem">Cada estudiante tiene <b>valores distintos</b> generados con su carnet: compartir la respuesta no sirve 😉</div>
+        <div id="p-cierre"></div>
         ${local ? '' : `<div style="text-align:center;margin-top:34px"><div class="nota" style="font-size:1rem">Enviaron</div><div class="grande-numero" style="font-size:5rem;margin:6px 0 14px" id="n-env">—</div><div class="barra-prog" style="max-width:620px;margin:0 auto"><div id="b-env" style="width:0"></div></div></div>`}
       </div>`;
-      if (!local) R._progreso(p.reto);
+      if (!local) { R._progreso(p.reto); R._cierre(p); }
+    },
+
+    // pregunta rápida: se lee la pregunta, cuenta regresiva y, al cerrar, barras por opción
+    rapida(p) {
+      const pts = II.puntosRapida(p);
+      cuerpo.innerHTML = `<div style="max-width:1000px;margin:4vh auto">
+        <div class="controles"><span class="chip acento">Pregunta rápida${p.ciclo ? ' · Ciclo ' + p.ciclo : ''}</span><span class="chip">Vale ${pts} punto${pts > 1 ? 's' : ''}</span><span class="chip">Responde en tu dispositivo</span></div>
+        <h1 class="pres-titulo" style="margin-top:14px;font-size:2.1rem;line-height:1.3">${p.t}</h1>
+        <div id="p-ops" class="pres-opciones">${p.o.map((o, i) => `<div class="pres-opcion" data-i="${i}"><span class="txt">${o}</span><span class="num"></span><div class="relleno"></div></div>`).join('')}</div>
+        <p class="nota" style="margin-top:8px">En cada dispositivo las opciones aparecen en otro orden.</p>
+        <div id="p-cierre"></div>
+        <div id="p-por"></div>
+        ${local ? '' : `<div style="text-align:center;margin-top:18px"><span class="nota" style="font-size:1rem">Enviaron </span><b class="grande-numero" style="font-size:2.4rem" id="n-env">—</b><div class="barra-prog" style="max-width:520px;margin:8px auto 0"><div id="b-env" style="width:0"></div></div></div>`}
+      </div>`;
+      if (local) {
+        // modo ensayo: un clic en la pantalla revela la respuesta
+        cuerpo.querySelector('#p-ops').addEventListener('click', () => R._revelar(p, null));
+        return;
+      }
+      R._progreso(p.id);
+      R._cierre(p);
+    },
+
+    _revelar(p, conteo) {
+      const t = conteo ? Object.values(conteo).reduce((a, b) => a + b, 0) : 0;
+      II.$$('#p-ops .pres-opcion').forEach((d) => {
+        const i = +d.dataset.i, n = conteo ? conteo[i] || 0 : null;
+        d.classList.toggle('correcta', i === p.c);
+        d.classList.toggle('apagada', i !== p.c);
+        if (n != null) { d.querySelector('.num').textContent = n; d.querySelector('.relleno').style.width = (t ? (n / t) * 100 : 0) + '%'; }
+      });
+      const por = II.$('#p-por');
+      if (por && p.por) por.innerHTML = `<div class="aviso ok" style="font-size:1.1rem">${p.por}</div>`;
+    },
+
+    // aviso de cierre (botón del docente): cuenta regresiva y luego "cerrado"
+    _cierre(p) {
+      const act = II.actividadDe(p);
+      let revelado = false;
+      const f = async () => {
+        const caja = II.$('#p-cierre');
+        if (!caja) return;
+        const c = II.cierreDe(filaEstado, act);
+        if (!c) { caja.innerHTML = ''; return; }
+        const s = Math.ceil(II.restaCierre(c));
+        if (s > 0) {
+          caja.innerHTML = `<div class="aviso duda cuenta-pres">⏳ ${p.tipo === 'rapida' ? 'La pregunta' : 'El reto'} se cierra en <b>${s} s</b>: lo que tengan escrito se enviará solo.</div>`;
+          return;
+        }
+        caja.innerHTML = `<div class="aviso ok cuenta-pres">✓ ${p.tipo === 'rapida' ? 'Pregunta cerrada' : 'Reto cerrado'}.</div>`;
+        if (p.tipo === 'rapida' && !revelado) {
+          revelado = true;
+          // espera unos segundos a que lleguen los envíos automáticos
+          const pintarBarras = async () => { const m = await II.resumenOpciones(SES, act); if (m && II.$('#p-ops')) R._revelar(p, m); };
+          pintarBarras(); setTimeout(pintarBarras, 3000); setTimeout(pintarBarras, 7000);
+        }
+      };
+      f(); reloj = setInterval(f, 500);
     },
 
     revisa(p) {
@@ -162,7 +221,11 @@
   const irA = async (i) => {
     i = Math.max(0, Math.min(S.pasos.length - 1, i));
     if (local) { idxLocal = i; II.guardar('ii-pres-local-' + SES, i); return mostrar(S.pasos[i]); }
-    if (esDocente) { mostrar(S.pasos[i]); await II.fijarPaso(SES, S.pasos[i].id); }
+    if (esDocente) {
+      mostrar(S.pasos[i]);
+      const ex = (filaEstado && filaEstado.extra) || {};
+      await II.fijarPaso(SES, S.pasos[i].id, ex.cierre ? { ...ex, cierre: null } : undefined);
+    }
   };
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input,select,textarea')) return;
@@ -191,6 +254,7 @@
       filaEstado = fila;
       const p = S.pasos.find((x) => x.id === fila.paso) || S.pasos[0];
       if (!paso || p.id !== paso.id) mostrar(p);
+      // el aviso de cierre se actualiza solo (lee filaEstado cada medio segundo)
     });
     setTimeout(() => { if (!paso) mostrar(S.pasos[0]); }, 6000);
   }

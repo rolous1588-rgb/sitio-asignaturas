@@ -108,7 +108,8 @@
     let ultimo = null;
     const aplicar = (fila) => {
       if (!fila || fila.sesion !== sesion) return;
-      const clave = fila.paso + '|' + fila.actualizado;
+      // también avisa cuando el docente inicia o cancela el cierre de un reto
+      const clave = fila.paso + '|' + fila.actualizado + '|' + JSON.stringify((fila.extra && fila.extra.cierre) || null);
       if (clave === ultimo) return;
       ultimo = clave;
       alCambiar(fila);
@@ -156,10 +157,13 @@
     return { ok: true, extra };
   };
 
-  II.fijarPaso = async (sesion, paso) => {
+  // extra (opcional): reemplaza estado_sesion.extra en la misma operación (p. ej. para limpiar un cierre)
+  II.fijarPaso = async (sesion, paso, extra) => {
+    const cambios = { paso, actualizado: new Date().toISOString() };
+    if (extra) cambios.extra = extra;
     const { data, error } = await II.sb
       .from('estado_sesion')
-      .update({ paso, actualizado: new Date().toISOString() })
+      .update(cambios)
       .eq('sesion', sesion)
       .select();
     if (error) return { ok: false, error: error.message };
@@ -218,6 +222,18 @@
     return { ok: !error, error: error && error.message };
   };
 
+  // conteo anónimo por opción de una pregunta rápida → { 0: n, 1: n, … }
+  II.resumenOpciones = async (sesion, actividad) => {
+    if (!II.sb) return null;
+    try {
+      const { data, error } = await II.sb.rpc('resumen_opciones', { p_sesion: sesion, p_actividad: actividad });
+      if (error) throw error;
+      const m = {};
+      (data || []).forEach((f) => { if (f.opcion != null) m[f.opcion] = Number(f.n); });
+      return m;
+    } catch (e) { return null; }
+  };
+
   II.resumen = async (sesion, actividad) => {
     if (!II.sb) return null;
     try {
@@ -235,7 +251,32 @@
   II.indicePaso = (sesion, pasoId) => II.SESIONES[sesion].pasos.findIndex((p) => p.id === pasoId);
   II.TIPOS = {
     espera: 'Bienvenida', cuestionario: 'Diagnóstico', explica: 'Explicación', explora: 'Exploración',
-    reto: 'Reto', revisa: 'Revisión', pausa: 'Pausa', cierre: 'Cierre'
+    rapida: 'Pregunta rápida', reto: 'Reto', revisa: 'Revisión', pausa: 'Pausa', cierre: 'Cierre'
+  };
+
+  // actividad que registra respuestas en un paso (null si el paso no tiene respuestas)
+  II.actividadDe = (paso) => {
+    if (!paso) return null;
+    if (paso.tipo === 'reto') return paso.reto;
+    if (paso.tipo === 'rapida') return paso.id;
+    if (paso.tipo === 'cuestionario') return 'diagnostico';
+    return null;
+  };
+  II.puntosRapida = (paso) => paso.puntos || 1;
+  II.rapidasDe = (S) => S.pasos.filter((p) => p.tipo === 'rapida');
+
+  // cierre de un reto o pregunta rápida (botón del docente): segundos de aviso
+  II.SEG_CIERRE = { reto: 30, rapida: 15 };
+  // cierre vigente en la fila de estado para esa actividad → { act, seg, fin, id } o null
+  II.cierreDe = (fila, act) => {
+    const c = fila && fila.extra && fila.extra.cierre;
+    return c && act && c.act === act ? c : null;
+  };
+  // segundos que faltan para que termine el cierre (según este reloj), entre 0 y seg
+  II.restaCierre = (c) => {
+    if (!c) return null;
+    const r = (new Date(c.fin).getTime() - Date.now()) / 1000;
+    return Math.max(0, Math.min(c.seg || 30, isFinite(r) ? r : 0));
   };
 
   // puntaje de un reto: aciertos proporcionales; segundo intento vale la mitad

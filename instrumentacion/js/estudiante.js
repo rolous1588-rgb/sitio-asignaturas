@@ -8,6 +8,8 @@
   const libre = II.params.get('modo') === 'libre' || !II.configurado;
   let alumno = II.leer('ii-alumno');
   let pasoActual = null, filaEstado = null, diagrama = null, idxLibre = 0, relojInt = null;
+  // actividad en pantalla que se puede cerrar (reto o pregunta rápida): { act, cerrar(motivo) }
+  let cerrador = null, cuentaInt = null, cierreVisto = null;
   let limiteLibre = S.pasos.length - 1; // hasta dónde deja avanzar el modo repaso
 
   const main = II.$('#principal');
@@ -22,6 +24,30 @@
       II.$('#b-salir').onclick = () => { if (confirmarSalida()) { localStorage.removeItem('ii-alumno'); location.reload(); } };
     } else u.innerHTML = '';
     II.$('#b-modo').innerHTML = libre ? '<span class="chip duda">Modo repaso</span>' : '';
+    actualizarPuntos();
+  };
+
+  // ---------- puntaje acumulado de hoy (solo lo ve el propio estudiante) ----------
+  // Las preguntas rápidas suman recién cuando se cierran (así el puntaje no delata la respuesta).
+  const puntosHoy = () => {
+    let total = 0, max = 0;
+    Object.entries(S.retos).forEach(([id, R]) => { max += R.puntos; const st = II.leer(clave('reto', id)); if (st) total += st.mejor || 0; });
+    II.rapidasDe(S).forEach((p) => { max += II.puntosRapida(p); const st = II.leer(clave('rap', p.id)); if (st && st.revelada) total += st.pts || 0; });
+    return { total: Math.round(total * 10) / 10, max };
+  };
+  const actualizarPuntos = () => {
+    const e = II.$('#b-puntos');
+    if (!e) return;
+    if (!alumno || libre) { e.innerHTML = ''; return; }
+    const p = puntosHoy();
+    e.innerHTML = `<span class="chip ok" title="Tu puntaje de hoy">⭐ ${II.fmt(p.total, 1)} / ${p.max}</span>`;
+  };
+
+  // aviso breve abajo de la pantalla
+  const avisoBreve = (html, clase = 'info', ms = 6000) => {
+    const a = II.html(`<div class="aviso ${clase} aviso-flotante">${html}</div>`);
+    document.body.appendChild(a);
+    setTimeout(() => a.remove(), ms);
   };
   let salidaArmada = false;
   const confirmarSalida = () => {
@@ -81,6 +107,39 @@
     diagrama = null;
     if (relojInt) clearInterval(relojInt);
     relojInt = null;
+    if (cuentaInt) clearInterval(cuentaInt);
+    cuentaInt = null; cierreVisto = null; cerrador = null;
+    const b = II.$('#cierre-aviso'); if (b) b.remove();
+  };
+
+  // ---------- cierre de la actividad por el docente (cuenta regresiva) ----------
+  const vigilarCierre = () => {
+    if (libre || !cerrador) return;
+    const c = II.cierreDe(filaEstado, cerrador.act);
+    if (!c) { // sin cierre o cancelado por el docente
+      if (cuentaInt) { clearInterval(cuentaInt); cuentaInt = null; }
+      const b = II.$('#cierre-aviso'); if (b) b.remove();
+      cierreVisto = null;
+      return;
+    }
+    if (cierreVisto === c.id) return; // ya está corriendo
+    cierreVisto = c.id;
+    // se cuenta con el reloj de este dispositivo, entre 3 s y los segundos del aviso
+    const resta = Math.max(3, II.restaCierre(c) || 0);
+    const fin = Date.now() + resta * 1000;
+    const tick = () => {
+      const s = Math.ceil((fin - Date.now()) / 1000);
+      let b = II.$('#cierre-aviso');
+      if (s <= 0) {
+        clearInterval(cuentaInt); cuentaInt = null;
+        if (b) b.remove();
+        if (cerrador) cerrador.cerrar('docente');
+        return;
+      }
+      if (!b) { b = II.html('<div id="cierre-aviso" class="aviso duda aviso-flotante"></div>'); document.body.appendChild(b); }
+      b.innerHTML = `⏳ <b>${pasoActual && pasoActual.tipo === 'rapida' ? 'La pregunta' : 'El reto'} se cierra en ${s} s.</b> Lo que tengas marcado o escrito se enviará solo.`;
+    };
+    tick(); cuentaInt = setInterval(tick, 250);
   };
   const cabecera = (paso) => `
     <div class="cabecera-paso">
@@ -165,11 +224,97 @@
       montarDiagrama(II.$('#diag'), paso);
     },
 
+    rapida(paso) {
+      const k = clave('rap', paso.id);
+      const pts = II.puntosRapida(paso);
+      let st = II.leer(k, null); // { op, ok, pts, revelada, vacio, auto }
+      // cada carnet ve las opciones en otro orden: decir "es la C" no sirve
+      const orden = II.mezclar(II.rng(alumno.carnet + '|' + paso.id), paso.o.map((_, i) => i));
+      main.innerHTML = `<div class="contenido angosto"><div class="tarjeta">${cabecera(paso)}
+        <div class="controles" style="margin:-4px 0 12px"><span class="chip">Vale ${pts} punto${pts > 1 ? 's' : ''}</span><span class="chip">Un solo intento</span></div>
+        <div class="pregunta-rapida">${paso.t}</div>
+        <div class="opciones" id="rq-op">${orden.map((i) => `<label class="opcion"><input type="radio" name="rq" value="${i}">${paso.o[i]}</label>`).join('')}</div>
+        <div id="rq-msg"></div>
+        <button class="boton primario grande bloque" id="rq-enviar">Enviar respuesta</button>
+      </div></div>`;
+      const raiz = II.$('#rq-op');
+      const elegida = () => { const x = raiz.querySelector('input:checked'); return x ? +x.value : null; };
+      raiz.querySelectorAll('input').forEach((i) => i.addEventListener('change', () => {
+        raiz.querySelectorAll('.opcion').forEach((o) => o.classList.toggle('elegida', o.querySelector('input').checked));
+        II.$('#rq-msg').innerHTML = '';
+      }));
+
+      const pintar = () => {
+        const bot = II.$('#rq-enviar');
+        raiz.querySelectorAll('input').forEach((i) => {
+          const v = +i.value, o = i.closest('.opcion');
+          i.disabled = !!st;
+          if (st && st.op === v) i.checked = true;
+          o.classList.toggle('elegida', !!st && st.op === v && !st.revelada);
+          o.classList.toggle('correcta', !!st && st.revelada && v === paso.c);
+          o.classList.toggle('errada', !!st && st.revelada && st.op === v && v !== paso.c);
+        });
+        if (!st) return;
+        bot.classList.add('oculto');
+        const msg = II.$('#rq-msg');
+        if (!st.revelada) {
+          msg.innerHTML = '<div class="aviso info">✓ Respuesta registrada. Verás si acertaste cuando el docente cierre la pregunta.</div>';
+        } else {
+          const cab = st.vacio ? `<b>No respondiste:</b> 0 de ${pts}.`
+            : st.ok ? `<b>¡Correcto!</b> +${pts} punto${pts > 1 ? 's' : ''}.` : `<b>Incorrecto:</b> 0 de ${pts}.`;
+          msg.innerHTML = `<div class="aviso ${st.ok ? 'ok' : st.vacio ? 'duda' : 'mal'}">${cab}${st.ok ? '' : ` La correcta es: <b>${paso.o[paso.c]}</b>.`}${paso.por ? `<br>${paso.por}` : ''}</div>`;
+        }
+      };
+
+      const enviarOp = (op, auto) => {
+        const ok = op != null && op === paso.c;
+        st = { op, ok, pts: ok ? pts : 0, revelada: libre, vacio: op == null, auto: auto || null };
+        II.guardar(k, st);
+        if (!libre) {
+          II.enviar({ sesion: SES, actividad: paso.id, carnet: alumno.carnet, nombre: alumno.nombre,
+            respuesta: { opcion: op, auto: auto || null, vacio: op == null }, correcta: ok, intento: 1, confianza: null, puntaje: st.pts })
+            .then((r) => {
+              const m = II.$('#rq-msg');
+              if (!m || !pasoActual || pasoActual.id !== paso.id) return;
+              if (r.rechazadas) m.insertAdjacentHTML('beforeend', '<div class="aviso mal">Esta pregunta ya está cerrada: tu respuesta <b>no</b> se registró.</div>');
+              else if (!r.ok) m.insertAdjacentHTML('beforeend', '<div class="aviso duda">Sin conexión: tu respuesta quedó guardada y se enviará sola al reconectar.</div>');
+            });
+        }
+      };
+
+      II.$('#rq-enviar').addEventListener('click', () => {
+        if (st) return;
+        const op = elegida();
+        if (op == null) { II.$('#rq-msg').innerHTML = '<div class="aviso mal">Elige una opción antes de enviar.</div>'; return; }
+        enviarOp(op);
+        pintar();
+        actualizarPuntos();
+      });
+
+      // cierre (botón del docente o cambio de paso): envía lo marcado y muestra el resultado
+      if (!libre) cerrador = {
+        act: paso.id,
+        cerrar: (motivo) => {
+          if (st && st.revelada) return null;
+          if (!st) enviarOp(elegida(), motivo);
+          st = { ...st, revelada: true };
+          II.guardar(k, st);
+          pintar();
+          actualizarPuntos();
+          return st.vacio ? 'Pregunta rápida: no respondiste (0 puntos).'
+            : st.ok ? `Pregunta rápida: <b>¡correcta!</b> +${pts}.` : `Pregunta rápida: incorrecta. La correcta era <b>${paso.o[paso.c]}</b>.`;
+        }
+      };
+      pintar();
+    },
+
     reto(paso) {
       const R = S.retos[paso.reto];
       const gen = R.generar(II.rng(alumno.carnet + '|' + paso.reto));
       const k = clave('reto', paso.reto);
+      const kb = clave('borr', paso.reto); // borrador: lo escrito sin enviar (sobrevive a una recarga)
       let st = II.leer(k, { intentos: 0, mejor: 0, terminado: false, valores: {}, detalle: {}, confianza: null });
+      const borr = II.leer(kb, null);
       main.innerHTML = `<div class="contenido angosto"><div class="tarjeta">${cabecera(paso)}
         <div class="controles" style="margin:-4px 0 12px"><span class="chip">Vale ${R.puntos} puntos</span><span class="chip" id="r-intento"></span><span class="chip">Valores propios de tu carnet</span></div>
         <div class="enunciado">${gen.enunciado}</div>
@@ -193,13 +338,18 @@
       </div></div>`;
 
       const form = II.$('#f-reto');
-      let confianza = st.confianza;
+      let confianza = st.confianza || (!st.terminado && borr ? borr.confianza : null);
+      const leerValores = () => { const v = {}; gen.campos.forEach((c) => { v[c.id] = form.elements[c.id].value; }); return v; };
+      const guardarBorrador = () => { if (!st.terminado) II.guardar(kb, { valores: leerValores(), confianza }); };
       const pintarConfianza = () => II.$$('.confianza button').forEach((b) => b.classList.toggle('activo', b.dataset.c === confianza));
-      II.$$('.confianza button').forEach((b) => b.addEventListener('click', () => { if (!st.terminado) { confianza = b.dataset.c; pintarConfianza(); } }));
-      gen.campos.forEach((c) => { if (st.valores[c.id] != null) form.elements[c.id].value = st.valores[c.id]; });
+      II.$$('.confianza button').forEach((b) => b.addEventListener('click', () => { if (!st.terminado) { confianza = b.dataset.c; pintarConfianza(); guardarBorrador(); } }));
+      const iniciales = !st.terminado && borr && borr.valores ? borr.valores : st.valores;
+      gen.campos.forEach((c) => { if (iniciales[c.id] != null) form.elements[c.id].value = iniciales[c.id]; });
+      form.addEventListener('input', guardarBorrador);
+      form.addEventListener('change', guardarBorrador);
 
       const pintarEstado = () => {
-        II.$('#r-intento').textContent = st.terminado ? 'Terminado' : `Intento ${st.intentos + 1} de 2`;
+        II.$('#r-intento').textContent = st.terminado ? (st.cerradoPor ? 'Cerrado' : 'Terminado') : `Intento ${st.intentos + 1} de 2`;
         gen.campos.forEach((c) => {
           const e = form.elements[c.id];
           e.classList.remove('ok', 'mal');
@@ -212,9 +362,12 @@
         if (st.terminado) {
           bot.classList.add('oculto');
           II.$$('.confianza button').forEach((b) => (b.disabled = true));
-          msg.innerHTML = st.correcta
-            ? `<div class="aviso ok">¡Correcto! Obtuviste <b>${II.fmt(st.mejor, 1)} de ${R.puntos}</b> puntos.</div>`
-            : `<div class="aviso mal">Respuesta registrada: <b>${II.fmt(st.mejor, 1)} de ${R.puntos}</b> puntos. ${libre ? 'Mira la solución abajo.' : 'Veremos la solución en la revisión.'}</div>`;
+          const nota = `<b>${II.fmt(st.mejor, 1)} de ${R.puntos}</b> puntos`;
+          msg.innerHTML = st.vacio
+            ? `<div class="aviso duda">El reto se cerró sin que enviaras respuesta: ${nota}. ${libre ? '' : 'Veremos la solución en la revisión.'}</div>`
+            : st.correcta
+              ? `<div class="aviso ok">¡Correcto! Obtuviste ${nota}.</div>`
+              : `<div class="aviso mal">${st.cerradoPor ? 'El reto se cerró y se envió lo que tenías: ' : 'Respuesta registrada: '}${nota}. ${libre ? 'Mira la solución abajo.' : 'Veremos la solución en la revisión.'}</div>`;
           if (libre) II.$('#r-sol').innerHTML = `<h3 style="margin-top:16px">Solución con tus valores</h3><div class="solucion">${gen.solucion}</div>`;
         } else if (st.intentos === 1) {
           const ac = Object.values(st.detalle).filter(Boolean).length;
@@ -222,18 +375,8 @@
         }
       };
 
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        if (st.terminado) return;
-        const valores = {};
-        let faltan = false;
-        gen.campos.forEach((c) => {
-          const v = form.elements[c.id].value;
-          valores[c.id] = v;
-          if (String(v).trim() === '' || (c.tipo === 'num' && !isFinite(II.num(v)))) faltan = true;
-        });
-        if (faltan) { II.$('#r-msg').innerHTML = '<div class="aviso mal">Completa todas las respuestas (los números pueden llevar coma o punto decimal).</div>'; return; }
-        if (!confianza) { II.$('#r-msg').innerHTML = '<div class="aviso mal">Marca si estás seguro o tienes dudas antes de enviar.</div>'; return; }
+      // califica y registra un intento (también lo usa el cierre automático)
+      const registrar = (valores, motivo) => {
         const ver = II.verificarReto(gen, valores);
         const intento = st.intentos + 1;
         // 1er intento: proporcional. 2º intento: lo que ya estaba bien conserva su valor; lo corregido vale la mitad.
@@ -241,17 +384,57 @@
           ? ver.aciertos
           : gen.campos.reduce((a, c) => a + (ver.detalle[c.id] ? (st.detalle[c.id] ? 1 : 0.5) : 0), 0);
         const pts = Math.round(((R.puntos * base) / ver.total) * 10) / 10;
-        st = { ...st, intentos: intento, valores, detalle: ver.detalle, confianza, mejor: Math.max(st.mejor, pts), correcta: ver.todo, terminado: ver.todo || intento >= 2 };
+        const vacio = !!motivo && st.intentos === 0 && gen.campos.every((c) => String(valores[c.id] || '').trim() === '');
+        st = { ...st, intentos: intento, valores, detalle: ver.detalle, confianza, mejor: Math.max(st.mejor, pts), correcta: ver.todo,
+          terminado: !!motivo || ver.todo || intento >= 2, cerradoPor: motivo || null, vacio };
         II.guardar(k, st);
+        II.guardar(kb, null);
+        if (libre) return Promise.resolve({ ok: true });
+        return II.enviar({ sesion: SES, actividad: paso.reto, carnet: alumno.carnet, nombre: alumno.nombre,
+          respuesta: { valores, aciertos: ver.aciertos, total: ver.total, auto: motivo || null, vacio },
+          correcta: ver.todo, intento, confianza: confianza || null, puntaje: pts });
+      };
+      const avisarEnvio = (r) => {
+        const sol = II.$('#r-sol');
+        if (!sol || !pasoActual || pasoActual.id !== paso.id) return;
+        if (r.rechazadas) sol.innerHTML = '<div class="aviso mal">Este reto ya está cerrado: tu respuesta <b>no</b> se registró.</div>';
+        else if (!r.ok) sol.innerHTML = '<div class="aviso duda">Sin conexión en este momento: tu respuesta quedó guardada y se enviará sola al reconectar.</div>';
+      };
+
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        if (st.terminado) return;
+        const valores = leerValores();
+        const faltan = gen.campos.some((c) => String(valores[c.id]).trim() === '' || (c.tipo === 'num' && !isFinite(II.num(valores[c.id]))));
+        if (faltan) { II.$('#r-msg').innerHTML = '<div class="aviso mal">Completa todas las respuestas (los números pueden llevar coma o punto decimal).</div>'; return; }
+        if (!confianza) { II.$('#r-msg').innerHTML = '<div class="aviso mal">Marca si estás seguro o tienes dudas antes de enviar.</div>'; return; }
         II.$('#r-enviar').disabled = true;
-        if (!libre) {
-          const r = await II.enviar({ sesion: SES, actividad: paso.reto, carnet: alumno.carnet, nombre: alumno.nombre, respuesta: { valores, aciertos: ver.aciertos, total: ver.total }, correcta: ver.todo, intento, confianza, puntaje: pts });
-          if (r.rechazadas) II.$('#r-sol').innerHTML = '<div class="aviso mal">Este reto ya está cerrado: tu respuesta <b>no</b> se registró.</div>';
-          else if (!r.ok) II.$('#r-sol').innerHTML = '<div class="aviso duda">Sin conexión en este momento: tu respuesta quedó guardada y se enviará sola al reconectar.</div>';
-        }
-        II.$('#r-enviar').disabled = false;
+        const envio = registrar(valores);
         pintarEstado();
+        actualizarPuntos();
+        const r = await envio;
+        avisarEnvio(r);
+        if (II.$('#r-enviar')) II.$('#r-enviar').disabled = false;
       });
+
+      // cierre (botón del docente o cambio de paso): envía lo que haya escrito, aunque esté incompleto
+      if (!libre) cerrador = {
+        act: paso.reto,
+        cerrar: (motivo) => {
+          if (st.terminado) return null;
+          const valores = leerValores();
+          const sinCambios = st.intentos > 0 && gen.campos.every((c) => String(valores[c.id]) === String(st.valores[c.id] ?? ''));
+          if (sinCambios) { // ya había enviado un intento y no cambió nada: queda ese puntaje
+            st = { ...st, terminado: true, cerradoPor: motivo };
+            II.guardar(k, st); II.guardar(kb, null);
+          } else {
+            registrar(valores, motivo).then(avisarEnvio);
+          }
+          pintarEstado();
+          actualizarPuntos();
+          return `${II.esc(R.titulo.split('·')[0].trim())}: ${st.vacio ? 'se cerró sin respuesta' : 'se envió lo que tenías'} → <b>${II.fmt(st.mejor, 1)} de ${R.puntos}</b> puntos.`;
+        }
+      };
       pintarEstado();
     },
 
@@ -259,7 +442,7 @@
       const R = S.retos[paso.reto];
       const gen = R.generar(II.rng(alumno.carnet + '|' + paso.reto));
       const st = II.leer(clave('reto', paso.reto));
-      const res = !st || !st.intentos
+      const res = !st || !st.intentos || st.vacio
         ? '<div class="aviso duda">No enviaste este reto. Igual revisa la solución con tus valores.</div>'
         : st.correcta
           ? `<div class="aviso ok">Lo resolviste bien: <b>${II.fmt(st.mejor, 1)} de ${R.puntos}</b> puntos.</div>`
@@ -286,8 +469,7 @@
     },
 
     cierre(paso) {
-      let total = 0, max = 0;
-      Object.entries(S.retos).forEach(([id, R]) => { const st = II.leer(clave('reto', id)); max += R.puntos; if (st) total += st.mejor || 0; });
+      const { total, max } = puntosHoy();
       main.innerHTML = `<div class="contenido angosto"><div class="tarjeta">${cabecera(paso)}
         <div style="text-align:center;margin:10px 0 18px"><div class="nota">Tu puntaje de hoy</div><div class="grande-numero">${II.fmt(total, 1)} <span style="font-size:1.4rem;color:var(--texto-3)">/ ${max}</span></div></div>
         <ul class="ideas">${paso.ideas.map((t, i) => `<li><b class="n">${i + 1}</b><span>${t}</span></li>`).join('')}</ul>
@@ -297,12 +479,20 @@
   };
 
   const mostrarPaso = (paso) => {
+    // red de seguridad: si la clase avanza con un reto o pregunta sin cerrar, se envía lo que haya
+    let resumen = null;
+    if (!libre && cerrador && pasoActual && pasoActual.id !== paso.id) {
+      try { resumen = cerrador.cerrar('avance'); } catch (e) { /* no debe impedir el cambio de paso */ }
+    }
     limpiar();
     pasoActual = paso;
     II.$('#b-paso').textContent = II.TIPOS[paso.tipo];
     (render[paso.tipo] || render.espera)(paso);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (libre) pintarNavLibre();
+    if (resumen) avisoBreve(resumen, 'info', 7000);
+    actualizarPuntos();
+    vigilarCierre();
   };
 
   // ---------- modo repaso: navegación libre ----------
@@ -362,6 +552,7 @@
       filaEstado = fila;
       const paso = S.pasos.find((p) => p.id === fila.paso) || S.pasos[0];
       if (!pasoActual || paso.id !== pasoActual.id) mostrarPaso(paso);
+      else vigilarCierre(); // mismo paso: puede haber empezado o cancelado un cierre
     });
   };
 

@@ -88,6 +88,7 @@
   const estadoAlumno = (act, carnet) => {
     const rs = deActividad(act).filter((r) => r.carnet === carnet);
     if (!rs.length) return { clase: 'nada', txt: 'Sin enviar', rs };
+    if (rs.every(esVacio)) return { clase: 'nada', txt: 'No respondió · 0 pts', rs, mejor: 0 };
     const ok = rs.find((r) => r.correcta);
     const ult = rs[rs.length - 1];
     const mejor = Math.max(...rs.map((r) => +r.puntaje || 0));
@@ -95,19 +96,23 @@
     if (ult.confianza === 'seguro') return { clase: 'mal', txt: `✗ Seguro · ${II.fmt(mejor, 1)} pts`, rs, mejor };
     return { clase: 'duda', txt: `✗ Con dudas · ${II.fmt(mejor, 1)} pts`, rs, mejor };
   };
-  const actividadDePaso = (paso) => (paso ? (paso.reto || (paso.tipo === 'cuestionario' ? 'diagnostico' : null)) : null);
+  const actividadDePaso = (paso) => II.actividadDe(paso);
+  const esVacio = (r) => !!(r.respuesta && r.respuesta.vacio);
+  const enviaron = (act) => new Set(deActividad(act).filter((r) => !esVacio(r)).map((r) => r.carnet)).size;
 
   // ---------- control ----------
   const pasoIdx = () => Math.max(0, II.indicePaso(SES, D.fila ? D.fila.paso : 'inicio'));
   const ir = async (i) => {
     i = Math.max(0, Math.min(S.pasos.length - 1, i));
     const paso = S.pasos[i];
-    D.fila = { ...(D.fila || {}), paso: paso.id, actualizado: new Date().toISOString() };
+    const ex = (D.fila && D.fila.extra) || {};
+    const extra = ex.cierre ? { ...ex, cierre: null } : undefined;
+    D.fila = { ...(D.fila || {}), paso: paso.id, actualizado: new Date().toISOString(), ...(extra ? { extra } : {}) };
     const act = actividadDePaso(paso);
     if (act) D.actividad = act;
     pintar();
     if (D.pestana === 'control') window.scrollTo({ top: 0, behavior: 'smooth' });
-    const r = await II.fijarPaso(SES, paso.id);
+    const r = await II.fijarPaso(SES, paso.id, extra);
     if (!r.ok) aviso('No se pudo cambiar el paso: ' + r.error);
   };
   const aviso = (t) => {
@@ -120,7 +125,7 @@
     const p = S.pasos[i];
     const act = actividadDePaso(p);
     const al = alumnos().length;
-    const env = act ? new Set(deActividad(act).map((r) => r.carnet)).size : null;
+    const env = act ? enviaron(act) : null;
     let grupo = '';
     const lista = S.pasos.map((x, j) => {
       const g = x.ciclo ? 'Ciclo ' + x.ciclo : x.tipo === 'pausa' ? 'Pausa' : j < 3 ? 'Inicio' : 'Cierre';
@@ -151,6 +156,8 @@
             ${ex.repaso_cerrado ? '' : '<button class="boton chico peligro" data-acc="cerrar-repaso">Cerrar el repaso</button>'}
           </div></div>`;
       })()}
+      ${tarjetaCierre(p)}
+      ${p.tipo === 'rapida' ? tarjetaRapida(p) : ''}
       ${p.guion ? guionHTML(p.guion) : ''}
       <div class="tarjeta" style="padding:14px">
         <div class="controles" style="margin-bottom:8px">
@@ -160,6 +167,35 @@
         <div class="nota" style="word-break:break-all">${II.esc(II.urlClase(SES))}</div>
       </div>
       <ul class="lista-pasos" style="margin-top:14px">${lista}</ul>`;
+  };
+
+  // ---------- cerrar reto / pregunta rápida ----------
+  const tarjetaCierre = (p) => {
+    if (p.tipo !== 'reto' && p.tipo !== 'rapida') return '';
+    const act = actividadDePaso(p);
+    const nombre = p.tipo === 'rapida' ? 'pregunta' : 'reto';
+    const c = II.cierreDe(D.fila, act);
+    const s = c ? Math.ceil(II.restaCierre(c)) : null;
+    let cuerpo;
+    if (!c) cuerpo = `<button class="boton primario bloque" data-acc="cerrar-act">⏱ Cerrar ${nombre} (${II.SEG_CIERRE[p.tipo]} s)</button>
+      <div class="nota" style="margin-top:6px">Los estudiantes ven una cuenta regresiva; al terminar, se envía lo que cada uno tenga escrito y ven su nota. Si tocas Siguiente sin cerrar, se cierra solo.</div>`;
+    else if (s > 0) cuerpo = `<div class="controles" style="justify-content:space-between"><b style="font-size:1.1rem">⏳ Cerrando en <span id="cd-doc">${s}</span> s…</b><button class="boton chico" data-acc="cancelar-cierre">Cancelar</button></div>`;
+    else cuerpo = `<div class="aviso ok" style="margin:0">✓ ${p.tipo === 'rapida' ? 'Pregunta cerrada: en Zoom ya se ven los resultados.' : 'Reto cerrado. Toca <b>Siguiente</b> para la revisión.'}</div>`;
+    return `<div class="tarjeta" style="padding:12px 14px;margin-bottom:12px;border-color:#c9dbf3">${cuerpo}</div>`;
+  };
+  const tarjetaRapida = (p) => {
+    const rs = deActividad(p.id).filter((r) => !esVacio(r));
+    const ult = new Map(); rs.forEach((r) => ult.set(r.carnet, r));
+    const n = ult.size;
+    const cuenta = p.o.map((_, i) => Array.from(ult.values()).filter((r) => r.respuesta && r.respuesta.opcion === i).length);
+    return `<div class="tarjeta" style="padding:12px 14px;margin-bottom:12px">
+      <div class="etiqueta" style="margin-bottom:6px">Pregunta rápida · respuestas en vivo (${n})</div>
+      <div style="font-weight:600;margin-bottom:8px">${p.t}</div>
+      ${p.o.map((o, i) => `<div style="margin-bottom:6px"><div class="nota" style="margin-bottom:2px">${i === p.c ? '✓ ' : ''}${o}</div>
+        <div class="barra-prog"><div style="width:${n ? (cuenta[i] / n) * 100 : 0}%;background:${i === p.c ? 'var(--ok)' : 'var(--mal)'}"></div></div>
+        <div class="nota" style="text-align:right">${cuenta[i]}</div></div>`).join('')}
+      ${p.por ? `<div class="nota" style="margin-top:6px"><b>Por qué:</b> ${p.por}</div>` : ''}
+    </div>`;
   };
 
   // guion: formato simple (puntos) o extenso (objetivo, pasos, preguntas, dudas, transición)
@@ -179,12 +215,25 @@
 
   // ---------- pizarra ----------
   const vistaPizarra = () => {
-    const acts = [['diagnostico', 'Diagnóstico']].concat(Object.entries(S.retos).map(([k, r]) => [k, r.titulo.split('·')[0].trim()]));
-    const act = D.actividad || actividadDePaso(S.pasos[pasoIdx()]) || 'c1-reto';
+    const rapidas = II.rapidasDe(S);
+    const acts = [['diagnostico', 'Diagnóstico']].concat(Object.entries(S.retos).map(([k, r]) => [k, r.titulo.split('·')[0].trim()]), rapidas.length ? [['rapidas', 'Preguntas rápidas']] : []);
+    let act = D.actividad || actividadDePaso(S.pasos[pasoIdx()]) || 'c1-reto';
+    if (rapidas.some((p) => p.id === act)) act = 'rapidas';
     D.actividad = act;
     const lista = alumnos();
     let cuerpo = '';
-    if (act === 'diagnostico') {
+    if (act === 'rapidas') {
+      const filas = rapidas.map((p, j) => {
+        const ult = new Map(); deActividad(p.id).forEach((r) => ult.set(r.carnet, r));
+        const v = Array.from(ult.values());
+        const resp = v.filter((r) => !esVacio(r)).length, ok = v.filter((r) => r.correcta).length;
+        const pct = resp ? Math.round((ok / resp) * 100) : 0;
+        return `<div style="margin-bottom:12px"><div class="nota" style="margin-bottom:4px">${j + 1}. ${p.t}</div>
+          <div class="barra-prog"><div style="width:${pct}%;background:${pct >= 70 ? 'var(--ok)' : pct >= 40 ? 'var(--duda)' : 'var(--mal)'}"></div></div>
+          <div class="nota" style="text-align:right">${resp ? `${ok} de ${resp} correctas (${pct} %)` : 'sin respuestas'}${v.length - resp ? ` · ${v.length - resp} no respondieron` : ''}</div></div>`;
+      }).join('');
+      cuerpo = `<div class="tarjeta" style="padding:14px">${filas}</div>`;
+    } else if (act === 'diagnostico') {
       const rs = deActividad('diagnostico');
       const ult = new Map(); rs.forEach((r) => ult.set(r.carnet, r));
       const n = ult.size;
@@ -240,14 +289,22 @@
         const rs = deActividad(k).filter((r) => r.carnet === a.carnet && r.intento <= 2);
         return rs.length ? Math.max(...rs.map((r) => +r.puntaje || 0)) : null;
       });
-      const total = pts.reduce((s, p) => s + (p || 0), 0);
-      const participo = pts.filter((p) => p != null).length + (diag ? 1 : 0);
-      return { a, diag: diag ? diag.respuesta.aciertos : null, pts, total, participo };
+      const rap = II.rapidasDe(S).map((p) => {
+        const rs = deActividad(p.id).filter((r) => r.carnet === a.carnet);
+        return rs.length ? Math.max(...rs.map((r) => +r.puntaje || 0)) : null;
+      });
+      const rapTotal = rap.reduce((s, p) => s + (p || 0), 0);
+      const total = pts.reduce((s, p) => s + (p || 0), 0) + rapTotal;
+      const participo = pts.filter((p) => p != null).length + rap.filter((p) => p != null).length + (diag ? 1 : 0);
+      return { a, diag: diag ? diag.respuesta.aciertos : null, pts, rap, rapTotal, total, participo };
     });
   };
   const vistaReporte = () => {
     const retos = Object.entries(S.retos);
-    const max = retos.reduce((s, [, r]) => s + r.puntos, 0);
+    const rapidas = II.rapidasDe(S);
+    const maxRap = rapidas.reduce((s, p) => s + II.puntosRapida(p), 0);
+    const max = retos.reduce((s, [, r]) => s + r.puntos, 0) + maxRap;
+    const nAct = retos.length + rapidas.length + 1;
     const filas = tablaReporte();
     return `
       <div class="controles" style="margin-bottom:12px">
@@ -255,8 +312,8 @@
         <button class="boton" data-acc="recargar">Actualizar</button>
       </div>
       <div class="tabla-envoltura"><table class="tabla">
-        <tr><th>Nombre</th><th>Carnet</th><th>Área</th><th>Diag. /5</th>${retos.map(([, r]) => `<th>${II.esc(r.titulo.split('·')[0].trim())} /${r.puntos}</th>`).join('')}<th>Total /${max}</th><th>Actividades</th></tr>
-        ${filas.map((f) => `<tr><td>${II.esc(f.a.nombre)}</td><td>${II.esc(f.a.carnet)}</td><td>${II.esc(f.a.info.area || '—')}</td><td class="n">${f.diag ?? '—'}</td>${f.pts.map((p) => `<td class="n">${p == null ? '—' : II.fmt(p, 1)}</td>`).join('')}<td class="n"><b>${II.fmt(f.total, 1)}</b></td><td class="n">${f.participo}/${retos.length + 1}</td></tr>`).join('') || `<tr><td colspan="${6 + retos.length}" class="nota">Aún no hay datos.</td></tr>`}
+        <tr><th>Nombre</th><th>Carnet</th><th>Área</th><th>Diag. /5</th>${retos.map(([, r]) => `<th>${II.esc(r.titulo.split('·')[0].trim())} /${r.puntos}</th>`).join('')}${maxRap ? `<th>Rápidas /${maxRap}</th>` : ''}<th>Total /${max}</th><th>Actividades</th></tr>
+        ${filas.map((f) => `<tr><td>${II.esc(f.a.nombre)}</td><td>${II.esc(f.a.carnet)}</td><td>${II.esc(f.a.info.area || '—')}</td><td class="n">${f.diag ?? '—'}</td>${f.pts.map((p) => `<td class="n">${p == null ? '—' : II.fmt(p, 1)}</td>`).join('')}${maxRap ? `<td class="n">${II.fmt(f.rapTotal, 1)}</td>` : ''}<td class="n"><b>${II.fmt(f.total, 1)}</b></td><td class="n">${f.participo}/${nAct}</td></tr>`).join('') || `<tr><td colspan="${7 + retos.length}" class="nota">Aún no hay datos.</td></tr>`}
       </table></div>
       <div class="tarjeta" style="margin-top:24px;padding:14px">
         <h3>Datos de prueba</h3>
@@ -268,8 +325,11 @@
     const retos = Object.entries(S.retos);
     const n = (x) => (x == null ? '' : String(x).replace('.', ','));
     const q = (s) => '"' + String(s ?? '').replace(/"/g, '""') + '"';
-    const cab = ['Nombre', 'Carnet', 'Área', 'Experiencia', 'Diagnóstico (/5)', ...retos.map(([, r]) => `${r.titulo} (/${r.puntos})`), 'Total', 'Actividades'];
-    const filas = tablaReporte().map((f) => [q(f.a.nombre), q(f.a.carnet), q(f.a.info.area), q(f.a.info.experiencia), n(f.diag), ...f.pts.map(n), n(f.total), f.participo].join(';'));
+    const rapidas = II.rapidasDe(S);
+    const cab = ['Nombre', 'Carnet', 'Área', 'Experiencia', 'Diagnóstico (/5)', ...retos.map(([, r]) => `${r.titulo} (/${r.puntos})`),
+      ...rapidas.map((p, j) => `Rápida ${j + 1} (/${II.puntosRapida(p)})`), ...(rapidas.length ? ['Rápidas total'] : []), 'Total', 'Actividades'];
+    const filas = tablaReporte().map((f) => [q(f.a.nombre), q(f.a.carnet), q(f.a.info.area), q(f.a.info.experiencia), n(f.diag), ...f.pts.map(n),
+      ...f.rap.map(n), ...(rapidas.length ? [n(f.rapTotal)] : []), n(f.total), f.participo].join(';'));
     const csv = '﻿' + [cab.map(q).join(';'), ...filas].join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
@@ -331,6 +391,17 @@
         D.fila = { ...(D.fila || {}), extra: r.extra };
         pintar();
       }
+      else if (acc === 'cerrar-act' || acc === 'cancelar-cierre') {
+        b.disabled = true;
+        const p = S.pasos[pasoIdx()];
+        const seg = II.SEG_CIERRE[p.tipo] || 30;
+        const cierre = acc === 'cancelar-cierre' ? null
+          : { act: actividadDePaso(p), seg, fin: new Date(Date.now() + seg * 1000).toISOString(), id: String(Date.now()) };
+        const r = await II.fijarExtra(SES, { cierre }, D.fila ? D.fila.extra : {});
+        if (!r.ok) { aviso('No se pudo ' + (cierre ? 'cerrar' : 'cancelar') + ': ' + r.error); b.disabled = false; return; }
+        D.fila = { ...(D.fila || {}), extra: r.extra };
+        pintar();
+      }
       else if (acc === 'csv') descargarCSV();
       else if (acc === 'recargar') cargar();
       else if (acc === 'borrar') borrar(b);
@@ -354,6 +425,17 @@
     cargar();
     suscribir();
     setInterval(cargar, 8000);
+    // cuenta regresiva del cierre: actualiza el número y repinta al terminar
+    let cdAntes = null;
+    setInterval(() => {
+      const p = S.pasos[pasoIdx()];
+      const c = II.cierreDe(D.fila, actividadDePaso(p));
+      const s = c ? Math.ceil(II.restaCierre(c)) : null;
+      const e = II.$('#cd-doc');
+      if (e && s > 0) e.textContent = s;
+      if (cdAntes > 0 && s === 0 && D.pestana === 'control') pintar();
+      cdAntes = s;
+    }, 500);
   };
 
   // arranque

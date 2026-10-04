@@ -119,6 +119,7 @@ as $$
     select distinct on (carnet) carnet, correcta, confianza
     from public.respuestas
     where sesion = p_sesion and actividad = p_actividad
+      and coalesce((respuesta ->> 'vacio')::boolean, false) = false  -- sin los "no respondió"
     order by carnet, creado desc
   )
   select count(*),
@@ -128,6 +129,23 @@ as $$
   from ultimas;
 $$;
 grant execute on function public.resumen_actividad(text, text) to anon, authenticated;
+
+-- Conteo anónimo por opción de una pregunta rápida (barras en Zoom)
+create or replace function public.resumen_opciones(p_sesion text, p_actividad text)
+returns table (opcion int, n bigint)
+language sql stable security definer set search_path = public
+as $$
+  with ultimas as (
+    select distinct on (carnet) carnet, respuesta
+    from public.respuestas
+    where sesion = p_sesion and actividad = p_actividad
+      and coalesce((respuesta ->> 'vacio')::boolean, false) = false
+      and (respuesta ->> 'opcion') ~ '^[0-9]+$'
+    order by carnet, creado desc
+  )
+  select (respuesta ->> 'opcion')::int, count(*) from ultimas group by 1 order by 1;
+$$;
+grant execute on function public.resumen_opciones(text, text) to anon, authenticated;
 
 -- 6. Tiempo real
 alter publication supabase_realtime add table public.estado_sesion, public.respuestas, public.ingresos;
