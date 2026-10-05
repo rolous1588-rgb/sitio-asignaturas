@@ -154,10 +154,12 @@
     },
     resumen: (d) => `${miles(d.kwh)} kWh · ${miles(d.kvarh)} kVARh`,
     enunciado: (d) => `Tu taller consumió <b>${miles(d.kwh)} kWh</b> y <b>${miles(d.kvarh)} kVARh</b> en el mes; el cargo base es <b>Bs ${miles(d.cargo)}</b>. Calcula el FP del mes y el recargo (si el FP es menor a 0,85).`,
-    campos: [{ id: 'fp', etiqueta: 'FP del mes', unidad: '' }, { id: 'bs', etiqueta: 'Recargo', unidad: 'Bs' }],
+    campos: [{ id: 'fp', etiqueta: 'FP del mes', unidad: '', ph: 'ej. 0,812' }, { id: 'bs', etiqueta: 'Recargo', unidad: 'Bs', ph: 'ej. 1250' }],
     opciones: (d) => ({ params: { cargo: d.cargo, cliente: 'Tu taller' }, inicial: { kwh: d.kwh, kvarh: d.kvarh }, fijos: { kwh: true, kvarh: true }, ocultar: ['fp', 'rec', 'pct'], sinControles: true }),
     evaluar: (est, d) => {
-      const fp = window.II ? II.num(est.fp) : Number(est.fp), bs = window.II ? II.num(est.bs) : Number(est.bs);
+      let bsTxt = String(est.bs || '').replace(/[\sBbs]/g, '');
+      if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(bsTxt)) bsTxt = bsTxt.replace(/\./g, ''); // 1.290 = mil doscientos noventa
+      const fp = II.num(est.fp), bs = II.num(bsTxt);
       const okFP = isFinite(fp) && Math.abs(fp - d.fp) <= 0.005;
       const okBs = isFinite(bs) && (Math.abs(bs - d.bs) <= Math.max(d.bs * 0.03, 5));
       const err = isFinite(bs) ? (Math.abs(bs - d.bs) / Math.max(d.bs, 1)) * 100 : 100;

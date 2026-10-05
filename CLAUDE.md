@@ -55,6 +55,23 @@ Tablas `docentes`, `estado_sesion` (paso actual; filas `ii-s1` … `ii-s6`), `in
 S1 Dom 27/09 09–12 · S2 Mar 29/09 + Mié 30/09 (sensores T y P; presión se terminó el 30/09) · **S3 Dom 04/10 09–12 (nivel, flujo y 4–20 mA)** · **S4 Mar 06/10 20–22 (calibración, errores y trazabilidad + HART)** · **S5 Mié 07/10 20–22 (P&ID/ISA 5.1, caso integrado con fallas del lazo + evaluación final)**. La fila `ii-s6` de la base queda sin uso.
 Simbología ISA: se reparte (etiquetas LT-101, FT-102, TT-103 desde S3) y se completa en S5. Ruido: idea básica en S3; casos prácticos (blindaje, tierra) como fallas en S5.
 
+## Módulo Medidas Eléctricas (clases presenciales, desde oct 2026)
+
+Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televisor del aula (Skyworth 75", espejo por Chromecast; última fila a 9 m). La misma página proyecta y controla. Los estudiantes entran por QR con datos móviles (el Wi-Fi de la facultad casi no funciona). Reutiliza `../instrumentacion/js/config.js` y `nucleo.js` (misma base Supabase, misma cuenta docente).
+
+| Archivo | Rol |
+|---|---|
+| `proyectar.html` + `js/proyectar.js` | Proyección + control: carrusel ◀ ▶, QR, Habilitar → Cerrar (cuenta regresiva) → Resultados / Solución / Intento anónimo. Sin sesión = modo ensayo local |
+| `clase.html` + `js/estudiante.js` | Estudiante (vertical). Sigue el paso; predicciones con un toque; ejercicios en su propio diagrama con datos por carnet; envía estado + movimientos + segundos. `&modo=libre` = repaso sin registro |
+| `js/fp-diagramas.js` | `FP.diagramas`: `fasores`, `potencia`, `triangulo`, `linea`, `vatimetros`, `corrector`, `factura`, `armonicos`. Opciones: `inicial`, `params`, `ocultar` (lecturas tapadas → "?"), `fijos`, `revelado`, `sinControles` |
+| `js/fp-sesion.js` | `FP.SESIONES['me-fp1']` (23 pasos: inicio, explica, rapida, ejercicio, cierre) y `FP.EJERCICIOS` e1–e5 (`generar`, `enunciado`, `resumen`, `opciones`, `evaluar`, `eje`, `solucion`) |
+| `css/me.css` | Paleta clara del sitio. En `body.tv` todo se mide en `--u` = 1 % del alto (dvh) |
+
+- Tamaños para 9 m (regla DISCAS: alto de letra ≥ distancia/200): números clave ≈ 6,5 % del alto, textos ≥ 4,5 %, trazos gruesos, una idea por pantalla.
+- Fases en `estado_sesion.extra`: `{ abierto: id }` → `{ abierto: id, fin, seg }` (cierre) → `{ cerrado: id }`. Cambiar de paso limpia `extra`; el estudiante envía solo lo que tenga si el paso cambia o se cierra.
+- Las respuestas se leen directamente desde la página del docente (RLS: solo docente). La TV muestra todo anónimo.
+- Regla de factura usada: ELFEC (FP ≥ 0,85; recargo = cargo × (0,85/FP − 1)). Pendiente confirmar la de CESSA (Sucre).
+
 ## Pendiente
 - Sesión 3: el repaso quedó limitado a "inicio" (`repaso_hasta: 'inicio'`); al final de la clase, "Abrir toda la sesión" desde el panel.
 - Sesión 4 (calibración + HART) y Sesión 5 (P&ID + caso integrado + evaluación final), con preguntas rápidas y botón de cierre.

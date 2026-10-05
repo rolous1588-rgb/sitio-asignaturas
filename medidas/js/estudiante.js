@@ -192,7 +192,7 @@
     // abierto: trabaja en su propio diagrama
     const borr = II.leer('me-borr-' + SID + '-' + p.id + '-' + alumno.carnet, null);
     const campos = ej.tipo === 'numerico'
-      ? `<div class="campos-num">${ej.campos.map((c) => `<label class="campo"><span>${c.etiqueta}${c.unidad ? ' (' + c.unidad + ')' : ''}</span><input data-c="${c.id}" inputmode="decimal" autocomplete="off" value="${II.esc((borr && borr[c.id]) || '')}"></label>`).join('')}</div>` : '';
+      ? `<div class="campos-num">${ej.campos.map((c) => `<label class="campo"><span>${c.etiqueta}${c.unidad ? ' (' + c.unidad + ')' : ''}</span><input data-c="${c.id}" inputmode="decimal" autocomplete="off" placeholder="${c.ph || ''}" value="${II.esc((borr && borr[c.id]) || '')}"></label>`).join('')}</div>` : '';
     $('#cont').innerHTML = navLibre() + tarjeta(cab + `<p>${ej.enunciado(d)}</p><div id="zona-dg"></div>${campos}
       <button class="boton prim bloque" id="b-enviar" style="margin-top:12px">Enviar mi respuesta</button>`);
     const o = ej.opciones(d);
