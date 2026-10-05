@@ -72,7 +72,26 @@ Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televiso
 - Las respuestas se leen directamente desde la página del docente (RLS: solo docente). La TV muestra todo anónimo.
 - Regla de factura usada: ELFEC (FP ≥ 0,85; recargo = cargo × (0,85/FP − 1)). Pendiente confirmar la de CESSA (Sucre).
 
+## Módulo Electrónica Digital 1 (clases presenciales, desde oct 2026)
+
+Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular en horizontal** (Chromecast a la TV de 75", aula de ~6 m) y la misma página controla la clase; los estudiantes entran por QR con datos móviles. Reutiliza `../instrumentacion/js/config.js` y `nucleo.js` (misma base y cuenta docente). Mantiene el diseño de los HTML de clase de Digital 1 (pestañas + carrusel, letra base ≈ 20 px que se ajusta sola, botones A− / A+, respuestas de las preguntas en ventana grande).
+
+| Archivo | Rol |
+|---|---|
+| `index.html` | Portada: clase en vivo, repaso libre y proyectar |
+| `proyectar.html` + `js/proyectar.js` | Proyección + control. Barra: pestañas 7 Karnaugh / 8 Aplicaciones, Habilitar → Cerrar (cuenta regresiva) → Resultados / Solución / Intento anónimo, 👥 conectados, QR, ⋮ (entrar como docente, **reporte CSV** para la nota de prácticas, **borrar datos de esta clase**). Las diapositivas `explica` están escritas en el HTML (`id="p-<paso>"`); las de actividad se generan. Sin sesión = modo ensayo |
+| `clase.html` + `js/estudiante.js` | Estudiante (vertical). Sigue el paso; rápidas con un toque; ejercicios con datos por carnet; «Explorar en mi celular» en los pasos con `explorar` (`mapa`, `bomba`). `&modo=libre` = repaso sin registro |
+| `js/d1-kmap.js` | `D1.k`: `resolver` (mínima exacta: primos + cobertura), `svg/dibujar/estatico` (grupos con bordes que se tocan), `cubo` (¿las celdas tocadas forman un grupo?), `editor` (mapa para el celular: 1 · Llenar → 2 · Agrupar; la expresión se arma sola) |
+| `js/d1-diagramas.js` | `D1.seg` (display de 7 segmentos) y `D1.diag.bomba` (tanque con **llave de salida**: cerrada / media / abierta; sensores de electrodo con banda de 2 %; fallas visibles o ocultas `fb` `fa` `fc`) |
+| `js/d1-sesion.js` | `D1.SESIONES['d1-c3']` (28 pasos, 8 rápidas de 1 pt) y `D1.EJERCICIOS`: `e1` tabla → mapa de 3 variables (4 pts), `e2` diseño completo con 8 problemas (4), `e3` encontrar la falla de la bomba (2), `e4` un segmento del display con X (4). Cada uno: `generar`, `enunciado`, `montar`, `evaluar`, `solucion`, `vista`, `resumen` |
+| `css/d1.css` | Estilos (`body.tv` proyección, `body.est` celular) |
+
+- Base: fila `d1-c3` en `estado_sesion` (creada el 05/10). Fases en `extra` iguales a Medidas.
+- Puntaje de los mapas: mapa bien llenado 1 + expresión correcta 2 + mínima 1. Diseño completo: tabla (hasta 2, proporcional) + correcta 1 + mínima 1.
+- Pruebas: como el contenedor de Claude no llega a Supabase ni a jsDelivr, se probó con un simulador local de supabase-js (servidor de consultas compartido) y Playwright: docente + 3 estudiantes, todas las actividades, reporte CSV.
+
 ## Pendiente
 - Sesión 3: el repaso quedó limitado a "inicio" (`repaso_hasta: 'inicio'`); al final de la clase, "Abrir toda la sesión" desde el panel.
 - Sesión 4 (calibración + HART) y Sesión 5 (P&ID + caso integrado + evaluación final), con preguntas rápidas y botón de cierre.
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
+- Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html`, probar con un celular y luego **⋮ → Borrar datos de esta clase**. Al terminar, dejar el paso en `cierre`.

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f5f1">
+<meta name="robots" content="noindex">
+<title>Proyección · Electrónica Digital 1</title>
+<link rel="stylesheet" href="css/d1.css?v=1">
+</head>
+<body class="tv">
+
+<header id="bar">
+  <nav id="tabs"></nav>
+  <div class="grupo-vivo">
+    <button class="acc oculto" id="b-acc"></button>
+    <button class="acc oculto" id="b-extra"></button>
+    <button class="chip ensayo" id="b-chip">Ensayo</button>
+    <span class="punto" id="t-con"></span>
+  </div>
+  <div id="tools">
+    <button id="b-qr" aria-label="Código QR">QR</button>
+    <button id="aMinus" aria-label="Letra más chica">A−</button>
+    <button id="aPlus" aria-label="Letra más grande">A+</button>
+    <button id="fsBtn" aria-label="Pantalla completa">⛶</button>
+    <button id="b-menu" aria-label="Menú">⋮</button>
+  </div>
+</header>
+
+<main id="stage">
+<section class="slide" id="p-kidea">
+  <h2>Celdas vecinas cambian un solo bit</h2>
+  <div class="body">
+    <div class="col"><svg id="c2KI"></svg></div>
+    <div class="col big">
+      <p class="card" id="c2KIMsg"></p>
+      <div class="q"><p class="qt">¿La columna de la izquierda es vecina de la de la derecha?</p><button class="rv">Revelar</button>
+        <div class="ans">Sí: 00 y 10 difieren en un solo bit. El mapa se «enrolla» como un cilindro, y lo mismo pasa entre la fila de arriba y la de abajo.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-kvot">
+  <h2>Del votador al mapa</h2>
+  <div class="body">
+    <div class="col"><table class="tt tight" id="c2KVT"></table></div>
+    <div class="col big">
+      <svg id="c2KV"></svg>
+      <div class="row"><button class="btn pri" id="c2KVGo">Agrupar</button><span class="expr" id="c2KVExpr"></span></div>
+      <div class="q"><p class="qt">Los tres grupos se solapan en la celda 7. ¿Es un problema?</p><button class="rv">Revelar</button>
+        <div class="ans">No. Solapar está permitido porque X + X = X. Es justo lo que hicimos en álgebra al repetir A·B·C tres veces, pero aquí se ve de un vistazo.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-krules">
+  <h2>Reglas para agrupar</h2>
+  <div class="body">
+    <div class="col big">
+      <ul class="sum">
+        <li>Solo se agrupan <b>unos</b> (y X si conviene).</li>
+        <li>Grupos de <b>1, 2, 4 u 8</b> celdas, en rectángulo.</li>
+        <li>Los bordes se tocan: izquierda con derecha, arriba con abajo.</li>
+        <li>Grupos <b>lo más grandes</b> posible.</li>
+        <li>La <b>menor cantidad</b> de grupos.</li>
+        <li>Se pueden solapar; cada 1 debe quedar en algún grupo.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <svg id="c2KR"></svg>
+      <p class="tc">Las 4 esquinas forman <b>un solo grupo</b>:<br><span class="expr" id="c2KRExpr"></span></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-ksolve">
+  <h2>Mapa interactivo</h2>
+  <div class="body">
+    <div class="col big"><svg id="c2KS"></svg></div>
+    <div class="col">
+      <div class="row"><button class="btn sel" id="c2KS3">3 variables</button><button class="btn" id="c2KS4">4 variables</button></div>
+      <p class="lbl">Toca una celda: 0 → 1 → X → 0</p>
+      <div class="row"><button class="btn pri" id="c2KSGo">Mostrar grupos</button><button class="btn" id="c2KSRnd">Al azar</button><button class="btn" id="c2KSClr">Borrar</button></div>
+      <p class="expr" id="c2KSExpr"></p>
+      <p class="lbl" id="c2KSInfo"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-kx">
+  <h2>«No importa» (X): ¿la tomo como 1 o como 0?</h2>
+  <div class="body">
+    <div class="col"><svg id="c2KX"></svg></div>
+    <div class="col big">
+      <p>Entrada BCD (A B C D = 8 4 2 1). <b>Y = 1 si el dígito es 5 o más.</b> Los códigos 10 a 15 nunca llegan: son X.</p>
+      <div class="row"><button class="btn sel" id="c2KXUse">Aprovechar las X</button><button class="btn" id="c2KXZero">X como 0</button></div>
+      <p class="expr" id="c2KXExpr"></p>
+      <p class="lbl" id="c2KXInfo"></p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-kq">
+  <h2>Para pensar: Karnaugh</h2>
+  <div class="body"><div class="qg">
+    <div class="q"><p class="qt">¿Por qué no se permite un grupo de 3 celdas?</p><button class="rv">Revelar</button>
+      <div class="ans">Cada vez que duplicas un grupo eliminas una variable. 3 celdas no forman un solo término: necesitas dos grupos de 2, que pueden solaparse.</div></div>
+    <div class="q"><p class="qt">En un mapa de 4 variables, ¿qué representa un grupo de 8?</p><button class="rv">Revelar</button>
+      <div class="ans">Un término de <b>una sola variable</b>: 8 celdas eliminan 3 de las 4 variables.</div></div>
+    <div class="q"><p class="qt">Dos estudiantes llegan a expresiones distintas, ambas con 3 términos. ¿Pueden estar bien las dos?</p><button class="rv">Revelar</button>
+      <div class="ans">Sí: a veces hay más de una solución mínima. Compruébalo con la tabla: si dan lo mismo fila por fila, las dos son correctas.</div></div>
+    <div class="q"><p class="qt">En el detector «≥ 5», ¿qué pasa si por una falla llega el código 1100?</p><button class="rv">Revelar</button>
+      <div class="ans">Con las X aprovechadas sale 1, porque A = 1. Usar X es seguro solo si esos códigos de verdad nunca llegan. Si una falla puede producirlos, tú decides cuál es el valor seguro.</div></div>
+  </div></div>
+</section>
+
+<section class="slide" id="p-pumpd">
+  <h2>Problema 1 · La bomba de agua de un edificio</h2>
+  <div class="body">
+    <div class="col">
+      <p>Una bomba sube agua de la <b>cisterna</b> al <b>tanque</b> del techo.</p>
+      <p class="lbl"><b>C</b> = hay agua en la cisterna<br><b>Lb</b> = el agua cubre el sensor bajo del tanque<br><b>La</b> = el agua cubre el sensor alto<br><b>M</b> = bomba encendida · <b>F</b> = alarma de falla</p>
+      <div class="row"><button class="btn" id="c2PDAll">Revelar todo</button>
+        <span class="q plain"><span class="qt" hidden>Mapas de Karnaugh de M y F</span><button class="rv btn pri">Ver mapas</button><span class="ans" id="c2PDMaps"></span></span></div>
+    </div>
+    <div class="col"><table class="tt tight" id="c2PDT"></table></div>
+    <div class="col"><p class="card" id="c2PDWhy"></p></div>
+  </div>
+</section>
+
+<section class="slide" id="p-psim">
+  <h2>Probemos el diseño: M = C·<span class="ov">La</span> · F = <span class="ov">Lb</span>·La</h2>
+  <div class="body" id="c2PSZona"></div>
+  <div class="q oculto" id="c2PSQ"><p class="qt">Abre la llave con el tanque lleno. ¿Qué hace la bomba? ¿Es bueno?</p><button class="rv">Revelar</button>
+    <div class="ans">Arranca y para cada pocos segundos: repone cada poquito de agua que se consume. Eso desgasta el motor. Una instalación real llena hasta La y <b>no vuelve a arrancar hasta que el agua baja de Lb</b>. Para eso el circuito tiene que recordar si estaba llenando: ya no es combinacional.</div></div>
+</section>
+
+<section class="slide" id="p-pq">
+  <h2>Para pensar: la bomba</h2>
+  <div class="body">
+    <div class="col">
+      <div class="q"><p class="qt">Daña el sensor alto y simula. ¿Tu circuito se da cuenta?</p><button class="rv">Revelar</button>
+        <div class="ans">No. Con La siempre en 0, la bomba nunca se apaga y el tanque rebalsa. F solo detecta «agua arriba sin agua abajo». En la práctica se agrega un sensor de rebalse o un flotador mecánico.</div></div>
+      <div class="q"><p class="qt">Si la cisterna se vacía a mitad del llenado, ¿qué hace el circuito?</p><button class="rv">Revelar</button>
+        <div class="ans">M = C·<span class="ov">La</span> se apaga apenas C = 0: la bomba no trabaja en seco. Bien. Pero nadie se entera de que falta agua; podrías agregar otra salida de aviso con <span class="ov">C</span>.</div></div>
+    </div>
+    <div class="col">
+      <div class="q"><p class="qt">Una bomba bien diseñada llena hasta La y no vuelve a arrancar hasta que el agua baja de Lb. ¿Se puede con lógica combinacional?</p><button class="rv">Revelar</button>
+        <div class="ans">No. Con Lb = 1 y La = 0, a veces la bomba debe estar <b>encendida</b> (está llenando) y a veces <b>apagada</b> (se está vaciando): la misma entrada pide dos salidas distintas. El circuito tendría que <b>recordar</b> qué estaba haciendo. Eso ya es un circuito secuencial.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-press">
+  <h2>Problema 2 · Prensa con mando a dos manos</h2>
+  <div class="body">
+    <div class="col big"><svg id="c2PR" viewBox="0 0 260 200" style="overflow:hidden"></svg></div>
+    <div class="col">
+      <p>Baja solo con <b>los dos</b> botones presionados: <b class="k">Y = I · D</b></p>
+      <div class="row"><button class="btn" id="c2PRTape">Poner cinta en el botón I</button></div>
+      <div class="q"><p class="qt">¿Por qué una AND no basta para la seguridad?</p><button class="rv">Revelar</button>
+        <div class="ans">Porque el operario puede trabar un botón con cinta y dejar una mano libre dentro de la prensa. La norma de mandos a dos manos (ISO 13851) exige presionar ambos casi a la vez, en menos de 0,5 s, y soltar los dos antes de volver a empezar. Eso exige medir tiempo y recordar: ya no es combinacional.</div></div>
+      <div class="q"><p class="qt">Si el botón D se queda pegado, ¿tu circuito lo nota?</p><button class="rv">Revelar</button>
+        <div class="ans">No: para la AND, «pegado» y «presionado» son lo mismo. Por eso los botones de seguridad tienen dos contactos, uno normalmente abierto y otro normalmente cerrado. Si alguna vez están iguales, hay falla. ¡Ese chequeo sí es combinacional: una XNOR!</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-seg7">
+  <h2>Problema 3 · Decodificador BCD a 7 segmentos</h2>
+  <div class="body">
+    <div class="col">
+      <div class="row center" style="flex-wrap:nowrap;gap:.8em">
+        <div style="flex:1;min-width:0"><svg id="c2SSD" viewBox="0 0 130 214" style="max-height:calc(var(--svh) * 1.1)"></svg></div>
+        <div class="vbits" id="c2SSBits"></div>
+      </div>
+      <p class="lbl tc" id="c2SSCap"></p>
+    </div>
+    <div class="col big">
+      <svg id="c2SSMap"></svg>
+      <div class="row between" style="flex-wrap:nowrap"><p class="expr" id="c2SSExpr"></p><button class="btn pri" id="c2SSGo">Ver grupos</button></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-q7">
+  <h2>Para pensar: el display</h2>
+  <div class="body"><div class="qg">
+    <div class="q"><p class="qt">¿Cuántos circuitos distintos necesitas para el display?</p><button class="rv">Revelar</button>
+      <div class="ans">Siete: uno por segmento, todos con las mismas 4 entradas. Los términos repetidos entre segmentos se comparten y se ahorran compuertas.</div></div>
+    <div class="q"><p class="qt">Tu display es de ánodo común: cada segmento se enciende con 0. ¿Rehaces todo?</p><button class="rv">Revelar</button>
+      <div class="ans">No: inviertes cada salida (agregas un NOT), o agrupas los <b>ceros</b> del mapa en vez de los unos.</div></div>
+    <div class="q"><p class="qt">Algunos decodificadores comerciales dibujan el 6 sin el segmento a y el 9 sin el d. ¿Cambia tu diseño?</p><button class="rv">Revelar</button>
+      <div class="ans">Sí: en el mapa de a, la celda 6 pasa a 0, y en el de d, la celda 9 pasa a 0. Cambian las expresiones. Por eso siempre se revisa la hoja de datos del chip.</div></div>
+    <div class="q"><p class="qt">Si ya existe un chip que hace esto (el 7448), ¿para qué diseñarlo?</p><button class="rv">Revelar</button>
+      <div class="ans">Para entender qué hay adentro, y porque el mismo método sirve para lo que el chip no trae: letras, un dado electrónico o un código propio.</div></div>
+  </div></div>
+</section>
+
+<section class="slide" id="p-meth">
+  <h2>El método en 6 pasos</h2>
+  <div class="body"><div class="stepg">
+    <div class="stepc pp"><p class="qt"><b class="sn">1</b>Entender el enunciado</p><p class="d">Lee y pregunta lo que falta.</p><button class="rv">Ejemplo</button>
+      <div class="ans">Tres jueces; se aprueba con al menos 2 votos a favor. ¿Y si fueran 4 y empatan? Se pregunta antes de diseñar.</div></div>
+    <div class="stepc pp"><p class="qt"><b class="sn">2</b>Definir variables</p><p class="d">Entradas, salidas y qué es el 1.</p><button class="rv">Ejemplo</button>
+      <div class="ans">A, B, C = 1 si el juez vota a favor. Y = 1 si se aprueba.</div></div>
+    <div class="stepc pp"><p class="qt"><b class="sn">3</b>Tabla de verdad</p><p class="d">2ⁿ filas; X donde no importa.</p><button class="rv">Ejemplo</button>
+      <div class="ans">8 filas. Y = 1 en 011, 101, 110 y 111.</div></div>
+    <div class="stepc pp"><p class="qt"><b class="sn">4</b>Mapa de Karnaugh</p><p class="d">Agrupa y saca la expresión mínima.</p><button class="rv">Ejemplo</button>
+      <div class="ans">Tres grupos de 2 → Y = A·B + A·C + B·C.</div></div>
+    <div class="stepc pp"><p class="qt"><b class="sn">5</b>Circuito y chips</p><p class="d">Cuenta compuertas, elige los 74xx.</p><button class="rv">Ejemplo</button>
+      <div class="ans">3 AND (7408) + 2 OR (7432) = 2 chips. Anota los pines antes de cablear.</div></div>
+    <div class="stepc pp"><p class="qt"><b class="sn">6</b>Simular y montar</p><p class="d">Falstad, luego protoboard.</p><button class="rv">Ejemplo</button>
+      <div class="ans">Prueba las 8 combinaciones, una por una, y compáralas con la tabla.</div></div>
+  </div></div>
+</section>
+
+<section class="slide" id="p-reto">
+  <h2>Retos para el laboratorio</h2>
+  <div class="body"><div class="stack">
+    <div class="retos">
+      <div class="reto pp"><p class="qt">Alarma del auto</p><p class="stars">★☆☆ · 4 entradas, 1 salida</p>
+        <div class="row"><button class="rv btn pri" data-a=".ans.e" data-h="Enunciado">Enunciado</button><button class="rv" data-a=".ans.p" data-h="Pista">Pista</button></div>
+        <div class="ans e">Entradas: llave puesta (M), cinturón abrochado (C), luces encendidas (L) y puerta abierta (P). La alarma suena si la llave está puesta y el cinturón no está abrochado, <b>o</b> si la llave no está puesta, las luces están encendidas y la puerta está abierta.</div>
+        <div class="ans p">Escribe cada condición por separado y llévalas a un mapa de 4 variables. ¿Los grupos se pueden juntar o te quedan dos términos?</div></div>
+      <div class="reto pp"><p class="qt">Comparador de 2 bits</p><p class="stars">★★☆ · 4 entradas, 3 salidas</p>
+        <div class="row"><button class="rv btn pri" data-a=".ans.e" data-h="Enunciado">Enunciado</button><button class="rv" data-a=".ans.p" data-h="Pista">Pista</button></div>
+        <div class="ans e">Dos números de 2 bits: A = A1A0 y B = B1B0. Tres salidas: MAYOR (A &gt; B), IGUAL (A = B) y MENOR (A &lt; B).</div>
+        <div class="ans p">Una tabla de 16 filas y tres mapas. IGUAL tiene solo 4 unos, en diagonal: ¿qué compuerta de ayer detecta «bits iguales»?</div></div>
+      <div class="reto pp"><p class="qt">Paridad de 4 bits</p><p class="stars">★★★ · 4 entradas, 1 salida</p>
+        <div class="row"><button class="rv btn pri" data-a=".ans.e" data-h="Enunciado">Enunciado</button><button class="rv" data-a=".ans.p" data-h="Pista">Pista</button></div>
+        <div class="ans e">Y = 1 si la cantidad de unos en A, B, C, D es <b>impar</b>.</div>
+        <div class="ans p">Dibuja el mapa: queda como un tablero de ajedrez. ¿Se puede agrupar algo? ¿Qué compuerta de ayer resuelve esto en cadena?</div></div>
+    </div>
+    <p class="card"><b>Para cada reto:</b> tabla, mapas, expresión mínima, circuito en Falstad, lista de chips 74xx y montaje en protoboard.</p>
+  </div></div>
+</section>
+</main>
+
+<button class="nav prev" id="prev" aria-label="Anterior">‹</button>
+<button class="nav next" id="next" aria-label="Siguiente">›</button>
+<div id="dots"></div>
+<div id="pop"><div class="pcard"><p class="pq"></p><div class="pa"></div><p class="pc">Toca para cerrar</p></div></div>
+<div id="rotate"><div class="ic">⟳</div><p>Gira el celular a horizontal para proyectar.</p><button id="rotOk">Ver así igual</button></div>
+<div class="aviso-tv oculto" id="aviso"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="../instrumentacion/js/config.js?v=d1"></script>
+<script src="../instrumentacion/js/nucleo.js?v=d1"></script>
+<script src="js/d1-kmap.js?v=1"></script>
+<script src="js/d1-diagramas.js?v=1"></script>
+<script src="js/d1-sesion.js?v=1"></script>
+<script src="js/proyectar.js?v=1"></script>
+</body>
+</html>
