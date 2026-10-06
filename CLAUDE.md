@@ -28,6 +28,8 @@ Carpeta `instrumentacion/`. Clase virtual síncrona por Zoom: el docente compart
 | `js/sesion2.js` | Sesión 2 (sensores de T y P, 2 h sin pausa): 17 pasos — principio físico → conexión → planta/selección → explora → reto → revisión, por ciclo; retos con diagnóstico de fallas; guion extenso (objetivo, pasos, preguntas, dudas, transición) |
 | `js/diagramas3.js` | `II.diagramas.nivel` (hidrostático abierto/cerrado con PT o DP y densidad; tiempo de vuelo ultrasonido/radar con temperatura, vapor y zona muerta), `.flujo` (placa orificio con perfil de presión y raíz cuadrada; turbina con pulsos y factor K; electromagnético con E = B·D·v) y `.lazo420` (lazo con fuente, cable, carga, fallas NAMUR y ruido; escalado LRV/URV). Atajos con pestaña fija: `nivelTOF`, `flujoOtros`, `lazoEscala`. Requiere `diagramas2b.js` |
 | `js/sesion3.js` | Sesión 3 (nivel, flujo y 4–20 mA, 3 h): 30 pasos en 3 ciclos con 9 preguntas rápidas (1 pt c/u), 3 retos de 10 pts + integrador de 20; guion extenso |
+| `js/diagramas4.js` | `II.diagramas.errores` (curva de error con cero, span, no linealidad e histéresis + tolerancia; repetibilidad con 10 lecturas y deriva con intervalo de calibración) y `.calibracion` (banco: bomba, patrón, PT-104 y multímetro con 9 puntos "como se encontró/como se dejó" y ajustes de cero/span; HART con onda FSK, trim de sensor, trim de salida y re-rango; pirámide de trazabilidad SI → IBMETRO → laboratorio 17025 → patrón de trabajo → planta + regla 4:1). Atajos: `erroresRepet`, `calibracionHart`, `calibracionTraza` |
+| `js/sesion4.js` | "Sesión 4, día 5" (calibración, errores y trazabilidad, 2 h sin pausa): 22 pasos, 6 preguntas rápidas, 2 retos de 10 pts + integrador de 20 (certificado del PT-104); guion extenso |
 | `css/ii.css` | Estilos (usa container queries para que los diagramas se adapten) |
 | `supabase/estructura.sql` | Esquema de la base de datos (ya ejecutado en Supabase) |
 
@@ -52,7 +54,8 @@ Tablas `docentes`, `estado_sesion` (paso actual; filas `ii-s1` … `ii-s6`), `in
 3. Activar la tarjeta de la sesión en `instrumentacion/index.html`.
 
 ### Calendario (reorganizado el 04/10 con el docente)
-S1 Dom 27/09 09–12 · S2 Mar 29/09 + Mié 30/09 (sensores T y P; presión se terminó el 30/09) · **S3 Dom 04/10 09–12 (nivel, flujo y 4–20 mA)** · **S4 Mar 06/10 20–22 (calibración, errores y trazabilidad + HART)** · **S5 Mié 07/10 20–22 (P&ID/ISA 5.1, caso integrado con fallas del lazo + evaluación final)**. La fila `ii-s6` de la base queda sin uso.
+S1 Dom 27/09 09–12 · S2 Mar 29/09 + Mié 30/09 (sensores T y P; presión se terminó el 30/09) · **S3 Dom 04/10 09–12 (nivel, flujo y 4–20 mA)** · **S4 Mar 06/10 20–22 (calibración, errores y trazabilidad + HART), nombrada "Sesión 4, día 5"** · **S5 Mié 07/10 20–22 (P&ID/ISA 5.1, caso integrado con fallas del lazo + evaluación final)**. La fila `ii-s6` de la base queda sin uso.
+El docente cuenta **6 días de clase**: S1 = día 1, S2 = días 2 y 3, S3 = día 4, S4 = día 5, S5 = día 6. Las sesiones nuevas se nombran "Sesión N, día D" (campo `numero: '4, día 5'`, que solo se usa en textos).
 Simbología ISA: se reparte (etiquetas LT-101, FT-102, TT-103 desde S3) y se completa en S5. Ruido: idea básica en S3; casos prácticos (blindaje, tierra) como fallas en S5.
 
 ## Módulo Medidas Eléctricas (clases presenciales, desde oct 2026)
@@ -91,7 +94,8 @@ Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular
 - Pruebas: como el contenedor de Claude no llega a Supabase ni a jsDelivr, se probó con un simulador local de supabase-js (servidor de consultas compartido) y Playwright: docente + 3 estudiantes, todas las actividades, reporte CSV.
 
 ## Pendiente
-- Sesión 3: el repaso quedó limitado a "inicio" (`repaso_hasta: 'inicio'`); al final de la clase, "Abrir toda la sesión" desde el panel.
-- Sesión 4 (calibración + HART) y Sesión 5 (P&ID + caso integrado + evaluación final), con preguntas rápidas y botón de cierre.
+- Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
+- "Sesión 5, día 6" (miércoles 07/10): P&ID con ISA 5.1 + caso integrado con fallas del lazo + evaluación final. Falta que el docente defina el formato de la evaluación.
+- Material de estudio de instalación de sensores (autoestudio con registro): falta que el docente decida si cuenta para la nota y cuándo se publica; antes, tabla de reglas de fabricantes con fuentes para revisar.
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
 - Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html`, probar con un celular y luego **⋮ → Borrar datos de esta clase**. Al terminar, dejar el paso en `cierre`.
