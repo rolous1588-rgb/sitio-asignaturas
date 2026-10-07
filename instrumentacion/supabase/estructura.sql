@@ -157,3 +157,6 @@ insert into public.estado_sesion (sesion) values
 on conflict do nothing;
 
 select 'Listo: estructura creada' as resultado;
+
+-- Sesiones asíncronas (Control de estudio) y evaluaciones de un solo intento:
+-- ejecutar después el archivo control-estudio.sql

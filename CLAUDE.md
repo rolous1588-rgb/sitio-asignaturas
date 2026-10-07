@@ -31,7 +31,12 @@ Carpeta `instrumentacion/`. Clase virtual síncrona por Zoom: el docente compart
 | `js/diagramas4.js` | `II.diagramas.errores` (curva de error con cero, span, no linealidad e histéresis + tolerancia; repetibilidad con 10 lecturas y deriva con intervalo de calibración) y `.calibracion` (banco: bomba, patrón, PT-104 y multímetro con 9 puntos "como se encontró/como se dejó" y ajustes de cero/span; HART con onda FSK, trim de sensor, trim de salida y re-rango; pirámide de trazabilidad SI → IBMETRO → laboratorio 17025 → patrón de trabajo → planta + regla 4:1). Atajos: `erroresRepet`, `calibracionHart`, `calibracionTraza` |
 | `js/sesion4.js` | "Sesión 4, día 5" (calibración, errores y trazabilidad, 2 h sin pausa): 22 pasos, 6 preguntas rápidas, 2 retos de 10 pts + integrador de 20 (certificado del PT-104); guion extenso |
 | `css/ii.css` | Estilos (usa container queries para que los diagramas se adapten) |
+| `estudio.html` + `js/estudio.js` | **Control de estudio** (sesión asíncrona `ii-ce`): portada con 7 módulos → módulo (vistas, reglas con fuente, errores típicos, caso, 2 de práctica, «Marcar como estudiado») → evaluación. Rutas por `#`: `#m1`…`#m7`, `#eval`, `#banco` (solo revisión). `?modo=revision` = vista docente sin registro (exige sesión docente en ese navegador) |
+| `js/evaluacion.js` | `II.preguntas`: motor de preguntas `opcion`, `num`, `zona` (tocar el lugar en una escena), `errores` (marcar todos, puntaje parcial), `orden` (puntaje parcial). `instancia(q, carnet)`, `calificar`, `render(cont, inst, resp, opts)`, `explicarEscena`. Se reutilizará en el examen final |
+| `js/escenas5.js` | `II.escenas`: `techo`, `toma`, `posicion`, `trazado`, `termopozo` (recto/codo), `vapor`, `magnetico`, `cableado`. Cada una devuelve `{ titulo, svg, zonas: { A: { t, ok, por } } }` |
+| `js/control-estudio.js` | `II.CONTROL`: fuentes (manuales de fabricantes), 7 módulos, banco de 43 preguntas (2 por módulo + 1 extra = 15 por carnet), `seleccion(carnet)`, `calificar(ids, resp, carnet)`. Registra `II.SESIONES['ii-ce']` con `asincrona: true` y `etiqueta` |
 | `supabase/estructura.sql` | Esquema de la base de datos (ya ejecutado en Supabase) |
+| `supabase/control-estudio.sql` | Cambios para sesiones asíncronas y evaluaciones de un intento (ventana abre/cierra, un `eval-inicio` y un `eval` por carnet, tiempo límite +2 min, `creado` del servidor, RPC `estado_evaluacion`, fila `ii-ce`) |
 
 ### Dinámica de clase (acordada con el docente)
 Ciclo por concepto (~35 min): **explica → explora → reto → revisa**.
@@ -47,6 +52,13 @@ Ciclo por concepto (~35 min): **explica → explora → reto → revisa**.
 Tablas `docentes`, `estado_sesion` (paso actual; filas `ii-s1` … `ii-s6`), `ingresos`, `respuestas`. RLS: estudiantes (anon) solo insertan; solo el docente (email en `docentes`) lee respuestas y cambia el paso. `resumen_actividad(sesion, actividad)` devuelve conteos anónimos para proyectar (sin contar los "no respondió"); `resumen_opciones(sesion, actividad)` cuenta por opción las preguntas rápidas.
 - **Respuestas solo con la actividad abierta**: la política de inserción usa `actividad_abierta(sesion, actividad)`: se acepta si `estado_sesion.paso` es esa actividad, o si el paso cambió hace menos de 15 min (envíos atrasados), o si es `ingreso`. Un rechazo llega como error 42501: `nucleo.js` lo descarta de la cola (copia en `ii-cola-rechazadas`) y el estudiante ve "Este reto ya está cerrado". **Al terminar una clase, dejar el paso fuera de un reto.**
 - **Control del modo repaso** en `estado_sesion.extra`: `repaso_hasta` (id del último paso repasable; null = todo) y `repaso_cerrado` (true = repaso cerrado). Se manejan desde el panel: "Liberar repaso hasta este paso", "Abrir toda la sesión", "Cerrar el repaso".
+
+### Control de estudio (sesión asíncrona `ii-ce`, vale 10 % del módulo)
+- Ventana en `estado_sesion.extra = { asincrona: true, abre, cierra, minutos: 20 }`. `abre = null` = no abierto. El panel docente (`docente.html?s=ii-ce`) tiene Abrir ahora / Cerrar ahora / Volver a «No abierto» / Cambiar cierre (hora de Bolivia, UTC−4) y el Reporte.
+- Envíos: `ingreso`, `mod-N` (`{ practica, seg }`), `eval-inicio` (insertado directo, su `creado` arranca el reloj), `eval-avance` (copia automática al cambiar de pregunta, cada 45 s y al ocultar la página), `eval` (`{ ids, resp, puntos, nota, motivo }`, `puntaje` = nota /100).
+- Reloj con la hora del servidor (RPC `estado_evaluacion`); termina en `inicio + minutos` o 15 s antes del cierre. Al llegar a cero se envía solo. El estudiante ve su nota al enviar y **las soluciones recién después del cierre** (en el mismo dispositivo).
+- Reporte docente: la nota se **recalcula** con `C.seleccion(carnet)` + respuestas guardadas. Si alguien empezó y no envió, se califica su último `eval-avance` llegado dentro de `minutos + 2`. Ponderada = nota × 0,10. CSV con P1…P15 y tabla de dificultad por pregunta.
+- El avance de los módulos se guarda en el dispositivo (`ii-ce-mods-<carnet>`); la evaluación se habilita con los 7 módulos marcados (o si el servidor dice que ya empezó).
 
 ### Cómo agregar una sesión nueva
 1. Crear `js/sesion2.js` registrando `II.SESIONES['ii-s2'] = { id, numero, titulo, fecha, siguiente, retos, diagnostico, pasos }` (copiar la forma de `sesion1.js`).
@@ -96,6 +108,8 @@ Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10): P&ID con ISA 5.1 + caso integrado con fallas del lazo + evaluación final. Falta que el docente defina el formato de la evaluación.
-- Material de estudio de instalación de sensores (autoestudio con registro): falta que el docente decida si cuenta para la nota y cuándo se publica; antes, tabla de reglas de fabricantes con fuentes para revisar.
+- Control de estudio: aplicar `supabase/control-estudio.sql` (la migración quedó cancelada dos veces; el docente puede pegarla en el SQL Editor). Luego el docente lo revisa con «Revisar como estudiante», borra datos de prueba, toca «Abrir ahora» y se agrega la tarjeta en `instrumentacion/index.html`. Cierra el jueves 08/10 a las 23:59.
+- Examen final (40 %): 20 preguntas, un intento, botón del docente para cerrar con cuenta regresiva escrita por teclado; al enviar, nota y soluciones. Reutilizar `evaluacion.js`.
+- Viernes: tabla completa de participación (por sesión, por persona, cada reto y rápida, total /100, promedio y ponderado a 25).
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
 - Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html`, probar con un celular y luego **⋮ → Borrar datos de esta clase**. Al terminar, dejar el paso en `cierre`.

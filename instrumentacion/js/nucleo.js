@@ -185,9 +185,14 @@
     if (!II.sb || vaciando) return { ok: false };
     vaciando = true;
     let cola = II.leer(CLAVE_COLA, []);
-    let ok = true, rechazadas = 0;
+    let ok = true, rechazadas = 0, duplicadas = 0;
     while (cola.length) {
       const { error } = await II.sb.from('respuestas').insert(cola[0]);
+      if (error && error.code === '23505') {
+        // ya existía (evaluación de un solo intento enviada antes): se descarta sin bloquear la cola
+        cola.shift(); II.guardar(CLAVE_COLA, cola); duplicadas++; II.marcarConexion(true);
+        continue;
+      }
       if (error) {
         // la base de datos rechazó la respuesta porque la actividad ya está cerrada:
         // se descarta para no bloquear las siguientes (queda una copia local)
@@ -208,7 +213,7 @@
       II.marcarConexion(true);
     }
     vaciando = false;
-    return { ok: ok && rechazadas === 0, pendientes: cola.length, rechazadas };
+    return { ok: ok && rechazadas === 0, pendientes: cola.length, rechazadas, duplicadas };
   };
   setInterval(() => { if (II.leer(CLAVE_COLA, []).length) II.vaciarCola(); }, 5000);
 

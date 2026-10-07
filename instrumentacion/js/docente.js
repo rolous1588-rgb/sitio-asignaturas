@@ -359,16 +359,25 @@
     if (!II.$('#panel')) return;
     II.$$('.pestanas button').forEach((b) => b.classList.toggle('activo', b.dataset.p === D.pestana));
     const cont = II.$('#panel');
+    if (S.asincrona) {
+      const foco = document.activeElement && document.activeElement.id === 'ce-cierra' ? document.activeElement.value : null;
+      if (foco != null) return; // no repintar mientras el docente escribe la fecha de cierre
+      cont.innerHTML = D.pestana === 'control' ? vistaControlCE() : vistaReporteCE();
+      return;
+    }
     const detalleAbierto = D.pestana === 'pizarra' && II.$('#detalle-alumno') && II.$('#detalle-alumno').innerHTML ? D.detalle : null;
     cont.innerHTML = D.pestana === 'control' ? vistaControl() : D.pestana === 'pizarra' ? vistaPizarra() : vistaReporte();
     if (detalleAbierto) verDetalle(detalleAbierto);
   };
 
+  const selectorSesiones = () => `<div class="controles" style="margin-bottom:12px">
+        <select class="entrada" id="sel-sesion" style="max-width:100%">${Object.values(II.SESIONES).map((s) => `<option value="${s.id}" ${s.id === SES ? 'selected' : ''}>${s.etiqueta ? II.esc(s.etiqueta) : 'Sesión ' + s.numero} · ${II.esc(s.titulo)}</option>`).join('')}</select>
+      </div>`;
+
   const iniciarPanel = () => {
+    if (S.asincrona) return iniciarAsincrona();
     main.innerHTML = `<div class="contenido" style="max-width:760px">
-      <div class="controles" style="margin-bottom:12px">
-        <select class="entrada" id="sel-sesion" style="max-width:100%">${Object.values(II.SESIONES).map((s) => `<option value="${s.id}" ${s.id === SES ? 'selected' : ''}>Sesión ${s.numero} · ${II.esc(s.titulo)}</option>`).join('')}</select>
-      </div>
+      ${selectorSesiones()}
       <div class="pestanas"><button data-p="control">Control</button><button data-p="pizarra">Pizarra</button><button data-p="reporte">Reporte</button></div>
       <div id="panel"></div></div>`;
     II.$$('.pestanas button').forEach((b) => b.addEventListener('click', () => { D.pestana = b.dataset.p; pintar(); }));
@@ -436,6 +445,217 @@
       if (cdAntes > 0 && s === 0 && D.pestana === 'control') pintar();
       cdAntes = s;
     }, 500);
+  };
+
+  // ============================================================
+  // SESIÓN ASÍNCRONA (Control de estudio): ventana, avance y notas
+  // ============================================================
+  const CE = II.CONTROL;
+  const fechaBO = (ms) => (ms ? new Date(ms).toLocaleString('es-BO', { timeZone: 'America/La_Paz', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—');
+  // Bolivia está en UTC−4 todo el año (sin horario de verano)
+  const aEntradaBO = (ms) => new Date(ms - 4 * 3600e3).toISOString().slice(0, 16);
+  const deEntradaBO = (v) => Date.parse(v + ':59-04:00'); // 23:59 → hasta 23:59:59
+  const extraCE = () => (D.fila && D.fila.extra) || {};
+  const ventanaCE = () => {
+    const ex = extraCE();
+    const abre = ex.abre ? Date.parse(ex.abre) : null, cierra = ex.cierra ? Date.parse(ex.cierra) : null, t = Date.now();
+    if (!D.fila) return { estado: 'sin-fila', abre, cierra };
+    if (!abre || t < abre) return { estado: 'antes', abre, cierra };
+    if (cierra && t >= cierra) return { estado: 'cerrada', abre, cierra };
+    return { estado: 'abierta', abre, cierra };
+  };
+
+  // una fila por estudiante; la nota se recalcula con las respuestas guardadas (no se usa el puntaje que mandó el celular)
+  const filasCE = () => {
+    const minutos = extraCE().minutos || CE.minutos;
+    const v = ventanaCE();
+    const ahora = Date.now();
+    return alumnos().map((a) => {
+      const rs = D.respuestas.filter((r) => r.carnet === a.carnet);
+      const mods = new Set(), seg = {};
+      rs.forEach((r) => {
+        const m = /^mod-(\d)$/.exec(r.actividad);
+        if (m) { mods.add(+m[1]); seg[m[1]] = Math.max(seg[m[1]] || 0, +((r.respuesta && r.respuesta.seg) || 0)); }
+      });
+      const ini = rs.find((r) => r.actividad === 'eval-inicio');
+      const env = rs.find((r) => r.actividad === 'eval');
+      const ids = CE.seleccion(a.carnet); // las preguntas dependen solo del carnet
+      let estado, origen, resp = null, fin = null;
+      if (env) {
+        resp = env.respuesta && env.respuesta.resp; estado = 'enviada'; fin = Date.parse(env.creado);
+        origen = env.respuesta && env.respuesta.motivo === 'tiempo' ? 'Enviada al terminar el tiempo' : 'Enviada';
+      } else if (ini) {
+        const limite = Date.parse(ini.creado) + (minutos + 2) * 60000;
+        const av = rs.filter((r) => r.actividad === 'eval-avance' && Date.parse(r.creado) <= limite).pop();
+        if (ahora < limite) { estado = 'curso'; origen = 'Rindiendo ahora'; }
+        else if (av) { estado = 'avance'; resp = av.respuesta && av.respuesta.resp; fin = Date.parse(av.creado); origen = 'No envió: se calificó su última copia automática'; }
+        else { estado = 'sin'; origen = 'Empezó y no se guardó ninguna respuesta'; }
+      } else { estado = 'no'; origen = 'No rindió'; }
+      const cal = resp ? CE.calificar(ids, resp, a.carnet) : null;
+      const nota = cal ? cal.nota : estado === 'sin' || (estado === 'no' && v.estado === 'cerrada') ? 0 : null;
+      const inicio = ini ? Date.parse(ini.creado) : null;
+      return {
+        a, mods: mods.size, min: Math.round(Object.values(seg).reduce((x, y) => x + y, 0) / 60),
+        inicio, fin, dur: inicio && fin ? (fin - inicio) / 60000 : null, estado, origen, ids, cal, nota
+      };
+    });
+  };
+
+  const vistaControlCE = () => {
+    const v = ventanaCE(), ex = extraCE();
+    const filas = filasCE();
+    const conNota = filas.filter((f) => f.cal);
+    const prom = conNota.length ? conNota.reduce((s, f) => s + f.nota, 0) / conNota.length : null;
+    const txt = { 'sin-fila': '<b style="color:var(--mal)">Falta crear la fila ii-ce en la base de datos</b>', antes: '<b style="color:var(--duda)">No abierto</b> · los estudiantes no pueden entrar a los módulos', abierta: '<b style="color:var(--ok)">Abierto</b>', cerrada: '<b style="color:var(--mal)">Cerrado</b> · ya no se registra nada' }[v.estado];
+    const porMod = CE.modulos.map((m) => new Set(D.respuestas.filter((r) => r.actividad === 'mod-' + m.n).map((r) => r.carnet)).size);
+    const n = filas.length;
+    return `
+      <div class="paso-actual"><span class="etiqueta">${CE.titulo} · sesión asíncrona</span>
+        <div class="titulo">${CE.subtitulo}</div>
+        <div class="nota">Estado: ${txt}</div></div>
+      <div class="tarjeta" style="padding:14px;margin-bottom:12px">
+        <div style="display:grid;gap:4px;font-size:.95rem">
+          <div><b>Abre:</b> ${v.abre ? fechaBO(v.abre) : 'todavía no'}</div>
+          <div><b>Cierra:</b> ${fechaBO(v.cierra)}</div>
+          <div><b>Evaluación:</b> ${CE.nEval} preguntas · ${ex.minutos || CE.minutos} min · un intento</div></div>
+        <div class="controles" style="margin-top:10px">
+          ${v.estado !== 'abierta' ? '<button class="boton primario" data-acc="ce-abrir">Abrir ahora</button>' : '<button class="boton peligro" data-acc="ce-cerrar">Cerrar ahora</button>'}
+          ${v.abre ? '<button class="boton chico" data-acc="ce-ocultar">Volver a «No abierto»</button>' : ''}
+        </div>
+        <label class="campo" style="margin-top:12px"><span>Cambiar el cierre (hora de Bolivia)</span>
+          <span class="controles"><input class="entrada" type="datetime-local" id="ce-cierra" value="${v.cierra ? aEntradaBO(v.cierra) : ''}" style="max-width:260px"><button class="boton" data-acc="ce-guardar-cierre">Guardar cierre</button></span></label>
+        <p class="nota" style="margin:6px 0 0">La base de datos rechaza cualquier envío fuera de esta ventana. Si alguien empieza la evaluación cerca del cierre, su tiempo termina con el cierre.</p>
+      </div>
+      <div class="metricas"><div class="metrica"><b>${n}</b><span>Entraron</span></div><div class="metrica"><b>${filas.filter((f) => f.mods === CE.modulos.length).length}</b><span>Con los ${CE.modulos.length} módulos</span></div>
+        <div class="metrica"><b>${filas.filter((f) => f.inicio).length}</b><span>Empezaron la evaluación</span></div><div class="metrica"><b>${prom == null ? '—' : II.fmt(prom, 1)}</b><span>Nota promedio (${conNota.length})</span></div></div>
+      <div class="tarjeta" style="padding:14px;margin-bottom:12px"><div class="etiqueta" style="margin-bottom:8px">Avance por módulo</div>
+        ${CE.modulos.map((m, j) => `<div style="margin-bottom:8px"><div class="nota" style="margin-bottom:2px">${m.n}. ${m.titulo}</div>
+          <div class="barra-prog"><div style="width:${n ? (porMod[j] / n) * 100 : 0}%"></div></div><div class="nota" style="text-align:right">${porMod[j]} de ${n}</div></div>`).join('')}
+      </div>
+      <div class="tarjeta" style="padding:14px">
+        <div class="controles" style="margin-bottom:8px">
+          <a class="boton chico" href="estudio.html?modo=revision" target="_blank" rel="noopener">Revisar como estudiante (no registra nada) ↗</a>
+          <a class="boton chico" href="estudio.html?modo=revision#banco" target="_blank" rel="noopener">Ver el banco de preguntas ↗</a>
+          <button class="boton chico" data-acc="ce-copiar">Copiar enlace de estudiantes</button>
+        </div>
+        <div class="nota" style="word-break:break-all">${II.esc(urlEstudio())}</div>
+      </div>`;
+  };
+  const urlEstudio = () => location.href.replace(/[^/]*$/, '') + 'estudio.html';
+
+  const vistaReporteCE = () => {
+    const filas = filasCE();
+    const chip = { enviada: 'ok', avance: 'duda', curso: 'acento', sin: 'mal', no: '' };
+    // dificultad de cada pregunta del banco
+    const est = {};
+    filas.filter((f) => f.cal).forEach((f) => f.ids.forEach((id, j) => { (est[id] = est[id] || []).push(f.cal.puntos[j]); }));
+    const dif = CE.banco.map((q) => ({ q, n: (est[q.id] || []).length, p: est[q.id] ? est[q.id].reduce((a, b) => a + b, 0) / est[q.id].length : null }))
+      .filter((x) => x.n).sort((x, y) => x.p - y.p);
+    const textoQ = (q) => { const i = II.preguntas.instancia(q, 'X'); return String(i.t).replace(/<[^>]+>/g, '').slice(0, 110); };
+    return `
+      <div class="controles" style="margin-bottom:12px">
+        <button class="boton primario" data-acc="ce-csv">Descargar para Excel (.csv)</button>
+        <button class="boton" data-acc="recargar">Actualizar</button>
+      </div>
+      <p class="nota" style="margin:0 0 8px">La nota se recalcula aquí con las respuestas guardadas. Ponderada = nota × 0,10 (el control vale el 10 % del módulo).</p>
+      <div class="tabla-envoltura"><table class="tabla">
+        <tr><th>Nombre</th><th>Nota /100</th><th>Ponderada /10</th><th>Estado</th><th>Módulos</th><th>Estudio</th><th>Inicio</th><th>Duración</th><th>Carnet</th></tr>
+        ${filas.map((f) => `<tr><td>${II.esc(f.a.nombre)}</td><td class="n"><b>${f.nota == null ? '—' : II.fmt(f.nota, 1)}</b></td><td class="n">${f.nota == null ? '—' : II.fmt(f.nota / 10, 2)}</td>
+          <td><span class="chip ${chip[f.estado]}" style="white-space:normal">${f.origen}</span></td>
+          <td class="n">${f.mods}/${CE.modulos.length}</td><td class="n">${f.min ? f.min + ' min' : '—'}</td>
+          <td class="n">${f.inicio ? fechaBO(f.inicio) : '—'}</td><td class="n">${f.dur != null ? II.fmt(f.dur, 1) + ' min' : '—'}</td><td>${II.esc(f.a.carnet)}</td></tr>`).join('') || '<tr><td colspan="9" class="nota">Aún no hay datos.</td></tr>'}
+      </table></div>
+      ${dif.length ? `<div class="tarjeta" style="margin-top:20px;padding:14px"><h3>Preguntas del banco: de la más difícil a la más fácil</h3>
+        <div class="tabla-envoltura"><table class="tabla"><tr><th>Id</th><th>Módulo</th><th>Pregunta</th><th>Veces</th><th>Acierto</th></tr>
+        ${dif.map((x) => `<tr><td>${x.q.id}</td><td class="n">${x.q.mod}</td><td style="white-space:normal;min-width:220px">${II.esc(textoQ(x.q))}</td><td class="n">${x.n}</td><td class="n"><b style="color:${x.p >= 0.7 ? 'var(--ok)' : x.p >= 0.4 ? 'var(--duda)' : 'var(--mal)'}">${II.fmt(x.p * 100, 0)} %</b></td></tr>`).join('')}</table></div></div>` : ''}
+      <div class="tarjeta" style="margin-top:24px;padding:14px">
+        <h3>Datos de prueba</h3>
+        <p class="nota">Borra todas las respuestas e ingresos del control de estudio. Úsalo solo después de probar, <b>antes de abrirlo</b> a los estudiantes. La ventana (abre/cierra) no cambia.</p>
+        ${ventanaCE().estado === 'abierta' ? '<div class="aviso duda">El control está <b>abierto</b>: si ya entraron estudiantes, borrarías sus datos reales.</div>' : ''}
+        <button class="boton peligro" data-acc="ce-borrar">Borrar datos de esta sesión</button>
+      </div>`;
+  };
+
+  const csvCE = () => {
+    const n = (x) => (x == null ? '' : String(x).replace('.', ','));
+    const q = (s) => '"' + String(s ?? '').replace(/"/g, '""') + '"';
+    const cab = ['Nombre', 'Carnet', 'Área', 'Módulos (/7)', 'Estudio (min)', 'Inicio', 'Duración (min)', 'Estado', 'Nota (/100)', 'Ponderada (/10)',
+      ...Array.from({ length: CE.nEval }, (_, j) => `P${j + 1}`), 'Preguntas (id)'];
+    const filas = filasCE().map((f) => [q(f.a.nombre), q(f.a.carnet), q(f.a.info.area), f.mods, f.min, q(f.inicio ? fechaBO(f.inicio) : ''), n(f.dur != null ? Math.round(f.dur * 10) / 10 : null),
+      q(f.origen), n(f.nota), n(f.nota == null ? null : Math.round(f.nota * 10) / 100),
+      ...f.ids.map((_, j) => n(f.cal ? Math.round(f.cal.puntos[j] * 100) / 100 : null)), q(f.ids.join(' '))].join(';'));
+    const csv = '\ufeff' + [cab.map(q).join(';'), ...filas].join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `control-de-estudio-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  const iniciarAsincrona = () => {
+    if (D.pestana === 'pizarra') D.pestana = 'control';
+    main.innerHTML = `<div class="contenido" style="max-width:860px">
+      ${selectorSesiones()}
+      <div class="pestanas"><button data-p="control">Control</button><button data-p="reporte">Reporte</button></div>
+      <div id="panel"></div></div>`;
+    II.$$('.pestanas button').forEach((b) => b.addEventListener('click', () => { D.pestana = b.dataset.p; pintar(); }));
+    II.$('#sel-sesion').addEventListener('change', (e) => { location.search = '?s=' + e.target.value; });
+    const cambiar = async (b, cambios, okMsg) => {
+      b.disabled = true;
+      const r = await II.fijarExtra(SES, cambios, extraCE());
+      if (!r.ok) { aviso('No se pudo cambiar: ' + r.error); b.disabled = false; return; }
+      D.fila = { ...(D.fila || {}), extra: r.extra };
+      pintar();
+      if (okMsg) { const a = II.html(`<div class="aviso ok aviso-flotante">${okMsg}</div>`); document.body.appendChild(a); setTimeout(() => a.remove(), 3500); }
+    };
+    let borrarCE = false;
+    II.$('#panel').addEventListener('click', async (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const acc = b.dataset.acc;
+      if (acc === 'ce-abrir') {
+        const v = ventanaCE();
+        if (v.cierra && v.cierra < Date.now()) return aviso('La fecha de cierre ya pasó: cámbiala primero.');
+        cambiar(b, { abre: new Date().toISOString() }, 'Control de estudio abierto.');
+      } else if (acc === 'ce-cerrar') cambiar(b, { cierra: new Date().toISOString() }, 'Control de estudio cerrado.');
+      else if (acc === 'ce-ocultar') cambiar(b, { abre: null }, 'Volvió a «No abierto».');
+      else if (acc === 'ce-guardar-cierre') {
+        const val = II.$('#ce-cierra').value;
+        const ms = val ? deEntradaBO(val) : NaN;
+        if (!isFinite(ms)) return aviso('Escribe una fecha y hora de cierre válidas.');
+        II.$('#ce-cierra').blur();
+        cambiar(b, { cierra: new Date(ms).toISOString() }, 'Cierre guardado: ' + fechaBO(ms) + '.');
+      } else if (acc === 'ce-csv') csvCE();
+      else if (acc === 'recargar') cargar();
+      else if (acc === 'ce-copiar') {
+        try { await navigator.clipboard.writeText(urlEstudio()); b.textContent = '¡Copiado!'; }
+        catch (err) { b.textContent = 'Mantén presionado el enlace para copiarlo'; }
+        setTimeout(() => { if (b.isConnected) b.textContent = 'Copiar enlace de estudiantes'; }, 2500);
+      } else if (acc === 'ce-borrar') {
+        if (!borrarCE) {
+          borrarCE = true; b.classList.add('confirmar'); b.textContent = 'Toca otra vez para confirmar';
+          setTimeout(() => { borrarCE = false; if (b.isConnected) { b.classList.remove('confirmar'); b.textContent = 'Borrar datos de esta sesión'; } }, 4000);
+          return;
+        }
+        borrarCE = false; b.disabled = true; b.textContent = 'Borrando…';
+        const r1 = await II.sb.from('respuestas').delete().eq('sesion', SES);
+        const r2 = await II.sb.from('ingresos').delete().eq('sesion', SES);
+        if (r1.error || r2.error) aviso('No se pudo borrar: ' + (r1.error || r2.error).message);
+        D.respuestas = []; D.ingresos = [];
+        cargar();
+      }
+    });
+    II.seguirEstado(SES, (fila) => { D.fila = fila; pintar(); });
+    // seguirEstado no avisa los cambios de la ventana hechos desde otro dispositivo: se relee cada 30 s
+    setInterval(async () => {
+      const { data } = await II.sb.from('estado_sesion').select('*').eq('sesion', SES).maybeSingle();
+      if (data && JSON.stringify(data.extra) !== JSON.stringify(extraCE())) { D.fila = data; pintar(); }
+    }, 30000);
+    cargar();
+    suscribir();
+    setInterval(cargar, 15000);
+    // si no existe la fila (falta aplicar el SQL), se avisa en la vista de control
+    II.sb.from('estado_sesion').select('*').eq('sesion', SES).maybeSingle().then(({ data }) => { if (!data) { D.fila = null; pintar(); } });
   };
 
   // arranque
