@@ -1,14 +1,17 @@
 // ============================================================
-// Control de estudio (sesión asíncrona ii-ce): 7 módulos + evaluación de un solo intento
-//   estudio.html                → estudiante (registra avance y evaluación)
-//   estudio.html?modo=revision  → revisión docente: todo abierto, no registra nada
-//                                 (pide haber entrado antes al panel docente en este navegador)
+// Evaluaciones de un solo intento. La página elige cuál con <body data-eval="…">:
+//   ii-ce  Control de estudio (estudio.html): 7 módulos + evaluación de 15 preguntas en 20 minutos
+//   ii-s6  Examen final (examen.html): 20 preguntas, sin reloj fijo; el docente lo cierra con cuenta regresiva
+//   ?modo=revision → revisión docente: todo abierto, no registra nada
+//                    (pide haber entrado antes al panel docente en este navegador)
 // Envíos: ingreso · mod-1 … mod-7 (módulo estudiado) · eval-inicio · eval-avance (copia automática) · eval
 // La hora que manda es la del servidor (RPC estado_evaluacion); la base rechaza envíos fuera de plazo.
 // ============================================================
 (function () {
-  const II = window.II, C = II.CONTROL, P = II.preguntas;
+  const II = window.II, P = II.preguntas;
+  const C = (II.EVALUACIONES || {})[document.body.dataset.eval || 'ii-ce'] || II.CONTROL;
   const SES = C.id;
+  const EX = !!C.examen;               // examen final: sin módulos, lo cierra el docente
   const revision = II.params.get('modo') === 'revision';
   const ensayo = !II.configurado;      // sin Supabase: todo queda en este navegador
   const local = revision || ensayo;    // en estos modos no se envía nada
@@ -24,7 +27,7 @@
   let moduloAbierto = null;
   let ultimoAvance = '';  // última copia automática enviada (para no repetir)
 
-  const k = (t) => `ii-ce${revision ? '-rev' : ''}-${t}-${alumno ? alumno.carnet : 'x'}`;
+  const k = (t) => `${SES}${revision ? '-rev' : ''}-${t}-${alumno ? alumno.carnet : 'x'}`;
   const ahora = () => Date.now() + offset;
   const leerMods = () => II.leer(k('mods'), {});
   const hechos = () => C.modulos.filter((m) => leerMods()[m.n]).length;
@@ -91,7 +94,7 @@
   const pintarBarra = () => {
     II.$('#b-sesion').textContent = C.titulo + ' · ' + C.subtitulo.split(':')[0];
     II.$('#b-modo').innerHTML = revision ? '<span class="chip duda">Revisión docente</span>' : ensayo ? '<span class="chip duda">Modo ensayo</span>' : '';
-    II.$('#b-avance').innerHTML = alumno && !revision ? `<span class="chip acento" title="Módulos estudiados">📘 ${hechos()}/${N}</span>` : '';
+    II.$('#b-avance').innerHTML = alumno && !revision && !EX ? `<span class="chip acento" title="Módulos estudiados">📘 ${hechos()}/${N}</span>` : '';
     const u = II.$('#b-usuario');
     if (alumno && !revision) {
       u.innerHTML = `<span>${II.esc(alumno.nombre)}</span><button class="boton chico" id="b-salir" title="Cambiar de usuario">Salir</button>`;
@@ -373,12 +376,20 @@
   // EVALUACIÓN
   // ============================================================
   // hora de término (hora del servidor): inicio + minutos, sin pasar el cierre del control (−15 s de margen)
+  // (examen: sin límite propio; termina 10 s antes del cierre que pone el docente)
   const finEval = (ev) => {
     if (!ev || !ev.inicio) return null;
-    let fin = ev.inicio + ((srv && srv.minutos) || C.minutos) * 60000;
+    const min = (srv && srv.minutos) || C.minutos;
+    let fin = min ? ev.inicio + min * 60000 : null;
     const v = ventana();
-    if (v.cierra) fin = Math.min(fin, v.cierra - 15000);
+    if (v.cierra) fin = Math.min(fin == null ? Infinity : fin, v.cierra - (EX ? 10000 : 15000));
     return fin;
+  };
+  const pintarAviso = (titulo, texto, clase = 'info') => {
+    main.innerHTML = `<div class="contenido angosto">${revision ? barraRevision() : ''}<div class="tarjeta" style="text-align:center">
+      <span class="etiqueta">${C.titulo}</span><h2 style="margin-top:6px">${titulo}</h2>
+      <div class="aviso ${clase}" style="text-align:left">${texto}</div></div></div>`;
+    enlazarRevision();
   };
   const instancias = (ids) => ids.map((id) => P.instancia(C.porId(id), alumno.carnet));
 
@@ -399,14 +410,24 @@
       guardarEval({ ids: C.seleccion(alumno.carnet), resp: {}, inicio: srv.inicio, actual: 0 });
       return pintarEnCurso();
     }
-    if (srv && srv.enviado) { location.hash = ''; return; }
+    if (srv && srv.enviado) {
+      if (EX) return pintarAviso('✓ Ya enviaste tu examen', 'Lo enviaste desde otro dispositivo y tu nota quedó registrada. La nota y las soluciones se ven en ese dispositivo.', 'ok');
+      location.hash = ''; return;
+    }
+    if (EX) {
+      const v = ventana();
+      if (v.estado === 'antes') return pintarAviso('⏳ El examen todavía no empieza', 'Espera la indicación del docente. <b>Esta pantalla se actualiza sola</b> cuando se abra el examen.');
+      if (v.estado === 'cerrada') return pintarAviso('El examen ya se cerró', 'No se registró ningún examen con tu carnet.', 'duda');
+      if (v.estado === 'sin-datos') return pintarAviso('Sin conexión', 'No se pudo leer el estado del examen. Revisa tu conexión y recarga la página.', 'mal');
+    }
     pintarIntro();
   };
 
   const pintarIntro = () => {
     const v = ventana();
-    if (v.estado !== 'abierta' || hechos() < N) { location.hash = ''; return; }
+    if (v.estado !== 'abierta' || hechos() < N) { if (!EX) location.hash = ''; return; }
     const quedan = v.cierra ? (v.cierra - ahora()) / 60000 : Infinity;
+    if (EX) return pintarIntroExamen(v);
     main.innerHTML = `<div class="contenido angosto" style="max-width:760px">
       ${revision ? barraRevision() : ''}
       <div class="tarjeta">
@@ -428,9 +449,31 @@
     dobleToque(II.$('#b-empezar'), '¿Listo? Toca otra vez: el reloj arranca', empezar, 4000);
   };
 
+  const pintarIntroExamen = (v) => {
+    main.innerHTML = `<div class="contenido angosto" style="max-width:760px">
+      ${revision ? barraRevision() : ''}
+      <div class="tarjeta">
+        <span class="etiqueta">Examen final · vale el ${C.peso} % de la nota del módulo · un solo intento</span>
+        <h2>${C.titulo}</h2>
+        <p class="sub">${II.esc(alumno.nombre)} · CI ${II.esc(alumno.carnet)}</p>
+        <ul class="ideas">
+          <li><b class="n">1</b><span><b>${C.nEval} preguntas</b> de todo el módulo (2 de cada tema): opción múltiple, cálculos cortos, tocar el lugar correcto en un dibujo y encontrar errores. Cada carnet recibe preguntas y valores distintos.</span></li>
+          <li><b class="n">2</b><span>No hay un reloj fijo. Cuando el docente cierre el examen verás una <b>cuenta regresiva</b>; al llegar a cero <b>se envía solo</b> lo que tengas marcado.</span></li>
+          <li><b class="n">3</b><span>Puedes moverte entre las preguntas y cambiar tus respuestas hasta enviar. En los cálculos se acepta un margen de ±2 %.</span></li>
+          <li><b class="n">4</b><span>Al enviar verás tu <b>nota y las soluciones</b>.</span></li>
+        </ul>
+        ${v.cierra ? `<div class="aviso duda">El docente ya puso la hora de cierre: quedan <b>${II.formatoReloj(Math.max(0, (v.cierra - ahora()) / 1000))}</b>.</div>` : ''}
+        ${local ? `<div class="aviso info">${revision ? 'Revisión docente' : 'Modo ensayo'}: no se registra nada.</div>` : ''}
+        <div id="ev-msg"></div>
+        <button class="boton primario grande bloque" id="b-empezar">Empezar el examen</button>
+      </div></div>`;
+    enlazarRevision();
+    dobleToque(II.$('#b-empezar'), '¿Listo? Toca otra vez para empezar', empezar, 4000);
+  };
+
   const empezar = async (b) => {
     b.disabled = true; b.textContent = 'Empezando…';
-    const msg = (html, clase = 'mal') => { const e = II.$('#ev-msg'); if (e) e.innerHTML = `<div class="aviso ${clase}">${html}</div>`; b.disabled = false; b.textContent = 'Empezar la evaluación'; };
+    const msg = (html, clase = 'mal') => { const e = II.$('#ev-msg'); if (e) e.innerHTML = `<div class="aviso ${clase}">${html}</div>`; b.disabled = false; b.textContent = EX ? 'Empezar el examen' : 'Empezar la evaluación'; };
     const ids = C.seleccion(alumno.carnet);
     if (local) {
       guardarEval({ ids, resp: {}, inicio: Date.now(), actual: 0 });
@@ -441,7 +484,7 @@
     try { ({ error } = await II.sb.from('respuestas').insert(registro('eval-inicio', { ids }))); }
     catch (e) { error = { message: String(e) }; }
     const s = await leerSrv();
-    if (s && s.enviado) { location.hash = ''; return; }
+    if (s && s.enviado) { if (EX) alHash(); else location.hash = ''; return; }
     if (s && s.inicio) {
       guardarEval({ ids, resp: {}, inicio: s.inicio, actual: 0 });
       return pintarEnCurso();
@@ -452,7 +495,7 @@
     }
     if (error && (error.code === '42501' || /row-level security/i.test(error.message || ''))) {
       await leerFila();
-      return msg('La evaluación no está disponible en este momento (el control está cerrado). Recarga la página.');
+      return msg(EX ? 'El examen no está abierto en este momento. Recarga la página.' : 'La evaluación no está disponible en este momento (el control está cerrado). Recarga la página.');
     }
     msg('No se pudo empezar: <b>revisa tu conexión</b> e inténtalo otra vez. El reloj todavía no arrancó.');
   };
@@ -473,11 +516,12 @@
     let i = Math.min(ev.actual || 0, insts.length - 1);
     main.innerHTML = `<div class="contenido angosto" style="max-width:760px">
       <div class="reloj-eval"><span>Pregunta <b id="ev-n"></b> de ${insts.length} · <span id="ev-cont"></span></span><span class="t" id="ev-t">--:--</span></div>
+      <div id="ev-cierre"></div>
       <div class="chips-preg" id="ev-chips">${insts.map((_, j) => `<button type="button" data-j="${j}">${j + 1}</button>`).join('')}</div>
       <div class="tarjeta" id="ev-preg"></div>
       <div class="mando" style="margin-top:12px"><button class="boton grande" id="ev-ant">◀ Anterior</button><button class="boton grande" id="ev-sig">Siguiente ▶</button></div>
       <div class="tarjeta" style="margin-top:16px">
-        <button class="boton primario grande bloque" id="ev-enviar">Enviar evaluación</button>
+        <button class="boton primario grande bloque" id="ev-enviar">${EX ? 'Enviar examen' : 'Enviar evaluación'}</button>
         <p class="nota" id="ev-faltan" style="margin:8px 0 0"></p>
         ${local ? '' : '<p class="nota" style="margin:6px 0 0">Tus respuestas se guardan en este dispositivo y se copian al servidor mientras avanzas.</p>'}
       </div></div>`;
@@ -522,9 +566,16 @@
     const tick = () => {
       const x = leerEval();
       if (!x || x.enviado) return;
-      const s = (finEval(x) - ahora()) / 1000;
-      const t = II.$('#ev-t');
-      if (t) { t.textContent = II.formatoReloj(Math.max(0, s)); t.classList.toggle('poco', s < 120); }
+      const fin = finEval(x);
+      const t = II.$('#ev-t'), bc = II.$('#ev-cierre');
+      if (fin == null) {
+        if (t) { t.textContent = 'sin límite'; t.style.fontSize = '1rem'; t.classList.remove('poco'); }
+        if (bc) bc.innerHTML = '';
+        return;
+      }
+      const s = (fin - ahora()) / 1000;
+      if (t) { t.textContent = II.formatoReloj(Math.max(0, s)); t.style.fontSize = ''; t.classList.toggle('poco', s < 120); }
+      if (bc && EX) bc.innerHTML = `<div class="aviso duda" style="margin:0 0 12px">⏳ <b>El docente cerró el examen.</b> Al llegar a cero se envía solo lo que tengas marcado.</div>`;
     };
     tick();
     vistaInt = setInterval(tick, 500);
@@ -538,7 +589,7 @@
     const cal = C.calificar(ev.ids, ev.resp, alumno.carnet);
     Object.assign(ev, { enviado: true, nota: cal.nota, puntos: cal.puntos, motivo, envio: local ? 'local' : 'pendiente', enviadoEn: ahora() });
     guardarEval(ev);
-    if (motivo === 'tiempo') avisoBreve('⏰ Se acabó el tiempo: tu evaluación se envió con lo que tenías marcado.', 'duda', 7000);
+    if (motivo === 'tiempo') avisoBreve(`⏰ Se acabó el tiempo: tu ${EX ? 'examen' : 'evaluación'} se envió con lo que tenías marcado.`, 'duda', 7000);
     if (!local) {
       II.enviar(registro('eval', { ids: ev.ids, resp: ev.resp, puntos: cal.puntos, nota: cal.nota, motivo }, { correcta: cal.nota >= 51, puntaje: cal.nota }));
     }
@@ -563,9 +614,9 @@
     if (a) a.outerHTML = avisoEnvio(e2);
   };
   const avisoEnvio = (ev) => {
-    if (ev.envio === 'ok') return '<div class="aviso ok" id="ev-envio">✓ Tu evaluación quedó <b>registrada</b> en el servidor.</div>';
+    if (ev.envio === 'ok') return `<div class="aviso ok" id="ev-envio">✓ Tu ${EX ? 'examen' : 'evaluación'} quedó <b>registrad${EX ? 'o' : 'a'}</b> en el servidor.</div>`;
     if (ev.envio === 'local') return `<div class="aviso info" id="ev-envio">${revision ? 'Revisión docente' : 'Modo ensayo'}: no se registró nada.</div>`;
-    if (ev.envio === 'rechazada') return '<div class="aviso mal" id="ev-envio">⚠ El envío llegó <b>fuera de tiempo</b> y el servidor no lo aceptó. El docente calificará con la última copia automática que se guardó durante tus 20 minutos.</div>';
+    if (ev.envio === 'rechazada') return '<div class="aviso mal" id="ev-envio">⚠ El envío llegó <b>fuera de tiempo</b> y el servidor no lo aceptó. El docente calificará con la última copia automática de tus respuestas que llegó a tiempo.</div>';
     return '<div class="aviso duda" id="ev-envio">⏳ <b>Enviando…</b> No cierres esta página hasta que diga «registrada». Si no tienes conexión, se enviará sola al reconectar.</div>';
   };
 
@@ -573,15 +624,15 @@
     const ev = leerEval();
     if (!ev || !ev.enviado) { location.hash = ''; return; }
     const v = ventana();
-    const verSol = revision || ensayo || v.estado === 'cerrada';
+    const verSol = C.solucionesAlEnviar || revision || ensayo || v.estado === 'cerrada';
     const insts = instancias(ev.ids);
     const pts = insts.map((q) => P.calificar(q, ev.resp[q.id]));
     main.innerHTML = `<div class="contenido angosto" style="max-width:760px">
       ${revision ? barraRevision() : ''}
       <div class="tarjeta" style="text-align:center">
-        <span class="etiqueta">Evaluación enviada${ev.motivo === 'tiempo' ? ' al terminar el tiempo' : ''}</span>
+        <span class="etiqueta">${EX ? 'Examen enviado' : 'Evaluación enviada'}${ev.motivo === 'tiempo' ? ' al terminar el tiempo' : ''}</span>
         <div class="grande-numero" style="margin:8px 0 0">${II.fmt(ev.nota, 1)}<small style="font-size:.45em;color:var(--texto-3)"> / 100</small></div>
-        <p class="sub" style="margin:4px 0 0">Equivale a <b>${II.fmt(ev.nota / 10, 2)} de 10 puntos</b> de la nota del módulo.</p>
+        <p class="sub" style="margin:4px 0 0">Equivale a <b>${II.fmt((ev.nota * C.peso) / 100, 2)} de ${C.peso} puntos</b> de la nota del módulo.</p>
         ${avisoEnvio(ev)}
       </div>
       <div class="tarjeta"><h3>Pregunta por pregunta</h3>
@@ -590,7 +641,7 @@
         ${verSol ? '' : `<div class="aviso info" style="margin-bottom:0">Las <b>soluciones</b> se publican cuando cierre el control (${v.cierra ? fecha(v.cierra) : C.cierreTexto}). Vuelve a abrir esta página <b>en este mismo dispositivo</b> para verlas con tus respuestas.</div>`}
       </div>
       ${verSol ? `<div id="ev-sol">${insts.map((_, j) => `<div class="tarjeta" data-sol="${j}"></div>`).join('')}</div>` : ''}
-      <a class="boton bloque" href="#" style="margin-top:16px;text-align:center">◀ Volver a los módulos</a>
+      ${EX ? '' : '<a class="boton bloque" href="#" style="margin-top:16px;text-align:center">◀ Volver a los módulos</a>'}
     </div>`;
     if (verSol) {
       insts.forEach((q, j) => P.render(II.$(`[data-sol="${j}"]`), q, ev.resp[q.id], { mostrar: true, numero: j + 1 }));
@@ -607,7 +658,7 @@
       <div class="nota" style="color:#8a5a12"><b>Revisión docente:</b> todo está abierto y no se registra nada. Carnet de prueba: <b>${II.esc(alumno.carnet)}</b> (define qué preguntas y valores salen).</div>
       <div class="controles" style="margin-top:8px">
         <a class="boton chico" href="#banco">Ver el banco completo (${C.banco.length} preguntas)</a>
-        <button class="boton chico" data-rev="todos">Marcar los ${N} módulos</button>
+        ${EX ? '' : `<button class="boton chico" data-rev="todos">Marcar los ${N} módulos</button>`}
         <button class="boton chico" data-rev="carnet">Cambiar carnet de prueba</button>
         <button class="boton chico peligro" data-rev="reiniciar">Reiniciar la revisión</button>
       </div></div>`;
@@ -639,9 +690,9 @@
     main.innerHTML = `<div class="contenido angosto" style="max-width:820px">
       ${barraRevision()}
       <div class="tarjeta"><h2>Banco de la evaluación</h2>
-        <p class="sub">${C.banco.length} preguntas. A cada carnet le tocan ${C.nEval}: 2 de cada módulo y 1 más al azar. Las de cálculo cambian sus valores con el carnet (aquí, con el carnet de prueba). Se muestran ya respondidas correctamente.</p>
-        <div class="controles">${C.modulos.map((m) => `<a class="boton chico" href="#banco" data-ir="${m.n}">M${m.n} (${C.banco.filter((q) => q.mod === m.n).length})</a>`).join('')}</div></div>
-      ${C.modulos.map((m) => `<h3 style="margin:22px 0 8px" id="bm-${m.n}">Módulo ${m.n} · ${m.titulo}</h3>
+        <p class="sub">${C.banco.length} preguntas. A cada carnet le tocan ${C.nEval}: ${EX ? '2 de cada tema' : '2 de cada módulo y 1 más al azar'}. Las de cálculo cambian sus valores con el carnet (aquí, con el carnet de prueba). Se muestran ya respondidas correctamente.</p>
+        <div class="controles">${(C.temas || C.modulos).map((m) => `<a class="boton chico" href="#banco" data-ir="${m.n}">${EX ? 'T' : 'M'}${m.n} (${C.banco.filter((q) => q.mod === m.n).length})</a>`).join('')}</div></div>
+      ${(C.temas || C.modulos).map((m) => `<h3 style="margin:22px 0 8px" id="bm-${m.n}">${EX ? 'Tema' : 'Módulo'} ${m.n} · ${m.titulo}</h3>
         ${C.banco.filter((q) => q.mod === m.n).map((q) => `<div class="tarjeta" data-b="${q.id}"></div>`).join('')}`).join('')}
     </div>`;
     C.banco.forEach((q) => {
@@ -662,9 +713,10 @@
     if (!alumno) return pintarIngreso();
     pintarBarra();
     const h = location.hash.replace('#', '');
-    if (/^m\d$/.test(h)) pintarModulo(+h.slice(1));
+    if (/^m\d$/.test(h) && !EX) pintarModulo(+h.slice(1));
     else if (h === 'eval') pintarEval();
     else if (h === 'banco' && revision) pintarBanco();
+    else if (EX) pintarEval();
     else pintarInicio();
     window.scrollTo(0, 0);
   };
@@ -675,16 +727,20 @@
   setInterval(() => {
     const ev = leerEval();
     if (!alumno || !ev || !ev.inicio || ev.enviado) return;
-    if (ahora() >= finEval(ev)) enviarEval('tiempo');
+    const fin = finEval(ev);
+    if (fin != null && ahora() >= fin) enviarEval('tiempo');
     else if (++cuentaAvance % 45 === 0) enviarAvance();
   }, 1000);
-  // la ventana del control puede cambiar (el docente la abre o la cierra): se relee cada minuto
+  // la ventana puede cambiar (el docente la abre o la cierra): se relee cada minuto (examen: cada 5 s)
   setInterval(async () => {
-    if (local) return;
+    if (local || !alumno) return;
     const antes = ventana().estado;
     await leerFila();
-    if (ventana().estado !== antes && (location.hash === '' || location.hash === '#')) alHash();
-  }, 60000);
+    if (ventana().estado === antes) return;
+    const ev = leerEval();
+    if (EX) { if (!(ev && ev.inicio && !ev.enviado)) alHash(); }
+    else if (location.hash === '' || location.hash === '#') alHash();
+  }, EX ? 5000 : 60000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) enviarAvance(); });
 
   // ---------- arranque ----------

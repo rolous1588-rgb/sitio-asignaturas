@@ -437,10 +437,12 @@
     titulo: 'Control de estudio',
     subtitulo: 'Instrumentos en planta: selección, instalación y puesta en marcha',
     cierreTexto: 'jueves 08/10 a las 23:59',
-    nEval: N_EVAL, minutos: 20,
+    nEval: N_EVAL, minutos: 20, peso: 10, pagina: 'estudio.html',
     fuentes: FUENTES, modulos: MODULOS, banco: BANCO,
     seleccion, porId, calificar
   };
+  II.EVALUACIONES = II.EVALUACIONES || {};
+  II.EVALUACIONES['ii-ce'] = II.CONTROL;
   // registro mínimo para que el panel docente la muestre en su lista
   II.SESIONES['ii-ce'] = { id: 'ii-ce', etiqueta: 'Control de estudio', numero: '', titulo: 'Instrumentos en planta (asíncrono)', fecha: 'Hasta el jueves 08/10, 23:59', asincrona: true, retos: {}, pasos: [], diagnostico: [] };
 })();

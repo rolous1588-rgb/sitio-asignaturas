@@ -360,7 +360,7 @@
     II.$$('.pestanas button').forEach((b) => b.classList.toggle('activo', b.dataset.p === D.pestana));
     const cont = II.$('#panel');
     if (S.asincrona) {
-      const foco = document.activeElement && document.activeElement.id === 'ce-cierra' ? document.activeElement.value : null;
+      const foco = document.activeElement && ['ce-cierra', 'ex-min'].includes(document.activeElement.id) ? document.activeElement.value : null;
       if (foco != null) return; // no repintar mientras el docente escribe la fecha de cierre
       cont.innerHTML = D.pestana === 'control' ? vistaControlCE() : vistaReporteCE();
       return;
@@ -450,7 +450,8 @@
   // ============================================================
   // SESIÓN ASÍNCRONA (Control de estudio): ventana, avance y notas
   // ============================================================
-  const CE = II.CONTROL;
+  const CE = (II.EVALUACIONES || {})[SES] || II.CONTROL;
+  const EX = !!CE.examen; // examen final: sin módulos; el docente lo cierra con cuenta regresiva
   const fechaBO = (ms) => (ms ? new Date(ms).toLocaleString('es-BO', { timeZone: 'America/La_Paz', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—');
   // Bolivia está en UTC−4 todo el año (sin horario de verano)
   const aEntradaBO = (ms) => new Date(ms - 4 * 3600e3).toISOString().slice(0, 16);
@@ -485,7 +486,7 @@
         resp = env.respuesta && env.respuesta.resp; estado = 'enviada'; fin = Date.parse(env.creado);
         origen = env.respuesta && env.respuesta.motivo === 'tiempo' ? 'Enviada al terminar el tiempo' : 'Enviada';
       } else if (ini) {
-        const limite = Date.parse(ini.creado) + (minutos + 2) * 60000;
+        const limite = minutos ? Date.parse(ini.creado) + (minutos + 2) * 60000 : v.cierra ? v.cierra + 120000 : Infinity;
         const av = rs.filter((r) => r.actividad === 'eval-avance' && Date.parse(r.creado) <= limite).pop();
         if (ahora < limite) { estado = 'curso'; origen = 'Rindiendo ahora'; }
         else if (av) { estado = 'avance'; resp = av.respuesta && av.respuesta.resp; fin = Date.parse(av.creado); origen = 'No envió: se calificó su última copia automática'; }
@@ -501,7 +502,47 @@
     });
   };
 
+  // ---------- examen final: abrir y cerrar con cuenta regresiva ----------
+  const vistaControlEX = () => {
+    const v = ventanaCE();
+    const filas = filasCE();
+    const conNota = filas.filter((f) => f.cal);
+    const prom = conNota.length ? conNota.reduce((s, f) => s + f.nota, 0) / conNota.length : null;
+    const resta = v.cierra ? Math.max(0, Math.ceil((v.cierra - Date.now()) / 1000)) : null;
+    const estado = v.estado === 'antes' ? '<b style="color:var(--duda)">No abierto</b> · los estudiantes ven «espera la indicación del docente»'
+      : v.estado === 'cerrada' ? `<b style="color:var(--mal)">Cerrado</b> a las ${fechaBO(v.cierra)} · ya no se registra nada`
+      : v.cierra ? `<b style="color:var(--duda)">Cerrándose</b>: quedan <b id="cd-ex">${II.formatoReloj(resta)}</b>` : '<b style="color:var(--ok)">Abierto</b>, sin hora de cierre';
+    let mando;
+    if (v.estado === 'antes') mando = `<button class="boton primario grande bloque" data-acc="ex-abrir">▶ Abrir el examen</button>
+      <p class="nota" style="margin:6px 0 0">Los estudiantes que ya estén en la página verán el examen en unos 5 segundos.</p>`;
+    else if (v.estado === 'abierta' && !v.cierra) mando = `<label class="campo" style="margin:0"><span>Cerrar el examen dentro de… (minutos)</span>
+        <span class="controles"><input class="entrada" type="text" id="ex-min" value="${II.esc(D.exMin || '5')}" inputmode="decimal" style="max-width:120px;font-size:1.3rem;font-weight:700"><button class="boton primario grande" data-acc="ex-cerrar">⏱ Iniciar la cuenta regresiva</button></span></label>
+      <p class="nota" style="margin:6px 0 0">Todos ven la cuenta regresiva; al llegar a cero se envía lo que cada uno tenga marcado y la base de datos ya no acepta más envíos.</p>`;
+    else if (v.estado === 'abierta') mando = `<div style="text-align:center;font-family:var(--mono);font-size:2.6rem;font-weight:700;color:var(--mal)" id="cd-ex-grande">${II.formatoReloj(resta)}</div>
+      <div class="controles" style="justify-content:center;margin-top:8px"><button class="boton" data-acc="ex-cancelar">Cancelar la cuenta regresiva</button></div>`;
+    else mando = `<div class="aviso ok" style="margin:0">✓ Examen cerrado. Revisa las notas en <b>Reporte</b>.</div>
+      <div class="controles" style="margin-top:8px"><button class="boton chico" data-acc="ex-cancelar">Reabrir sin hora de cierre</button></div>`;
+    return `
+      <div class="paso-actual"><span class="etiqueta">${CE.titulo} · ${CE.nEval} preguntas · un intento · vale ${CE.peso} %</span>
+        <div class="titulo">${CE.subtitulo}</div>
+        <div class="nota">Estado: ${estado}</div></div>
+      <div class="tarjeta" style="padding:14px;margin-bottom:12px">${mando}
+        ${v.abre && v.estado !== 'cerrada' ? '<div class="controles" style="margin-top:12px"><button class="boton chico" data-acc="ce-ocultar">Volver a «No abierto»</button></div>' : ''}
+      </div>
+      <div class="metricas"><div class="metrica"><b>${filas.length}</b><span>Entraron</span></div><div class="metrica"><b>${filas.filter((f) => f.inicio).length}</b><span>Empezaron</span></div>
+        <div class="metrica"><b>${filas.filter((f) => f.estado === 'enviada').length}</b><span>Enviaron</span></div><div class="metrica"><b>${prom == null ? '—' : II.fmt(prom, 1)}</b><span>Promedio /100</span></div></div>
+      <div class="tarjeta" style="padding:14px">
+        <div class="controles" style="margin-bottom:8px">
+          <a class="boton chico" href="${CE.pagina}?modo=revision" target="_blank" rel="noopener">Revisar como estudiante (no registra nada) ↗</a>
+          <a class="boton chico" href="${CE.pagina}?modo=revision#banco" target="_blank" rel="noopener">Ver el banco de preguntas ↗</a>
+          <button class="boton chico" data-acc="ce-copiar">Copiar enlace de estudiantes</button>
+        </div>
+        <div class="nota" style="word-break:break-all">${II.esc(urlEstudio())}</div>
+      </div>`;
+  };
+
   const vistaControlCE = () => {
+    if (EX) return vistaControlEX();
     const v = ventanaCE(), ex = extraCE();
     const filas = filasCE();
     const conNota = filas.filter((f) => f.cal);
@@ -541,7 +582,7 @@
         <div class="nota" style="word-break:break-all">${II.esc(urlEstudio())}</div>
       </div>`;
   };
-  const urlEstudio = () => location.href.replace(/[^/]*$/, '') + 'estudio.html';
+  const urlEstudio = () => location.href.replace(/[^/]*$/, '') + (CE.pagina || 'estudio.html');
 
   const vistaReporteCE = () => {
     const filas = filasCE();
@@ -557,16 +598,16 @@
         <button class="boton primario" data-acc="ce-csv">Descargar para Excel (.csv)</button>
         <button class="boton" data-acc="recargar">Actualizar</button>
       </div>
-      <p class="nota" style="margin:0 0 8px">La nota se recalcula aquí con las respuestas guardadas. Ponderada = nota × 0,10 (el control vale el 10 % del módulo).</p>
+      <p class="nota" style="margin:0 0 8px">La nota se recalcula aquí con las respuestas guardadas. Ponderada = nota × ${II.fmt(CE.peso / 100, 2)} (vale el ${CE.peso} % del módulo).</p>
       <div class="tabla-envoltura"><table class="tabla">
-        <tr><th>Nombre</th><th>Nota /100</th><th>Ponderada /10</th><th>Estado</th><th>Módulos</th><th>Estudio</th><th>Inicio</th><th>Duración</th><th>Carnet</th></tr>
-        ${filas.map((f) => `<tr><td>${II.esc(f.a.nombre)}</td><td class="n"><b>${f.nota == null ? '—' : II.fmt(f.nota, 1)}</b></td><td class="n">${f.nota == null ? '—' : II.fmt(f.nota / 10, 2)}</td>
+        <tr><th>Nombre</th><th>Nota /100</th><th>Ponderada /${CE.peso}</th><th>Estado</th>${EX ? '' : '<th>Módulos</th><th>Estudio</th>'}<th>Inicio</th><th>Duración</th><th>Carnet</th></tr>
+        ${filas.map((f) => `<tr><td>${II.esc(f.a.nombre)}</td><td class="n"><b>${f.nota == null ? '—' : II.fmt(f.nota, 1)}</b></td><td class="n">${f.nota == null ? '—' : II.fmt((f.nota * CE.peso) / 100, 2)}</td>
           <td><span class="chip ${chip[f.estado]}" style="white-space:normal">${f.origen}</span></td>
-          <td class="n">${f.mods}/${CE.modulos.length}</td><td class="n">${f.min ? f.min + ' min' : '—'}</td>
+          ${EX ? '' : `<td class="n">${f.mods}/${CE.modulos.length}</td><td class="n">${f.min ? f.min + ' min' : '—'}</td>`}
           <td class="n">${f.inicio ? fechaBO(f.inicio) : '—'}</td><td class="n">${f.dur != null ? II.fmt(f.dur, 1) + ' min' : '—'}</td><td>${II.esc(f.a.carnet)}</td></tr>`).join('') || '<tr><td colspan="9" class="nota">Aún no hay datos.</td></tr>'}
       </table></div>
       ${dif.length ? `<div class="tarjeta" style="margin-top:20px;padding:14px"><h3>Preguntas del banco: de la más difícil a la más fácil</h3>
-        <div class="tabla-envoltura"><table class="tabla"><tr><th>Id</th><th>Módulo</th><th>Pregunta</th><th>Veces</th><th>Acierto</th></tr>
+        <div class="tabla-envoltura"><table class="tabla"><tr><th>Id</th><th>${EX ? "Tema" : "Módulo"}</th><th>Pregunta</th><th>Veces</th><th>Acierto</th></tr>
         ${dif.map((x) => `<tr><td>${x.q.id}</td><td class="n">${x.q.mod}</td><td style="white-space:normal;min-width:220px">${II.esc(textoQ(x.q))}</td><td class="n">${x.n}</td><td class="n"><b style="color:${x.p >= 0.7 ? 'var(--ok)' : x.p >= 0.4 ? 'var(--duda)' : 'var(--mal)'}">${II.fmt(x.p * 100, 0)} %</b></td></tr>`).join('')}</table></div></div>` : ''}
       <div class="tarjeta" style="margin-top:24px;padding:14px">
         <h3>Datos de prueba</h3>
@@ -579,17 +620,26 @@
   const csvCE = () => {
     const n = (x) => (x == null ? '' : String(x).replace('.', ','));
     const q = (s) => '"' + String(s ?? '').replace(/"/g, '""') + '"';
-    const cab = ['Nombre', 'Carnet', 'Área', 'Módulos (/7)', 'Estudio (min)', 'Inicio', 'Duración (min)', 'Estado', 'Nota (/100)', 'Ponderada (/10)',
+    const cab = ['Nombre', 'Carnet', 'Área', ...(EX ? [] : ['Módulos (/7)', 'Estudio (min)']), 'Inicio', 'Duración (min)', 'Estado', 'Nota (/100)', `Ponderada (/${CE.peso})`,
       ...Array.from({ length: CE.nEval }, (_, j) => `P${j + 1}`), 'Preguntas (id)'];
-    const filas = filasCE().map((f) => [q(f.a.nombre), q(f.a.carnet), q(f.a.info.area), f.mods, f.min, q(f.inicio ? fechaBO(f.inicio) : ''), n(f.dur != null ? Math.round(f.dur * 10) / 10 : null),
-      q(f.origen), n(f.nota), n(f.nota == null ? null : Math.round(f.nota * 10) / 100),
+    const filas = filasCE().map((f) => [q(f.a.nombre), q(f.a.carnet), q(f.a.info.area), ...(EX ? [] : [f.mods, f.min]), q(f.inicio ? fechaBO(f.inicio) : ''), n(f.dur != null ? Math.round(f.dur * 10) / 10 : null),
+      q(f.origen), n(f.nota), n(f.nota == null ? null : Math.round(f.nota * CE.peso) / 100),
       ...f.ids.map((_, j) => n(f.cal ? Math.round(f.cal.puntos[j] * 100) / 100 : null)), q(f.ids.join(' '))].join(';'));
     const csv = '\ufeff' + [cab.map(q).join(';'), ...filas].join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
-    a.href = url; a.download = `control-de-estudio-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.href = url; a.download = `${EX ? 'examen-final' : 'control-de-estudio'}-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  // hora del servidor (para que el cierre no dependa del reloj del celular del docente)
+  const ahoraServidor = async () => {
+    try {
+      const { data, error } = await II.sb.rpc('estado_evaluacion', { p_sesion: SES, p_carnet: '-' });
+      if (!error && data && data[0] && data[0].ahora) return Date.parse(data[0].ahora);
+    } catch (e) { /* se usa el reloj local */ }
+    return Date.now();
   };
 
   const iniciarAsincrona = () => {
@@ -609,6 +659,7 @@
       if (okMsg) { const a = II.html(`<div class="aviso ok aviso-flotante">${okMsg}</div>`); document.body.appendChild(a); setTimeout(() => a.remove(), 3500); }
     };
     let borrarCE = false;
+    II.$('#panel').addEventListener('input', (e) => { if (e.target.id === 'ex-min') D.exMin = e.target.value; });
     II.$('#panel').addEventListener('click', async (e) => {
       const b = e.target.closest('button');
       if (!b) return;
@@ -618,7 +669,16 @@
         if (v.cierra && v.cierra < Date.now()) return aviso('La fecha de cierre ya pasó: cámbiala primero.');
         cambiar(b, { abre: new Date().toISOString() }, 'Control de estudio abierto.');
       } else if (acc === 'ce-cerrar') cambiar(b, { cierra: new Date().toISOString() }, 'Control de estudio cerrado.');
-      else if (acc === 'ce-ocultar') cambiar(b, { abre: null }, 'Volvió a «No abierto».');
+      else if (acc === 'ce-ocultar') cambiar(b, EX ? { abre: null, cierra: null } : { abre: null }, 'Volvió a «No abierto».');
+      else if (acc === 'ex-abrir') {
+        const t = await ahoraServidor();
+        cambiar(b, { asincrona: true, examen: true, abre: new Date(t).toISOString(), cierra: null, minutos: null }, 'Examen abierto.');
+      } else if (acc === 'ex-cerrar') {
+        const min = II.num(II.$('#ex-min').value);
+        if (!isFinite(min) || min < 0.5 || min > 120) return aviso('Escribe los minutos (entre 0,5 y 120).');
+        const t = await ahoraServidor();
+        cambiar(b, { cierra: new Date(t + min * 60000).toISOString() }, `Cuenta regresiva de ${II.fmt(min, 1)} min iniciada.`);
+      } else if (acc === 'ex-cancelar') cambiar(b, { cierra: null }, 'Sin hora de cierre.');
       else if (acc === 'ce-guardar-cierre') {
         const val = II.$('#ce-cierra').value;
         const ms = val ? deEntradaBO(val) : NaN;
@@ -653,7 +713,18 @@
     }, 30000);
     cargar();
     suscribir();
-    setInterval(cargar, 15000);
+    setInterval(cargar, EX ? 6000 : 15000);
+    // examen: la cuenta regresiva del panel se actualiza sola y se repinta al llegar a cero
+    if (EX) {
+      let antes = null;
+      setInterval(() => {
+        const v = ventanaCE();
+        const s = v.cierra ? Math.max(0, Math.ceil((v.cierra - Date.now()) / 1000)) : null;
+        ['#cd-ex', '#cd-ex-grande'].forEach((id) => { const e = II.$(id); if (e && s != null) e.textContent = II.formatoReloj(s); });
+        if (antes > 0 && s === 0 && D.pestana === 'control') pintar();
+        antes = s;
+      }, 500);
+    }
     // si no existe la fila (falta aplicar el SQL), se avisa en la vista de control
     II.sb.from('estado_sesion').select('*').eq('sesion', SES).maybeSingle().then(({ data }) => { if (!data) { D.fila = null; pintar(); } });
   };
