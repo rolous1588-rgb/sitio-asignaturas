@@ -36,7 +36,7 @@ Carpeta `instrumentacion/`. Clase virtual síncrona por Zoom: el docente compart
 | `js/escenas5.js` | `II.escenas`: `techo`, `toma`, `posicion`, `trazado`, `termopozo` (recto/codo), `vapor`, `magnetico`, `cableado`. Cada una devuelve `{ titulo, svg, zonas: { A: { t, ok, por } } }` |
 | `js/control-estudio.js` | `II.CONTROL`: fuentes (manuales de fabricantes), 7 módulos, banco de 43 preguntas (2 por módulo + 1 extra = 15 por carnet), `seleccion(carnet)`, `calificar(ids, resp, carnet)`. Registra `II.SESIONES['ii-ce']` con `asincrona: true` y `etiqueta` |
 | `supabase/estructura.sql` | Esquema de la base de datos (ya ejecutado en Supabase) |
-| `supabase/control-estudio.sql` | Cambios para sesiones asíncronas y evaluaciones de un intento (ventana abre/cierra, un `eval-inicio` y un `eval` por carnet, tiempo límite +2 min, `creado` del servidor, RPC `estado_evaluacion`, fila `ii-ce`) |
+| `supabase/control-estudio.sql` | (Ya ejecutado el 07/10) Cambios para sesiones asíncronas y evaluaciones de un intento (ventana abre/cierra, un `eval-inicio` y un `eval` por carnet, tiempo límite +2 min, `creado` del servidor, RPC `estado_evaluacion`, fila `ii-ce`) |
 
 ### Dinámica de clase (acordada con el docente)
 Ciclo por concepto (~35 min): **explica → explora → reto → revisa**.
@@ -108,7 +108,7 @@ Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10): P&ID con ISA 5.1 + caso integrado con fallas del lazo + evaluación final. Falta que el docente defina el formato de la evaluación.
-- Control de estudio: aplicar `supabase/control-estudio.sql` (la migración quedó cancelada dos veces; el docente puede pegarla en el SQL Editor). Luego el docente lo revisa con «Revisar como estudiante», borra datos de prueba, toca «Abrir ahora» y se agrega la tarjeta en `instrumentacion/index.html`. Cierra el jueves 08/10 a las 23:59.
+- Control de estudio: `supabase/control-estudio.sql` ya aplicado (07/10, pegado por el docente en el SQL Editor; la herramienta de migraciones queda cancelada desde aquí). Falta que el docente lo revise con «Revisar como estudiante», borra datos de prueba, toca «Abrir ahora» y se agrega la tarjeta en `instrumentacion/index.html`. Cierra el jueves 08/10 a las 23:59.
 - Examen final (40 %): 20 preguntas, un intento, botón del docente para cerrar con cuenta regresiva escrita por teclado; al enviar, nota y soluciones. Reutilizar `evaluacion.js`.
 - Viernes: tabla completa de participación (por sesión, por persona, cada reto y rápida, total /100, promedio y ponderado a 25).
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
