@@ -30,6 +30,9 @@ Carpeta `instrumentacion/`. Clase virtual síncrona por Zoom: el docente compart
 | `js/sesion3.js` | Sesión 3 (nivel, flujo y 4–20 mA, 3 h): 30 pasos en 3 ciclos con 9 preguntas rápidas (1 pt c/u), 3 retos de 10 pts + integrador de 20; guion extenso |
 | `js/diagramas4.js` | `II.diagramas.errores` (curva de error con cero, span, no linealidad e histéresis + tolerancia; repetibilidad con 10 lecturas y deriva con intervalo de calibración) y `.calibracion` (banco: bomba, patrón, PT-104 y multímetro con 9 puntos "como se encontró/como se dejó" y ajustes de cero/span; HART con onda FSK, trim de sensor, trim de salida y re-rango; pirámide de trazabilidad SI → IBMETRO → laboratorio 17025 → patrón de trabajo → planta + regla 4:1). Atajos: `erroresRepet`, `calibracionHart`, `calibracionTraza` |
 | `js/sesion4.js` | "Sesión 4, día 5" (calibración, errores y trazabilidad, 2 h sin pausa): 22 pasos, 6 preguntas rápidas, 2 retos de 10 pts + integrador de 20 (certificado del PT-104); guion extenso |
+| `js/diagramas5.js` | `II.diagramas.pid`: P&ID del TK-100 con ISA 5.1 (LT/LIC/LY/LV-101, FT/FI-102, TE/TT/TIC-103, PT/PI-104); tocar un instrumento muestra letras, ubicación (campo / tablero / DCS) y señal, y resalta su lazo. Pestañas Instrumento / Letras / Símbolos; atajos `pidLetras`, `pidSimbolos` |
+| `js/sesion5.js` | "Sesión 5, día 6" (P&ID y fallas del lazo, ~55 min): 13 pasos, 4 rápidas, reto "Detective del lazo" (10 pts: valor esperado, causa de la falla, TAG, símbolo); el cierre lleva al examen |
+| `examen.html` + `js/examen-banco.js` | **Examen final** (`ii-s6`, 40 %): 55 preguntas en 10 temas, 2 por tema y carnet = 20; usa `estudio.js` con `<body data-eval="ii-s6">`. Sin reloj fijo: el docente abre (`extra.asincrona/abre`) y cierra con una cuenta regresiva escrita por teclado (`extra.cierra`); al enviar se ven nota y soluciones |
 | `css/ii.css` | Estilos (usa container queries para que los diagramas se adapten) |
 | `estudio.html` + `js/estudio.js` | **Control de estudio** (sesión asíncrona `ii-ce`): portada con 7 módulos → módulo (vistas, reglas con fuente, errores típicos, caso, 2 de práctica, «Marcar como estudiado») → evaluación. Rutas por `#`: `#m1`…`#m7`, `#eval`, `#banco` (solo revisión). `?modo=revision` = vista docente sin registro (exige sesión docente en ese navegador) |
 | `js/evaluacion.js` | `II.preguntas`: motor de preguntas `opcion`, `num`, `zona` (tocar el lugar en una escena), `errores` (marcar todos, puntaje parcial), `orden` (puntaje parcial). `instancia(q, carnet)`, `calificar`, `render(cont, inst, resp, opts)`, `explicarEscena`. Se reutilizará en el examen final |
@@ -108,9 +111,9 @@ Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular
 
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
-- "Sesión 5, día 6" (miércoles 07/10): P&ID con ISA 5.1 + caso integrado con fallas del lazo + evaluación final. Falta que el docente defina el formato de la evaluación.
+- "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
 - Control de estudio: `supabase/control-estudio.sql` ya aplicado (07/10, pegado por el docente en el SQL Editor; la herramienta de migraciones queda cancelada desde aquí). Falta que el docente lo revise con «Revisar como estudiante», borra datos de prueba, toca «Abrir ahora» y se agrega la tarjeta en `instrumentacion/index.html`. Cierra el jueves 08/10 a las 23:59.
-- Examen final (40 %): 20 preguntas, un intento, botón del docente para cerrar con cuenta regresiva escrita por teclado; al enviar, nota y soluciones. Reutilizar `evaluacion.js`.
+- Examen final (40 %): publicado en `examen.html` (sesión `ii-s6`). Después del examen: Reporte → Descargar para Excel.
 - Viernes: tabla completa de participación (por sesión, por persona, cada reto y rápida, total /100, promedio y ponderado a 25).
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
 - Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html`, probar con un celular y luego **⋮ → Borrar datos de esta clase**. Al terminar, dejar el paso en `cierre`.
