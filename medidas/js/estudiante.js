@@ -68,15 +68,18 @@
       ev.preventDefault();
       const fd = new FormData(ev.target);
       alumno = { nombre: String(fd.get('nombre')).trim(), carnet: String(fd.get('carnet')).trim().replace(/\s+/g, ''), info: { carrera: fd.get('carrera') } };
-      II.guardar(K_AL, alumno);
       resp = II.leer(kResp(), {});
       ev.target.querySelector('button').disabled = true;
       await II.registrarIngreso(SID, alumno);
+      alumno.dia = hoy();
+      II.guardar(K_AL, alumno);
       arrancar();
     };
   }
 
   // ---------------- piezas ----------------
+  const formulas = (lista, titulo = 'Fórmulas útiles') =>
+    `<div class="formulas-est"><span class="etq">${II.esc(titulo)}</span>${lista.map((x) => (/:$/.test(x) ? `<div class="nota">${II.esc(x)}</div>` : `<div>${II.esc(x)}</div>`)).join('')}</div>`;
   const tarjeta = (html) => `<div class="tarjeta">${html}</div>`;
   const mira = (t = 'Mira la pantalla') => `<p class="mira"><span class="icono">📺</span>${t}</p>`;
 
@@ -99,6 +102,13 @@
   // ---------------- vistas por tipo ----------------
   function vInicio(p) {
     $('#cont').innerHTML = navLibre() + tarjeta(`<span class="etq">Conectado</span><h2>¡Listo, ${II.esc(alumno.nombre.split(' ')[0])}!</h2>${LIBRE ? '<p>Recorre la clase a tu ritmo. Nada se registra.</p>' : mira('Mira la pantalla: la clase empieza pronto.')}`);
+  }
+
+  function vTeoria(p) {
+    $('#cont').innerHTML = navLibre() + tarjeta(`<span class="etq">Teoría</span><h2>${II.esc(p.titulo)}</h2>
+      ${p.idea ? `<p class="idea-est">${II.esc(p.idea)}</p>` : ''}
+      <ul class="puntos-est">${(p.puntos || []).map((x) => `<li>${x}</li>`).join('')}</ul>
+      ${formulas(p.formulas || [], p.derecha || 'Fórmulas')}${LIBRE ? '' : mira()}`);
   }
 
   function vExplica(p) {
@@ -193,7 +203,7 @@
     const borr = II.leer('me-borr-' + SID + '-' + p.id + '-' + alumno.carnet, null);
     const campos = ej.tipo === 'numerico'
       ? `<div class="campos-num">${ej.campos.map((c) => `<label class="campo"><span>${c.etiqueta}${c.unidad ? ' (' + c.unidad + ')' : ''}</span><input data-c="${c.id}" inputmode="decimal" autocomplete="off" placeholder="${c.ph || ''}" value="${II.esc((borr && borr[c.id]) || '')}"></label>`).join('')}</div>` : '';
-    $('#cont').innerHTML = navLibre() + tarjeta(cab + `<p>${ej.enunciado(d)}</p><div id="zona-dg"></div>${campos}
+    $('#cont').innerHTML = navLibre() + tarjeta(cab + `<p>${ej.enunciado(d)}</p>${ej.formulas ? formulas(ej.formulas) : ''}<div id="zona-dg"></div>${campos}
       <button class="boton prim bloque" id="b-enviar" style="margin-top:12px">Enviar mi respuesta</button>`);
     const o = ej.opciones(d);
     const dg = montarDiagrama($('#zona-dg'), ej.diagrama, { ...o, inicial: { ...(o.inicial || {}), ...(ej.tipo !== 'numerico' && borr ? borr : {}) } });
@@ -281,6 +291,7 @@
       if (diag) { diag.destruir(); diag = null; }
       if (p.tipo === 'inicio') vInicio(p);
       else if (p.tipo === 'explica') vExplica(p);
+      else if (p.tipo === 'teoria') vTeoria(p);
       else if (p.tipo === 'rapida') vRapida(p);
       else if (p.tipo === 'ejercicio') vEjercicio(p);
       else vCierre(p);
@@ -290,8 +301,18 @@
     barra();
   }
 
+  // asistencia: si vuelve otro día con el mismo celular, se registra de nuevo
+  const hoy = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  function marcarAsistencia() {
+    if (LIBRE || !II.sb || !alumno || alumno.dia === hoy()) return;
+    alumno.dia = hoy();
+    II.guardar(K_AL, alumno);
+    II.registrarIngreso(SID, alumno);
+  }
+
   function arrancar() {
     resp = II.leer(kResp(), {});
+    marcarAsistencia();
     barra();
     if (LIBRE) { libreIdx = Math.min(S.pasos.length - 1, II.leer('me-libre-idx', 0) || 0); render(true); return; }
     $('#cont').innerHTML = tarjeta('<p>Conectando con la clase…</p>');

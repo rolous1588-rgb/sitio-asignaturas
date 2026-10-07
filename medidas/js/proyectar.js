@@ -1,6 +1,6 @@
 // ============================================================
 // Proyección + control (el celular del docente, en horizontal, espejado a la TV)
-// Sin sesión de docente funciona en "modo ensayo" (solo local).
+// Uso oficial: al abrir pide la cuenta docente y retoma el paso en que quedó la clase.
 // estado_sesion.extra = { abierto: id, fin, seg } | { cerrado: id } | {}
 // ============================================================
 (function () {
@@ -37,6 +37,9 @@
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   };
   const LETRAS = ['A', 'B', 'C', 'D', 'E'];
+  const puntosDe = (p) => (p.tipo === 'rapida' ? 1 : FP.EJERCICIOS[p.ejercicio].puntos);
+  const nombreAct = (p) => (p.tipo === 'rapida' ? 'Predicción ' + p.id.slice(1) : FP.EJERCICIOS[p.ejercicio].titulo);
+  const hoy = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); };
 
   // ---------------- encabezado y pie ----------------
   function cabecera() {
@@ -50,6 +53,7 @@
         : 'Cada uno trabaja en su celular con sus propios datos';
     }
     if (p.tipo === 'rapida') idea = 'Responde en tu celular · 1 punto';
+    if (p.tipo === 'teoria' && !idea) idea = 'Teoría';
     $('#t-titulo').textContent = titulo;
     $('#t-idea').textContent = idea;
     $('#t-num').textContent = idx + 1 + '/' + S.pasos.length;
@@ -78,8 +82,7 @@
         ext.textContent = vista === 'intento' ? 'Otro intento' : 'Intento';
       }
     }
-    $('#t-modo').textContent = docente ? 'Docente · en vivo' : 'Modo ensayo · toca para entrar';
-    $('#t-modo').classList.toggle('enlace', !docente);
+
   }
 
   // ---------------- escenas ----------------
@@ -115,6 +118,17 @@
   function escExplica() {
     const p = paso();
     montarDiagrama(p.diagrama, { inicial: p.inicial, params: p.params });
+  }
+
+  function cajaFormulas(lista, titulo, texto) {
+    return `<div class="formulas-tv${texto ? ' texto' : ''}">${titulo ? `<span class="etq">${II.esc(titulo)}</span>` : ''}${lista.map((x) => (/:$/.test(x) ? `<div class="nota">${II.esc(x)}</div>` : `<div>${II.esc(x)}</div>`)).join('')}</div>`;
+  }
+
+  function escTeoria() {
+    const p = paso();
+    $('#cuerpo').innerHTML = `<div class="esc teoria">
+      <div class="panel"><ul class="puntos-tv">${(p.puntos || []).map((x) => `<li>${x}</li>`).join('')}</ul></div>
+      <div class="panel">${cajaFormulas(p.formulas || [], p.derecha || 'Fórmulas', p.derechaTexto)}</div></div>`;
   }
 
   function panelEstado(p) {
@@ -154,7 +168,7 @@
         <div class="panel"><span class="etq">Ejercicio · ${ej.puntos} puntos</span>
           <p class="grande">${II.esc(ej.titulo)}</p>
           <p class="medio">${ej.tv}</p>
-          <p class="chico">Tus datos son distintos a los de tu compañero: están en tu celular.</p></div>
+          ${ej.formulas ? cajaFormulas(ej.formulas.slice(0, 3)) : ''}</div>
         ${panelEstado(p)}</div>`;
       return;
     }
@@ -263,16 +277,18 @@
     const gente = new Set(todas.filter((r) => r.actividad !== 'ingreso').map((r) => r.carnet));
     let sumaPts = 0;
     gente.forEach((c) => { acts.forEach((p) => { const r = por[p.id] && por[p.id][c]; if (r) sumaPts += Number(r.puntaje) || 0; }); });
-    const maxPts = acts.reduce((a, p) => a + (p.tipo === 'rapida' ? 1 : FP.EJERCICIOS[p.ejercicio].puntos), 0);
-    const filas = acts.map((p) => {
-      const rs = Object.values(por[p.id] || {});
+    const maxPts = acts.filter((p) => por[p.id]).reduce((a, p) => a + puntosDe(p), 0);
+    const fila = (nombre, rs) => {
       const ok = rs.filter((r) => r.correcta).length;
       const pct = rs.length ? Math.round((ok / rs.length) * 100) : 0;
-      const nombre = p.tipo === 'rapida' ? 'Predicción ' + p.id.slice(1) : FP.EJERCICIOS[p.ejercicio].titulo;
-      return `<div class="opcion-tv"><span class="barra" style="width:${pct}%;background:var(--ok-claro)"></span><span class="txt" style="font-size:calc(var(--u)*3.8)">${II.esc(nombre)}</span><span class="n" style="font-size:calc(var(--u)*3.8)">${rs.length ? pct + '%' : '—'}</span></div>`;
-    }).join('');
+      return `<div class="opcion-tv"><span class="barra" style="width:${pct}%;background:var(--ok-claro)"></span><span class="txt">${II.esc(nombre)}</span><span class="n">${pct}%</span></div>`;
+    };
+    const hechas = acts.filter((p) => por[p.id]);
+    const rapidas = hechas.filter((p) => p.tipo === 'rapida').flatMap((p) => Object.values(por[p.id]));
+    const filas = hechas.filter((p) => p.tipo === 'ejercicio').map((p) => fila(nombreAct(p), Object.values(por[p.id]))).join('') +
+      (rapidas.length ? fila('Predicciones (' + hechas.filter((p) => p.tipo === 'rapida').length + ')', rapidas) : '');
     $('#cuerpo').innerHTML = `<div class="esc">
-      <div class="panel" style="gap:calc(var(--u)*1)"><span class="etq">Aciertos por actividad</span><div class="opciones-tv una" style="gap:calc(var(--u)*.8);overflow:hidden">${filas}</div></div>
+      <div class="panel" style="gap:calc(var(--u)*1)"><span class="etq">Aciertos por actividad</span><div class="opciones-tv una cierre-lista">${filas || '<p class="chico">Aún no hay respuestas.</p>'}</div></div>
       <div class="panel"><div class="metricas">
         <div class="metrica"><span>Participaron</span><b>${gente.size}</b></div>
         <div class="metrica ok"><span>Promedio</span><b>${gente.size ? II.fmt(sumaPts / gente.size, 1) : '—'}</b></div>
@@ -287,6 +303,7 @@
     pie();
     if (p.tipo === 'inicio') escInicio();
     else if (p.tipo === 'explica') escExplica();
+    else if (p.tipo === 'teoria') escTeoria();
     else if (p.tipo === 'rapida') escRapida();
     else if (p.tipo === 'ejercicio') escEjercicio();
     else if (p.tipo === 'cierre') { escCierre(); cargarTodas().then(() => { if (paso().tipo === 'cierre') escCierre(); }); }
@@ -343,6 +360,7 @@
   }
 
   async function irA(nuevo) {
+    if (!docente) return pedirIngreso();
     if (nuevo < 0 || nuevo >= S.pasos.length || nuevo === idx) return;
     idx = nuevo;
     extra = {};
@@ -360,6 +378,7 @@
   }
 
   function accion() {
+    if (!docente) return pedirIngreso();
     const p = paso();
     const fz = fase(p);
     if (fz === 'preparado') return cambiarExtra({ abierto: p.id });
@@ -411,7 +430,7 @@
   async function contarGente() {
     if (!docente) return;
     try {
-      const { data, error } = await II.sb.from('ingresos').select('carnet').eq('sesion', SID);
+      const { data, error } = await II.sb.from('ingresos').select('carnet').eq('sesion', SID).gte('creado', hoy());
       if (error) throw error;
       conectados = new Set((data || []).map((r) => r.carnet)).size;
     } catch (e) { /* sin red */ }
@@ -423,36 +442,48 @@
     todas = data || [];
   }
 
-  // ---------------- docente: ingreso ----------------
-  function dialogoLogin() {
-    if (!II.sb) { aviso('Sin conexión con la base de datos: solo modo ensayo.'); return; }
-    const capa = II.html(`<div class="capa"><form class="dialogo">
-      <h2>Entrar como docente</h2><p>La misma cuenta del panel del diplomado.</p>
+  // ---------------- docente: ingreso obligatorio ----------------
+  let capaIngreso = null;
+  function pedirIngreso(msg) {
+    if (capaIngreso) return;
+    capaIngreso = II.html(`<div class="capa ingreso"><form class="dialogo">
+      <span class="etq">${II.esc(S.materia)}</span>
+      <h2>${II.esc(S.titulo)}</h2>
+      <p>Entra con tu cuenta docente (la misma del diplomado). Hazlo <b>antes de proyectar</b>: el celular la recuerda para las próximas clases.</p>
       <input name="email" type="email" placeholder="Correo" autocomplete="username" required>
       <input name="clave" type="password" placeholder="Contraseña" autocomplete="current-password" required>
-      <div class="error"></div>
-      <div class="fila-bt"><button type="button" class="boton" data-x>Cancelar</button><button class="boton prim">Entrar</button></div>
+      <div class="error">${II.esc(msg || '')}</div>
+      <div class="fila-bt"><button class="boton prim">Entrar a la clase</button></div>
     </form></div>`);
-    document.body.appendChild(capa);
-    capa.querySelector('[data-x]').onclick = () => capa.remove();
-    capa.querySelector('form').onsubmit = async (ev) => {
+    document.body.appendChild(capaIngreso);
+    capaIngreso.querySelector('form').onsubmit = async (ev) => {
       ev.preventDefault();
+      const err = capaIngreso.querySelector('.error');
+      if (!II.sb) { err.textContent = 'Sin conexión con la base de datos. Revisa internet y recarga la página.'; return; }
       const fd = new FormData(ev.target);
-      const err = capa.querySelector('.error');
       err.textContent = 'Entrando…';
       const { error } = await II.sb.auth.signInWithPassword({ email: String(fd.get('email')).trim(), password: String(fd.get('clave')) });
-      if (error) { err.textContent = 'No se pudo entrar: revisa correo y contraseña.'; return; }
-      const ok = await verificarDocente();
-      if (!ok) { err.textContent = 'Esta cuenta no tiene permiso de docente.'; return; }
-      capa.remove();
-      // la clase sigue el paso que está en pantalla
-      const r = await II.fijarPaso(SID, paso().id, {});
-      extra = {};
-      if (!r.ok) aviso(r.error);
-      montar();
-      sondear();
-      contarGente();
+      if (error) { err.textContent = /fetch|network/i.test(error.message || '') ? 'Sin internet. Revisa la conexión.' : 'No se pudo entrar: revisa correo y contraseña.'; return; }
+      if (!(await verificarDocente())) { err.textContent = 'Esta cuenta no tiene permiso de docente.'; await II.sb.auth.signOut(); return; }
+      capaIngreso.remove();
+      capaIngreso = null;
+      retomar();
     };
+  }
+
+  // la pantalla vuelve al paso en que está la clase (no la reinicia)
+  async function retomar() {
+    try {
+      const { data: fila } = await II.sb.from('estado_sesion').select('*').eq('sesion', SID).maybeSingle();
+      if (fila) {
+        const i = S.pasos.findIndex((p) => p.id === fila.paso);
+        if (i >= 0) idx = i;
+        extra = fila.extra || {};
+      }
+    } catch (e) { /* sin red: sigue con lo local */ }
+    montar();
+    sondear();
+    contarGente();
   }
 
   async function verificarDocente() {
@@ -462,6 +493,99 @@
     } catch (e) { docente = false; }
     pie();
     return docente;
+  }
+
+  // ---------------- menú ⋮ ----------------
+  function menu() {
+    const it = (k, t, sub) => `<button class="menu-it" data-m="${k}">${t}${sub ? `<small>${sub}</small>` : ''}</button>`;
+    const capa = II.html(`<div class="capa"><div class="dialogo">
+      <h2>${II.esc(S.titulo)}</h2>
+      ${it('pasos', 'Ir a un paso…', 'Lista de todas las pantallas de la clase')}
+      ${it('notas', 'Descargar notas (Excel)', 'Puntaje por estudiante, asistencia y nota sobre 100')}
+      ${it('salir', 'Salir de la cuenta docente', '')}
+      <div class="fila-bt"><button class="boton" data-x>Cerrar</button></div></div></div>`);
+    document.body.appendChild(capa);
+    capa.onclick = async (e) => {
+      if (e.target === capa || e.target.closest('[data-x]')) return capa.remove();
+      const bt = e.target.closest('[data-m]');
+      if (!bt) return;
+      capa.remove();
+      const m = bt.dataset.m;
+      if (m === 'pasos') listaPasos();
+      else if (m === 'notas') descargarNotas();
+      else if (m === 'salir') { await II.sb.auth.signOut(); docente = false; pedirIngreso(); }
+    };
+  }
+
+  const TIPO = { inicio: 'Inicio', explica: 'Diagrama', teoria: 'Teoría', rapida: 'Predicción', ejercicio: 'Ejercicio', cierre: 'Cierre' };
+  function listaPasos() {
+    const filas = S.pasos.map((p, i) => {
+      const t = p.tipo === 'ejercicio' ? FP.EJERCICIOS[p.ejercicio].titulo : p.tipo === 'rapida' ? p.t : p.titulo;
+      return `<button class="paso-it ${i === idx ? 'actual' : ''} t-${p.tipo}" data-i="${i}"><span class="n">${i + 1}</span><span class="tp">${TIPO[p.tipo] || ''}</span><span class="tt">${II.esc(t)}</span></button>`;
+    }).join('');
+    const capa = II.html(`<div class="capa"><div class="dialogo ancho"><h2>Ir a un paso</h2><div class="lista-pasos">${filas}</div>
+      <div class="fila-bt"><button class="boton" data-x>Cerrar</button></div></div></div>`);
+    document.body.appendChild(capa);
+    const act = capa.querySelector('.actual');
+    if (act) act.scrollIntoView({ block: 'center' });
+    capa.onclick = (e) => {
+      if (e.target === capa || e.target.closest('[data-x]')) return capa.remove();
+      const bt = e.target.closest('[data-i]');
+      if (!bt) return;
+      capa.remove();
+      irA(Number(bt.dataset.i));
+    };
+  }
+
+  // ---------------- notas (CSV que abre Excel) ----------------
+  async function descargarNotas() {
+    if (!docente) return pedirIngreso();
+    aviso('Preparando las notas…');
+    try {
+      const [r1, r2] = await Promise.all([
+        II.sb.from('ingresos').select('carnet,nombre,info,creado').eq('sesion', SID).order('creado', { ascending: true }),
+        II.sb.from('respuestas').select('actividad,carnet,nombre,puntaje,creado').eq('sesion', SID).order('creado', { ascending: true })
+      ]);
+      if (r1.error || r2.error) throw r1.error || r2.error;
+      const acts = S.pasos.filter(actDe);
+      const gente = {};
+      const persona = (c, n) => (gente[c] = gente[c] || { nombre: n, carrera: '', dias: new Set(), pts: {} });
+      const dia = (iso) => { const d = new Date(iso); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); };
+      (r1.data || []).forEach((r) => {
+        const g = persona(r.carnet, r.nombre);
+        g.nombre = r.nombre;
+        if (r.info && r.info.carrera) g.carrera = r.info.carrera;
+        g.dias.add(dia(r.creado));
+      });
+      const hechas = new Set();
+      (r2.data || []).forEach((r) => {
+        if (r.actividad === 'ingreso') return;
+        const g = persona(r.carnet, r.nombre);
+        g.pts[r.actividad] = Number(r.puntaje) || 0; // la última respuesta vale
+        g.dias.add(dia(r.creado));
+        hechas.add(r.actividad);
+      });
+      const usadas = acts.filter((p) => hechas.has(p.id));
+      const maxPts = usadas.reduce((a, p) => a + puntosDe(p), 0);
+      const num = (x) => String(Math.round(x * 10) / 10).replace('.', ',');
+      const cel = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+      const cab = ['Carnet', 'Nombre', 'Carrera', 'Asistencia'].concat(usadas.map((p) => nombreAct(p) + ' (' + puntosDe(p) + ')'), ['Total', 'Máximo', 'Nota /100']);
+      const filas = [cab.map(cel).join(';')];
+      Object.entries(gente).sort((a, b) => a[1].nombre.localeCompare(b[1].nombre, 'es')).forEach(([c, g]) => {
+        const pts = usadas.map((p) => g.pts[p.id]);
+        const tot = pts.reduce((a, x) => a + (x || 0), 0);
+        filas.push([cel(c), cel(g.nombre), cel(g.carrera), cel(Array.from(g.dias).join(', '))]
+          .concat(pts.map((x) => (x == null ? '0' : num(x))), [num(tot), maxPts, maxPts ? num((tot / maxPts) * 100) : '0']).join(';'));
+      });
+      const blob = new Blob(['﻿' + filas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'notas-medidas-factor-potencia-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      aviso('Notas descargadas: ' + Object.keys(gente).length + ' estudiantes.');
+    } catch (e) { aviso('No se pudieron descargar las notas. Revisa la conexión.'); }
   }
 
   // ---------------- pantalla completa y QR ----------------
@@ -495,7 +619,8 @@
     $('#b-extra').onclick = accionExtra;
     $('#b-pant').onclick = pantallaCompleta;
     $('#b-qr').onclick = verQR;
-    $('#t-modo').onclick = () => { if (!docente) dialogoLogin(); };
+    $('#b-menu').onclick = () => (docente ? menu() : pedirIngreso());
+    $('#t-num').onclick = () => (docente ? listaPasos() : pedirIngreso());
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === 'PageDown') irA(idx + 1);
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') irA(idx - 1);
@@ -503,21 +628,12 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) pedirPantallaEncendida(); });
     II.alCambiarConexion((ok) => { const d = $('#t-con'); d.classList.toggle('on', ok); d.classList.toggle('off', !ok); });
     montar();
-    if (!II.sb) return;
+    if (!II.sb) return pedirIngreso('Sin conexión con la base de datos. Revisa internet y recarga la página.');
     II.sb.auth.getSession().then(async ({ data }) => {
-      if (!(data && data.session)) return;
-      if (!(await verificarDocente())) return;
-      // retoma la clase donde está
-      const { data: fila } = await II.sb.from('estado_sesion').select('*').eq('sesion', SID).maybeSingle();
-      if (fila) {
-        const i = S.pasos.findIndex((p) => p.id === fila.paso);
-        if (i >= 0) idx = i;
-        extra = fila.extra || {};
-      }
-      montar();
-      sondear();
-      contarGente();
-    });
+      if (!(data && data.session)) return pedirIngreso();
+      if (!(await verificarDocente())) return pedirIngreso('Esta cuenta no tiene permiso de docente.');
+      retomar();
+    }).catch(() => pedirIngreso('Sin internet. Revisa la conexión.'));
     II.seguirEstado(SID, (fila) => {
       if (!docente || Date.now() - ultimoLocal < 3000) return;
       const i = S.pasos.findIndex((p) => p.id === fila.paso);

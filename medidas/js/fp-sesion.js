@@ -1,6 +1,6 @@
 // ============================================================
 // Medidas Eléctricas · Sesión "Factor de potencia y su corrección"
-// Pasos: inicio · explica · rapida (predicción) · ejercicio · cierre
+// Pasos: inicio · explica · teoria · rapida (predicción) · ejercicio · cierre
 // Ejercicios con datos propios por carnet: II.rng(carnet + '|' + id)
 // ============================================================
 (function () {
@@ -20,7 +20,8 @@
   E.e1 = {
     diagrama: 'triangulo', puntos: 10,
     titulo: 'Construye el triángulo de tu carga',
-    tv: 'Cada uno tiene su propia carga (S y FP en su celular). <b>Construye su triángulo moviendo P y Q.</b> Los valores de S y FP están tapados: hay que calcular.',
+    tv: 'Cada uno tiene su carga (S y FP). <b>Calcula P y Q y construye el triángulo.</b>',
+    formulas: ['P = S · FP', 'Q = S · sen φ = √(S² − P²)', 'φ = arccos(FP)'],
     generar: (r) => {
       const S = elegir(r, [20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80]);
       const fp = elegir(r, [0.6, 0.65, 0.7, 0.75, 0.8, 0.85]);
@@ -45,7 +46,8 @@
   E.e2 = {
     diagrama: 'linea', puntos: 10,
     titulo: 'FP mínimo para tu cable',
-    tv: 'Cada taller tiene su potencia y su cable (datos en el celular). <b>Calcula el FP mínimo para no pasar la corriente del cable</b> y ajústalo. La corriente está tapada.',
+    tv: 'Cada taller tiene su P y su cable. <b>Calcula el FP mínimo para no pasar la corriente del cable.</b>',
+    formulas: ['I = P / (√3 · VL · FP)', 'FP = P / (√3 · VL · Imáx)', 'VL = 380 V'],
     generar: (r) => {
       const P = elegir(r, rango(30, 60, 2.5));
       const fpObj = 0.72 + 0.01 * Math.floor(r() * 19);
@@ -75,7 +77,8 @@
   E.e3 = {
     diagrama: 'vatimetros', puntos: 10,
     titulo: 'FP con dos vatímetros',
-    tv: 'Cada uno tiene sus lecturas W1 y W2. <b>Calcula el FP de la carga y ajústalo.</b><br><span class="formula">tan φ = √3 · (W2 − W1) / (W1 + W2)</span>',
+    tv: 'Cada uno tiene sus lecturas W1 y W2. <b>Calcula el FP de la carga y ajústalo.</b>',
+    formulas: ['tan φ = √3·(W2 − W1)/(W1 + W2)', 'φ = arctan(…)', 'FP = cos φ'],
     generar: (r) => {
       const IL = elegir(r, [10, 12, 15, 18, 20, 25]);
       const fpT = 0.55 + 0.01 * Math.floor(r() * 41);
@@ -106,7 +109,8 @@
   E.e4 = {
     diagrama: 'corrector', puntos: 10,
     titulo: 'Corrige tu planta a 0,95',
-    tv: 'Cada planta es distinta. <b>Conecta los pasos justos del banco para llegar a FP ≥ 0,95</b>, con la menor cantidad posible. El FP final está tapado.<br><span class="formula">Qc = P · (tan φ₁ − tan φ₂)</span>',
+    tv: 'Cada planta es distinta. <b>Conecta los pasos justos para llegar a FP ≥ 0,95</b> (los menos posibles).',
+    formulas: ['Qc = P · (tan φ₁ − tan φ₂)', 'tan φ = √(1 − FP²) / FP', 'tan φ₂ (FP 0,95) = 0,329', 'pasos = Qc / q → redondear hacia arriba'],
     generar: (r) => {
       const P = elegir(r, rango(40, 120, 5));
       const fp1 = 0.68 + 0.01 * Math.floor(r() * 15);
@@ -143,7 +147,8 @@
   E.e5 = {
     diagrama: 'factura', puntos: 10, tipo: 'numerico',
     titulo: 'Lee tu factura',
-    tv: 'Cada uno recibió la factura de un taller. <b>Calcula el FP del mes y el recargo en Bs.</b><br><span class="formula">FP = kWh / √(kWh² + kVARh²)<br>Recargo = cargo × (0,85 / FP − 1)</span>',
+    tv: 'Cada uno recibió la factura de un taller. <b>Calcula el FP del mes y el recargo en Bs.</b>',
+    formulas: ['FP = kWh / √(kWh² + kVARh²)', 'Recargo = cargo × (0,85/FP − 1)', 'Si FP ≥ 0,85 → recargo = 0'],
     generar: (r) => {
       const kwh = Math.round((6000 + r() * 12000) / 10) * 10;
       const fpT = 0.62 + 0.01 * Math.floor(r() * 21);
@@ -208,29 +213,61 @@
         guia: ['60 kW con FP 0,7 → 114 %. Sube a 0,95 → 84 %.', 'Antes de comprar un trafo más grande, corregir.'] },
       { id: 'e2', tipo: 'ejercicio', ejercicio: 'e2' },
 
-      { id: 'vatimetros', tipo: 'explica', titulo: 'Medir el FP: dos vatímetros', diagrama: 'vatimetros', inicial: { fp: 0.8 },
-        idea: 'P = W1 + W2   ·   tan φ = √3 · (W2 − W1) / (W1 + W2)',
-        guia: ['FP 1: ambos iguales. FP 0,5: W1 = 0. Menor a 0,5: W1 negativo (invertir la bobina de tensión).'] },
+      // ---------- desde aquí: clase del miércoles 07/10 ----------
+      { id: 'repaso2', tipo: 'teoria', titulo: 'Repaso: lo que ya sabemos', idea: 'El FP dice qué parte de la corriente hace trabajo útil.',
+        puntos: ['FP = P / S: qué fracción de la potencia aparente se convierte en trabajo.', 'Con la misma P, un FP bajo exige <b>más corriente</b>.', 'Más corriente → más pérdidas (I²R), más caída de tensión y trafo más cargado.'],
+        formulas: ['S² = P² + Q²', 'FP = P / S = cos φ', 'Q = P · tan φ', 'I = P / (√3 · VL · FP)'] },
+
+      { id: 't-blondel', tipo: 'teoria', titulo: '¿Cómo se mide la potencia trifásica?', idea: 'Teorema de Blondel: con n conductores bastan n − 1 vatímetros.',
+        puntos: ['3 hilos → <b>2 vatímetros</b> (conexión Aron).', 'Bobina de corriente en serie con su línea; bobina de tensión entre su línea y la <b>línea común</b> (L2).', 'La suma da la potencia total, con carga equilibrada o no. Cada lectura sola no significa nada.', 'Con neutro (4 hilos) se necesitan 3.'],
+        formulas: ['P = W1 + W2', 'Carga equilibrada:', 'W1 = VL·IL·cos(30° + φ)', 'W2 = VL·IL·cos(30° − φ)'] },
       { id: 'r4', tipo: 'rapida', titulo: 'Predicción', t: 'Con FP = 0,5, uno de los dos vatímetros marca…', o: ['cero', 'el doble del otro', 'lo mismo que el otro', 'la potencia total'], c: 0 },
+      { id: 'vatimetros', tipo: 'explica', titulo: 'Medir el FP: dos vatímetros', diagrama: 'vatimetros', inicial: { fp: 0.8 },
+        idea: 'Mueve el FP y mira cómo se separan las dos lecturas.',
+        guia: ['FP 1: ambos iguales. FP 0,5: W1 = 0. Menor a 0,5: W1 negativo (invertir la bobina de tensión).'] },
+      { id: 't-vat-fp', tipo: 'teoria', titulo: 'Del par de lecturas al FP', idea: 'Restando y sumando las lecturas sale el ángulo.',
+        puntos: ['Suma: W1 + W2 = √3·VL·IL·cos φ = <b>P</b>.', 'Resta: W2 − W1 = VL·IL·sen φ.', 'Si una aguja va al revés: invertir su bobina de tensión y tomar la lectura como <b>negativa</b>.', 'Válido con carga equilibrada y ondas senoidales.'],
+        formulas: ['tan φ = √3·(W2 − W1)/(W1 + W2)', 'Q = √3 · (W2 − W1)', 'FP 1 → W1 = W2', 'FP 0,5 → W1 = 0', 'FP < 0,5 → W1 < 0'] },
+      { id: 'ej-vat', tipo: 'teoria', titulo: 'Ejemplo resuelto: dos vatímetros', idea: 'Motor trifásico a 380 V.', derecha: 'Solución',
+        puntos: ['Lecturas: <b>W1 = 2,24 kW</b> y <b>W2 = 5,66 kW</b>.', 'Calcular P, el FP, Q y la corriente de línea.'],
+        formulas: ['P = 2,24 + 5,66 = 7,90 kW', 'tan φ = 1,732·3,42/7,90 = 0,750', 'φ = 36,9° → FP = 0,80 ind', 'Q = 1,732 · 3,42 = 5,92 kVAR', 'I = 7 900/(1,732·380·0,8) = 15 A'] },
       { id: 'e3', tipo: 'ejercicio', ejercicio: 'e3' },
 
+      { id: 't-qc', tipo: 'teoria', titulo: '¿Cuántos kVAR hay que instalar?', idea: 'El capacitor entrega en el sitio la Q que pedía la bobina.',
+        puntos: ['P no cambia: solo baja Q. Por eso bajan S y la corriente.', 'Los capacitores van <b>en paralelo</b> con la carga.', 'Meta usual: FP ≈ 0,95, sin pasar a capacitivo.'],
+        formulas: ['Qc = P · (tan φ₁ − tan φ₂)', 'tan φ = √(1 − FP²) / FP', 'tan φ (FP 0,95) = 0,329', 'pasos = Qc / q (hacia arriba)'] },
       { id: 'corrector', tipo: 'explica', titulo: 'Corregir: capacitores en paralelo', diagrama: 'corrector', params: { P: 80, q: 10, N: 12, fp1: 0.72 },
-        idea: 'Qc = P · (tan φ₁ − tan φ₂). El capacitor aporta la Q que pedía la bobina.',
+        idea: 'Agrega pasos: el triángulo se cierra y la corriente baja.',
         guia: ['Paso a paso: mira cómo se cierra el triángulo y baja la corriente.', 'Pásate a propósito: el FP se vuelve capacitivo.'] },
+      { id: 'ej-qc', tipo: 'teoria', titulo: 'Ejemplo resuelto: banco de capacitores', idea: 'P = 80 kW, FP 0,72 → 0,95, pasos de 10 kVAR.', derecha: 'Solución',
+        puntos: ['Planta de <b>80 kW</b> con FP <b>0,72</b> inductivo, 380 V.', 'Banco automático de 12 pasos de <b>10 kVAR</b>.', '¿Cuántos pasos para FP ≥ 0,95?'],
+        formulas: ['tan φ₁ = 0,964 · tan φ₂ = 0,329', 'Qc = 80 · 0,635 = 50,8 kVAR', '50,8 / 10 = 5,08 → 6 pasos', 'FP final = 0,98 ind', 'I: 169 A → 124 A'] },
+      { id: 't-cap', tipo: 'teoria', titulo: 'De kVAR a microfaradios', idea: 'En baja tensión el banco se conecta en triángulo.',
+        puntos: ['En <b>triángulo</b> cada capacitor recibe VL: necesita 3 veces menos µF que en estrella.', 'Ej.: 50 kVAR a 380 V en Δ → <b>367 µF</b> por fase (en Y serían 1 102 µF).', 'Corriente del banco de 50 kVAR: 76 A. Contactor y cables con margen (≈ 1,43·Ic).'],
+        formulas: ['ω = 2π · 50 = 314,2 rad/s', 'Δ: C = Qc / (3 · ω · VL²)', 'Y: C = Qc / (ω · VL²)', '1φ: C = Qc / (ω · V²)', 'Ic = Qc / (√3 · VL)'] },
       { id: 'r5', tipo: 'rapida', titulo: 'Predicción', t: 'Si conectas más capacitores de los necesarios…', o: ['el FP llega a 1 y se queda ahí', 'el FP se vuelve capacitivo y la tensión sube', 'baja la potencia activa', 'no pasa nada'], c: 1 },
       { id: 'caso-noche', tipo: 'explica', titulo: 'Caso: banco fijo de noche', diagrama: 'corrector', params: { P: 15, q: 5, N: 12, fp1: 0.8 }, inicial: { pasos: 8 },
         idea: 'De noche baja la carga y un banco fijo sobrecompensa. Solución: banco automático.',
         guia: ['Quita pasos hasta volver a la zona verde: eso hace el regulador automático.'] },
+      { id: 't-donde', tipo: 'teoria', titulo: '¿Dónde y cómo compensar?', idea: 'Individual, por grupos o central automática.', derecha: 'Seguridad', derechaTexto: true,
+        puntos: ['<b>Individual</b> (junto al motor): alivia todo el cable. Qc ≤ 90 % de la Q en vacío del motor (evita autoexcitación).', '<b>Por grupos</b>: en el tablero de un sector.', '<b>Central automática</b>: regulador + escalones. Si Qc > 15 % del trafo, mejor automática que fija.'],
+        formulas: ['Resistencias de descarga: ≤ 75 V en 3 min (IEC 60831-1)', 'Esperar y medir antes de tocar', 'Contactores para capacitores: limitan el pico al conectar'] },
       { id: 'e4', tipo: 'ejercicio', ejercicio: 'e4' },
 
+      { id: 't-factura', tipo: 'teoria', titulo: '¿Cómo cobra la distribuidora?', idea: 'El medidor registra kWh y kVARh durante el mes.',
+        puntos: ['Con la energía activa y reactiva del mes se calcula el <b>FP medio</b>.', 'Si queda bajo el mínimo se cobra un <b>recargo</b> sobre el cargo base (energía + potencia).', 'Regla de ELFEC (Cochabamba): mínimo 0,85. La de CESSA (Sucre) puede variar.'],
+        formulas: ['FP = kWh / √(kWh² + kVARh²)', 'Recargo = cargo × (0,85/FP − 1)', 'Ej.: FP 0,752 → recargo 13,1 %'] },
       { id: 'factura', tipo: 'explica', titulo: 'Caso real: la factura', diagrama: 'factura',
-        idea: 'ELFEC (Cochabamba): FP mínimo 0,85. Recargo = cargo × (0,85/FP − 1).',
+        idea: 'Baja los kVARh y mira cómo desaparece el recargo.',
         guia: ['El medidor registra kWh y kVARh del mes; de ahí sale el FP.', 'Verificar la regla de CESSA para Sucre.'] },
       { id: 'e5', tipo: 'ejercicio', ejercicio: 'e5' },
 
       { id: 'armonicos', tipo: 'explica', titulo: 'Caso: armónicos (variadores, LED, equipos médicos)', diagrama: 'armonicos',
         idea: 'El cosfímetro solo ve el desfase. El FP real incluye la distorsión.',
         guia: ['Fuente sin PFC: cos φ₁ ≈ 1 pero FP real ≈ 0,67.', 'Con armónicos, un capacitor puede entrar en resonancia: se usan reactores de desintonía.'] },
+      { id: 't-arm', tipo: 'teoria', titulo: 'FP verdadero y resonancia', idea: 'Capacitores + armónicos: cuidado.',
+        puntos: ['Variadores, LED y fuentes toman corriente a pulsos: aparecen armónicos (3.º, 5.º, 7.º…).', 'El capacitor y la inductancia del trafo resuenan: si coincide con un armónico, la corriente se amplifica y el capacitor se daña.', 'Solución: reactor de desintonía (7 %) o filtro activo.'],
+        formulas: ['FP = cos φ₁ / √(1 + THD²)', 'h_res = √(Scc / Qc)', 'Trafo 75 kVA, uk 4 %:', 'Scc ≈ 1 875 kVA', 'Con 50 kVAR → h ≈ 6,1 ⚠'] },
       { id: 'r6', tipo: 'rapida', titulo: 'Predicción', t: 'Fuente de computadora sin PFC: el cosfímetro marca 0,99 y el THD es 110 %. El FP real es cerca de…', o: ['0,99', '0,67', '1', '0,30'], c: 1 },
 
       { id: 'cierre', tipo: 'cierre', titulo: 'Cierre', idea: 'Medir P, Q y FP → decidir cuánto, dónde y cómo compensar.' }

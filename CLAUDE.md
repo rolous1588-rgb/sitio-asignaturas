@@ -76,16 +76,17 @@ Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televiso
 
 | Archivo | Rol |
 |---|---|
-| `proyectar.html` + `js/proyectar.js` | Proyección + control: carrusel ◀ ▶, QR, Habilitar → Cerrar (cuenta regresiva) → Resultados / Solución / Intento anónimo. Sin sesión = modo ensayo local |
-| `clase.html` + `js/estudiante.js` | Estudiante (vertical). Sigue el paso; predicciones con un toque; ejercicios en su propio diagrama con datos por carnet; envía estado + movimientos + segundos. `&modo=libre` = repaso sin registro |
+| `proyectar.html` + `js/proyectar.js` | Proyección + control: carrusel ◀ ▶, QR, Habilitar → Cerrar (cuenta regresiva) → Resultados / Solución / Intento anónimo. **Sin modo ensayo** (pedido del docente 07/10): al abrir exige la cuenta docente y retoma el paso guardado en la base (no lo reinicia). Tocar el número de paso o ⋮ → «Ir a un paso…», «Descargar notas (Excel)» (CSV `;` con carnet, nombre, carrera, asistencia por fecha, puntaje por actividad realizada, total, máximo y nota /100) y salir. **No hay botón de borrar datos**: la sesión `me-fp1` ya tiene notas oficiales |
+| `clase.html` + `js/estudiante.js` | Estudiante (vertical). Sigue el paso; predicciones con un toque; ejercicios en su propio diagrama con datos por carnet y recuadro «Fórmulas útiles»; envía estado + movimientos + segundos. Registra un `ingreso` por día (asistencia). `&modo=libre` = repaso sin registro |
 | `js/fp-diagramas.js` | `FP.diagramas`: `fasores`, `potencia`, `triangulo`, `linea`, `vatimetros`, `corrector`, `factura`, `armonicos`. Opciones: `inicial`, `params`, `ocultar` (lecturas tapadas → "?"), `fijos`, `revelado`, `sinControles` |
-| `js/fp-sesion.js` | `FP.SESIONES['me-fp1']` (23 pasos: inicio, explica, rapida, ejercicio, cierre) y `FP.EJERCICIOS` e1–e5 (`generar`, `enunciado`, `resumen`, `opciones`, `evaluar`, `eje`, `solucion`) |
+| `js/fp-sesion.js` | `FP.SESIONES['me-fp1']` (33 pasos: inicio, explica, **teoria**, rapida, ejercicio, cierre) y `FP.EJERCICIOS` e1–e5 (`generar`, `enunciado`, `resumen`, `formulas`, `opciones`, `evaluar`, `eje`, `solucion`). Paso `teoria`: `{ puntos: [html], formulas: [texto; si termina en ':' es subtítulo], derecha?: 'Solución'/'Seguridad', derechaTexto? }` |
 | `css/me.css` | Paleta clara del sitio. En `body.tv` todo se mide en `--u` = 1 % del alto (dvh) |
 
 - Tamaños para 9 m (regla DISCAS: alto de letra ≥ distancia/200): números clave ≈ 6,5 % del alto, textos ≥ 4,5 %, trazos gruesos, una idea por pantalla.
 - Fases en `estado_sesion.extra`: `{ abierto: id }` → `{ abierto: id, fin, seg }` (cierre) → `{ cerrado: id }`. Cambiar de paso limpia `extra`; el estudiante envía solo lo que tenga si el paso cambia o se cierra.
 - Las respuestas se leen directamente desde la página del docente (RLS: solo docente). La TV muestra todo anónimo.
-- Regla de factura usada: ELFEC (FP ≥ 0,85; recargo = cargo × (0,85/FP − 1)). Pendiente confirmar la de CESSA (Sucre).
+- Regla de factura usada: ELFEC (FP ≥ 0,85; recargo = cargo × (0,85/FP − 1)). Pendiente confirmar la de CESSA (Sucre): no se encontró publicada.
+- Avance: el lunes 05/10 se llegó hasta e2 (11 estudiantes). El miércoles 07/10 se continúa desde `repaso2` (teoría de dos vatímetros en adelante).
 
 ## Módulo Electrónica Digital 1 (clases presenciales, desde oct 2026)
 

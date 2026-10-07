@@ -250,3 +250,44 @@ body.est { min-height: 100vh; }
 .portada .item p { margin: 2px 0 0; color: var(--texto-3); font-size: .86rem; }
 .migas a { color: var(--acento); text-decoration: none; font-weight: 600; }
 .tv-pie .modo.enlace { color: var(--acento); text-decoration: underline; cursor: pointer; }
+
+/* ---------- teoría (TV) ---------- */
+.esc.teoria { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.puntos-tv { margin: 0; padding-left: calc(var(--u) * 4.4); display: grid; gap: calc(var(--u) * 1.8); font-size: calc(var(--u) * 4.7); line-height: 1.28; font-weight: 500; }
+.puntos-tv li::marker { color: var(--acento); font-weight: 700; }
+.puntos-tv b { color: var(--acento-2); }
+.formulas-tv { background: var(--acento-claro); border-radius: calc(var(--u) * 2); padding: calc(var(--u) * 1.6) calc(var(--u) * 2.2); display: grid; gap: calc(var(--u) * 1.1); }
+.formulas-tv .etq { font-size: calc(var(--u) * 3.4); }
+.formulas-tv div { font-family: var(--mono); font-weight: 700; font-size: calc(var(--u) * 4.5); line-height: 1.25; color: var(--acento-2); }
+.formulas-tv div.nota { font-family: 'Inter', sans-serif; font-weight: 600; font-size: calc(var(--u) * 3.8); color: var(--texto-2); }
+.esc.teoria .formulas-tv { height: 100%; align-content: start; }
+.esc.teoria .panel:last-child { padding: calc(var(--u) * 1.6); }
+.tv-cab button.num { border: 0; background: var(--superficie-2); border-radius: 99px; padding: calc(var(--u) * .6) calc(var(--u) * 1.8); cursor: pointer; }
+
+/* ---------- menú y lista de pasos ---------- */
+.menu-it { display: block; width: 100%; text-align: left; padding: 12px 14px; margin-bottom: 8px; border: 1.5px solid var(--borde); border-radius: 12px; background: #fff; font-weight: 700; cursor: pointer; }
+.menu-it small { display: block; font-weight: 500; color: var(--texto-3); font-size: .82rem; }
+.menu-it:active { background: var(--acento-claro); }
+.dialogo.ancho { width: min(760px, 94vw); }
+.lista-pasos { display: grid; gap: 6px; max-height: 62vh; overflow: auto; margin-bottom: 12px; }
+.paso-it { display: grid; grid-template-columns: 34px 92px 1fr; gap: 8px; align-items: center; text-align: left; padding: 8px 10px; border: 1.5px solid var(--borde); border-radius: 10px; background: #fff; cursor: pointer; }
+.paso-it .n { font-family: var(--mono); font-weight: 700; color: var(--texto-3); }
+.paso-it .tp { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-3); }
+.paso-it .tt { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.paso-it.t-teoria .tp { color: var(--acento); }
+.paso-it.t-rapida .tp { color: var(--duda); }
+.paso-it.t-ejercicio .tp { color: var(--ok); }
+.paso-it.actual { border-color: var(--acento); background: var(--acento-claro); }
+.capa.ingreso { background: var(--fondo); }
+.dialogo .etq { font-size: .72rem; display: block; margin-bottom: 4px; }
+
+/* ---------- estudiante: teoría y fórmulas ---------- */
+.puntos-est { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 8px; }
+.puntos-est b { color: var(--acento-2); }
+.formulas-est { background: var(--acento-claro); border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; }
+.formulas-est .etq { font-size: .72rem; display: block; margin-bottom: 6px; }
+.formulas-est div { font-family: var(--mono); font-weight: 700; color: var(--acento-2); font-size: .92rem; line-height: 1.5; }
+.formulas-est div.nota { font-family: 'Inter', sans-serif; font-weight: 600; color: var(--texto-2); font-size: .85rem; }
+.formulas-tv.texto div { font-family: 'Inter', sans-serif; font-weight: 600; color: var(--texto); font-size: calc(var(--u) * 4.4); line-height: 1.3; }
+.cierre-lista { gap: calc(var(--u) * 1.1); }
+.cierre-lista .opcion-tv { font-size: calc(var(--u) * 4.4); padding: calc(var(--u) * 1) calc(var(--u) * 2); }
