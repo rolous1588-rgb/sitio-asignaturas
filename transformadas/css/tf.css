@@ -1,0 +1,98 @@
+/* ============================================================
+   Transformadas · examen desde el celular
+   Se carga DESPUÉS de ../medidas/css/me.css (misma paleta clara y componentes base)
+   ============================================================ */
+
+/* ---------- escritura matemática ---------- */
+.fr { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 .12em; font-size: .94em; line-height: 1.15; }
+.fr > span { padding: 0 .25em; white-space: nowrap; }
+.fr > span:first-child { border-bottom: 1.6px solid currentColor; padding-bottom: .12em; }
+.fr > span:last-child { padding-top: .12em; }
+.formula-tf { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1.12rem; color: var(--acento-2); background: var(--acento-claro); border-radius: 12px; padding: 12px 14px; margin: 10px 0; overflow-x: auto; white-space: nowrap; line-height: 1.6; }
+.formula-tf sup, .opcion-est sup, .solucion-tf sup { font-size: .72em; }
+.tramos { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.tramos .llave { font-size: 2.6em; font-weight: 300; line-height: 1; transform: scaleX(.7); }
+.tramos .filas { display: grid; gap: 2px; }
+.tramos .filas span { display: grid; grid-template-columns: 2.2em auto; gap: 10px; }
+.tramos .filas i { font-style: normal; font-weight: 500; color: var(--texto-2); }
+.nota-tf { font-size: .88rem; color: var(--texto-2); margin: 4px 0 0; }
+
+/* ---------- estudiante: reloj y navegación ---------- */
+.reloj-tf { position: sticky; top: 0; z-index: 25; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 10px 14px; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(22,32,44,.06); }
+.reloj-tf .info { flex: 1; min-width: 0; font-weight: 600; color: var(--texto-2); font-size: .9rem; line-height: 1.25; }
+.reloj-tf .t { font-family: var(--mono); font-weight: 700; font-size: 1.7rem; color: var(--acento-2); }
+.reloj-tf .t.poco { color: var(--mal); }
+.chips-tf { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+.chips-tf button { min-height: 44px; border-radius: 10px; border: 2px solid var(--borde-2); background: #fff; font-family: var(--mono); font-weight: 700; font-size: 1rem; cursor: pointer; }
+.chips-tf button.resp { background: var(--acento-claro); border-color: #9fc2ec; color: var(--acento-2); }
+.chips-tf button.medio { background: var(--duda-claro); border-color: #f0dbb2; color: var(--duda); }
+.chips-tf button.actual { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-claro); }
+.cab-preg { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.chip-tf { font-family: var(--mono); font-size: .76rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--superficie-2); color: var(--texto-2); }
+.chip-tf.acento { background: var(--acento-claro); color: var(--acento-2); }
+.chip-tf.ok { background: var(--ok-claro); color: var(--ok); }
+.chip-tf.mal { background: var(--mal-claro); color: var(--mal); }
+.chip-tf.duda { background: var(--duda-claro); color: var(--duda); }
+.enunciado { font-weight: 500; line-height: 1.5; }
+.mando-tf { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.mando-tf .boton { min-height: 50px; }
+.boton.peligro { background: var(--mal); border-color: var(--mal); color: #fff; }
+.opcion-est { font-weight: 500; line-height: 1.5; }
+.opcion-est .letra { flex: none; width: 1.4em; }
+.opcion-est .txt { overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; }
+
+/* campos numéricos con botón ± */
+.campos-tf { display: grid; gap: 10px; margin-top: 12px; }
+.campo-tf { display: grid; grid-template-columns: minmax(0, 1fr) 52px 120px; gap: 8px; align-items: center; }
+.campo-tf .et { font-weight: 700; color: var(--texto-2); font-size: .98rem; }
+.campo-tf input { width: 100%; min-height: 50px; padding: 10px 12px; border: 2px solid var(--borde-2); border-radius: 12px; font-family: var(--mono); font-size: 1.25rem; font-weight: 700; text-align: center; background: #fff; outline: none; }
+.campo-tf input:focus { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-claro); }
+.campo-tf input.bien { border-color: var(--ok); background: var(--ok-claro); }
+.campo-tf input.mal { border-color: var(--mal); background: var(--mal-claro); }
+.campo-tf .signo { min-height: 50px; border-radius: 12px; border: 2px solid var(--borde-2); background: var(--superficie-2); font-weight: 700; font-size: 1.2rem; cursor: pointer; }
+.campo-tf .signo:active { background: var(--acento-claro); }
+
+/* ordenar pasos */
+.orden-tf { display: grid; gap: 8px; }
+.orden-tf button { display: flex; gap: 10px; align-items: center; text-align: left; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--borde); background: #fff; font-weight: 600; cursor: pointer; min-height: 52px; }
+.orden-tf button .num { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--borde-2); display: grid; place-items: center; font-family: var(--mono); font-weight: 700; color: var(--acento-2); }
+.orden-tf button.elegido { border-color: var(--acento); background: var(--acento-claro); }
+.orden-tf button.elegido .num { background: var(--acento); border-color: var(--acento); color: #fff; }
+.orden-tf button.correcta { border-color: var(--ok); background: var(--ok-claro); }
+.orden-tf button.errada { border-color: var(--mal); background: var(--mal-claro); }
+.orden-ok { margin: 6px 0 0; padding-left: 20px; }
+
+/* avisos */
+.aviso-vuelta { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 60; max-width: 640px; margin: 0 auto; box-shadow: 0 8px 28px rgba(22,32,44,.22); }
+.lista-tf { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.lista-tf b { color: var(--acento-2); }
+.espera-pulso { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--ok); margin-right: 8px; animation: pulso 1.4s ease-in-out infinite; }
+@keyframes pulso { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+
+/* resultados del estudiante */
+.nota-grande { font-family: var(--mono); font-size: 3.6rem; font-weight: 700; line-height: 1; color: var(--acento-2); }
+.nota-grande small { font-size: .4em; color: var(--texto-3); }
+.solucion-tf { background: var(--fondo); border-radius: 12px; padding: 12px 14px; margin-top: 10px; line-height: 1.55; overflow-x: auto; }
+.solucion-tf p { margin: 0 0 6px; } .solucion-tf p:last-child { margin: 0; }
+.solucion-tf b { color: var(--ok); }
+.resumen-pts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+.resumen-pts div { border-radius: 10px; padding: 6px 4px; text-align: center; font-family: var(--mono); font-size: .8rem; font-weight: 700; background: var(--superficie-2); }
+.resumen-pts div.ok { background: var(--ok-claro); color: var(--ok); }
+.resumen-pts div.mal { background: var(--mal-claro); color: var(--mal); }
+.resumen-pts div.duda { background: var(--duda-claro); color: var(--duda); }
+
+/* ---------- TV ---------- */
+.tv .reloj-gigante { font-family: var(--mono); font-size: calc(var(--u) * 30); font-weight: 700; line-height: 1; letter-spacing: -0.04em; color: var(--acento-2); }
+.tv .reloj-gigante.poco { color: var(--mal); }
+.tv .reglas-tv { margin: 0; padding-left: calc(var(--u) * 4.4); display: grid; gap: calc(var(--u) * 1.6); font-size: calc(var(--u) * 4.6); line-height: 1.28; font-weight: 500; }
+.tv .reglas-tv b { color: var(--acento-2); }
+.tv .reglas-tv .ojo { color: var(--mal); }
+.tv .barras-p { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: calc(var(--u) * 1.2); align-items: end; height: 100%; min-height: 0; padding-top: calc(var(--u) * 2); }
+.tv .barras-p .col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: calc(var(--u) * .8); min-height: 0; }
+.tv .barras-p .bar { width: 100%; border-radius: calc(var(--u) * 1.2) calc(var(--u) * 1.2) 0 0; background: var(--ok); min-height: 2px; }
+.tv .barras-p .bar.medio { background: var(--duda); }
+.tv .barras-p .bar.bajo { background: var(--mal); }
+.tv .barras-p .pct { font-family: var(--mono); font-weight: 700; font-size: calc(var(--u) * 3.8); }
+.tv .barras-p .et { font-family: var(--mono); font-weight: 700; font-size: calc(var(--u) * 3.6); color: var(--texto-3); }
+.tv .minutos-tv { font-family: var(--mono); font-size: calc(var(--u) * 4.6); font-weight: 700; min-width: calc(var(--u) * 18); text-align: center; }
+.dialogo .aviso { font-size: .92rem; }

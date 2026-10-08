@@ -109,6 +109,20 @@ Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular
 - Puntaje de los mapas: mapa bien llenado 1 + expresión correcta 2 + mínima 1. Diseño completo: tabla (hasta 2, proporcional) + correcta 1 + mínima 1.
 - Pruebas: como el contenedor de Claude no llega a Supabase ni a jsDelivr, se probó con un simulador local de supabase-js (servidor de consultas compartido) y Playwright: docente + 3 estudiantes, todas las actividades, reporte CSV.
 
+## Módulo Transformadas y Funciones Especiales (examen desde el celular, desde 08/10/2026)
+
+Carpeta `transformadas/`. Examen presencial en el aula con TV: el docente proyecta `proyectar.html` (celular horizontal) y cada estudiante responde en `clase.html` por QR. Reutiliza `../instrumentacion/js/config.js`, `nucleo.js` y los estilos `../medidas/css/me.css` (+ `css/tf.css`). **No necesita cambios en la base**: usa el mecanismo de evaluación de un intento (`asincrona`, `eval-inicio`, `eval-avance`, `eval`).
+
+| Archivo | Rol |
+|---|---|
+| `proyectar.html` + `js/proyectar.js` | Proyección + control. Espera (QR, reglas, −5/+5 min, Iniciar) → En curso (reloj gigante, registrados/empezaron/enviaron, +5 min, Cortar = 30 s) → Cerrado (acierto por pregunta y promedio, anónimos). ⋮: Descargar notas (CSV), vista del estudiante, **Reiniciar y borrar datos** (pide escribir BORRAR; solo pruebas). Si la fila de la sesión no existe, la crea al entrar el docente |
+| `clase.html` + `js/examen.js` | Estudiante: registro (nombre, C.U., carrera) → espera → examen (chips 1–10, reloj con hora del servidor, guardado local + copia automática) → enviado → al cerrar: nota y solución con sus números. **Registro de salidas** en `respuesta.sal`: veces y segundos con la página oculta (otra app, bloqueo, llamada), salida abierta al final, pérdidas de foco sin ocultar, respuestas cambiadas ≤ 30 s tras volver, recargas, pantalla encendida (`wakeLock`), dispositivo. Aviso al volver: «Saliste de la página (n.ª vez)» |
+| `js/tf-banco.js` | `TF.PREGUNTAS` (10 preguntas, 7·4 + 12·4 + 6 + 18 = 100 pts) con `gen(r)` por carnet; tipos `opcion` (correcta en la posición 0, se mezcla), `campos` (enteros, botón ±, acepta fracción a/b) y `orden`. `TF.nota(carnet, resp)` recalcula la nota (la usa el reporte). Escritura matemática con fracciones de barra horizontal (`TF.mat`) |
+
+- Sesiones: `tf-ex1` (oficial) y `tf-prueba` (ensayo). `extra = { asincrona, abre, fin, cierra, minutos, duracion, cortado? }`: `fin` es lo que muestran los relojes; `cierra = fin + 20 s` (margen para el envío final); `minutos = duración + 1` (entero, lo usa `evaluacion_permite`). `abre` se fija 10 s antes de la hora del servidor.
+- Reporte: nota del `eval`; si no hay, la última `eval-avance` («Última copia automática»). Las copias se piden aparte y de la más nueva a la más antigua (límite de 1000 filas de Supabase).
+- Pruebas: simulador de supabase-js con un servidor compartido entre contextos (docente + 3 estudiantes en Playwright), incluido el reporte con copia automática.
+
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
