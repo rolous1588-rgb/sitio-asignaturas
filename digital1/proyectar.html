@@ -121,7 +121,7 @@
       <p>Una bomba sube agua de la <b>cisterna</b> al <b>tanque</b> del techo.</p>
       <p class="lbl"><b>C</b> = hay agua en la cisterna<br><b>Lb</b> = el agua cubre el sensor bajo del tanque<br><b>La</b> = el agua cubre el sensor alto<br><b>M</b> = bomba encendida · <b>F</b> = alarma de falla</p>
       <div class="row"><button class="btn" id="c2PDAll">Revelar todo</button>
-        <span class="q plain"><span class="qt" hidden>Mapas de Karnaugh de M y F</span><button class="rv btn pri">Ver mapas</button><span class="ans" id="c2PDMaps"></span></span></div>
+        <span class="q plain"><span class="qt" hidden>Mapas de Karnaugh de M⁺ (con memoria) y F</span><button class="rv btn pri">Ver mapas</button><span class="ans" id="c2PDMaps"></span></span></div>
     </div>
     <div class="col"><table class="tt tight" id="c2PDT"></table></div>
     <div class="col"><p class="card" id="c2PDWhy"></p></div>
@@ -129,10 +129,10 @@
 </section>
 
 <section class="slide" id="p-psim">
-  <h2>Probemos el diseño: M = C·<span class="ov">La</span> · F = <span class="ov">Lb</span>·La</h2>
+  <h2>La bomba: arranca bajo Lb y para en La</h2>
   <div class="body" id="c2PSZona"></div>
-  <div class="q oculto" id="c2PSQ"><p class="qt">Abre la llave con el tanque lleno. ¿Qué hace la bomba? ¿Es bueno?</p><button class="rv">Revelar</button>
-    <div class="ans">Arranca y para cada pocos segundos: repone cada poquito de agua que se consume. Eso desgasta el motor. Una instalación real llena hasta La y <b>no vuelve a arrancar hasta que el agua baja de Lb</b>. Para eso el circuito tiene que recordar si estaba llenando: ya no es combinacional.</div></div>
+  <div class="q oculto" id="c2PSQ"><p class="qt">¿Por qué la bomba no arranca apenas baja un poco el agua?</p><button class="rv">Revelar</button>
+    <div class="ans">Porque <b>recuerda</b> lo que estaba haciendo. Entre Lb y La la bomba sigue igual: si venía llenando, sigue; si estaba apagada, espera a que el agua baje de Lb (tanque vacío). Así arranca pocas veces y el motor dura más. Ese recuerdo es la M que vuelve a entrar: M⁺ = C·<span class="ov">La</span>·(<span class="ov">Lb</span> + M).</div></div>
 </section>
 
 <section class="slide" id="p-pq">
@@ -140,13 +140,13 @@
   <div class="body">
     <div class="col">
       <div class="q"><p class="qt">Daña el sensor alto y simula. ¿Tu circuito se da cuenta?</p><button class="rv">Revelar</button>
-        <div class="ans">No. Con La siempre en 0, la bomba nunca se apaga y el tanque rebalsa. F solo detecta «agua arriba sin agua abajo». En la práctica se agrega un sensor de rebalse o un flotador mecánico.</div></div>
+        <div class="ans">No. Con La siempre en 0, la bomba nunca recibe la orden de parar y el tanque rebalsa. F solo detecta «agua arriba sin agua abajo». En la práctica se agrega un sensor de rebalse o un flotador mecánico.</div></div>
       <div class="q"><p class="qt">Si la cisterna se vacía a mitad del llenado, ¿qué hace el circuito?</p><button class="rv">Revelar</button>
-        <div class="ans">M = C·<span class="ov">La</span> se apaga apenas C = 0: la bomba no trabaja en seco. Bien. Pero nadie se entera de que falta agua; podrías agregar otra salida de aviso con <span class="ov">C</span>.</div></div>
+        <div class="ans">M⁺ = C·<span class="ov">La</span>·(<span class="ov">Lb</span> + M) tiene a C como factor: se apaga apenas C = 0 y la bomba no trabaja en seco. Ojo: al volver el agua, la bomba ya «olvidó» que estaba llenando y espera a que el nivel baje de Lb. Y nadie se entera de que faltó agua: podrías agregar una salida de aviso con <span class="ov">C</span>.</div></div>
     </div>
     <div class="col">
-      <div class="q"><p class="qt">Una bomba bien diseñada llena hasta La y no vuelve a arrancar hasta que el agua baja de Lb. ¿Se puede con lógica combinacional?</p><button class="rv">Revelar</button>
-        <div class="ans">No. Con Lb = 1 y La = 0, a veces la bomba debe estar <b>encendida</b> (está llenando) y a veces <b>apagada</b> (se está vaciando): la misma entrada pide dos salidas distintas. El circuito tendría que <b>recordar</b> qué estaba haciendo. Eso ya es un circuito secuencial.</div></div>
+      <div class="q"><p class="qt">La bomba llena hasta La y no vuelve a arrancar hasta que el agua baja de Lb. ¿Se puede con solo C, Lb y La como entradas?</p><button class="rv">Revelar</button>
+        <div class="ans">No. Con Lb = 1 y La = 0, a veces la bomba debe estar <b>encendida</b> (está llenando) y a veces <b>apagada</b> (se está vaciando): la misma entrada pide dos salidas distintas. El truco es <b>realimentar</b>: la salida M vuelve a entrar, M⁺ = C·<span class="ov">La</span>·(<span class="ov">Lb</span> + M). Esa realimentación es una memoria (un <i>latch</i>): ya es un circuito secuencial.</div></div>
     </div>
   </div>
 </section>

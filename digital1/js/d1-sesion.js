@@ -230,7 +230,7 @@
       return { puntos: ok ? 2 : 0, ok, valor: ok ? 2 : 0, texto: k == null ? 'No elegiste ninguna opción.' : ok ? 'Diagnóstico correcto.' : 'Tu instalación tenía: ' + OPC_FALLA[FALLAS.indexOf(d.falla)].toLowerCase() + '.' };
     },
     solucion: () => ({
-      html: '<div class="solucion"><p><b>Lb dañado:</b> el agua cubre Lb pero la lectura sigue en 0. Al llegar a La suena F.</p>' +
+      html: '<div class="solucion"><p><b>Lb dañado:</b> el agua cubre Lb pero la lectura sigue en 0: la bomba vuelve a arrancar apenas baja un poco de La, y al llegar a La suena F.</p>' +
         '<p><b>La dañado:</b> el tanque llega arriba, La sigue en 0 y la bomba no para: rebalsa.</p>' +
         '<p><b>C dañado:</b> hay agua en la cisterna pero C = 0, y la bomba nunca arranca.</p>' +
         '<p><b>Sin falla:</b> cada lectura coincide con el agua.</p><p>Método: <b>comparar lo que mide el sensor con lo que pasa de verdad</b>.</p></div>'
@@ -261,12 +261,12 @@
       { id: 'r4', tipo: 'rapida', g: 0, titulo: 'Para pensar', t: 'Una X conviene tomarla como 1…', o: ['solo si agranda un grupo', 'siempre', 'nunca', 'solo si está sola'], c: 0,
         por: 'Como 1 solo si te permite agrandar un grupo; si no, como 0. Nunca hagas un grupo solo de X.' },
       { id: 'kq', tipo: 'explica', g: 0, titulo: 'Para pensar: Karnaugh', idea: 'Discutan en parejas antes de revelar.' },
-      { id: 'pumpd', tipo: 'explica', g: 1, titulo: 'Problema 1 · La bomba de agua', idea: 'M = C·<span class="ov">La</span> · F = <span class="ov">Lb</span>·La' },
-      { id: 'r5', tipo: 'rapida', g: 1, titulo: 'Predicción', t: 'Con la llave de salida cerrada, el agua llega al sensor alto. La bomba…', o: ['se apaga y se queda apagada', 'arranca y para muchas veces', 'sigue encendida hasta rebalsar', 'hace sonar la alarma F'], c: 0,
-        por: 'Si nadie consume agua, el nivel no baja: La sigue en 1 y la bomba queda apagada.' },
-      { id: 'psim', tipo: 'explica', g: 1, titulo: 'Probemos el diseño', idea: 'Abre y cierra la llave de salida y mira la bomba.', explorar: 'bomba' },
+      { id: 'pumpd', tipo: 'explica', g: 1, titulo: 'Problema 1 · La bomba de agua', idea: 'La bomba arranca cuando el agua baja de Lb y para cuando llega a La.' },
+      { id: 'r5', tipo: 'rapida', g: 1, titulo: 'Predicción', t: 'El tanque está a la mitad, la bomba apagada y la gente consume agua. ¿Cuándo arranca la bomba?', o: ['cuando el agua baja del sensor bajo (Lb)', 'de inmediato', 'cuando el agua baja del sensor alto (La)', 'nunca, porque ya llenó'], c: 0,
+        por: 'Arranca recién cuando el agua baja de Lb (tanque vacío) y sigue hasta llegar a La. Entre los dos sensores, la bomba hace lo mismo que estaba haciendo.' },
+      { id: 'psim', tipo: 'explica', g: 1, titulo: 'Probemos el diseño', idea: 'Mira el ciclo: arranca bajo Lb y para en La. Cambia la llave para cambiar el consumo.', explorar: 'bomba' },
       { id: 'r6', tipo: 'rapida', g: 1, titulo: 'Predicción', t: 'Si el sensor alto se daña y queda siempre en 0, ¿qué pasa?', o: ['el tanque rebalsa', 'suena la alarma F', 'la bomba no arranca', 'nada, sigue normal'], c: 0,
-        por: 'Con La siempre en 0, M = C·<span class="ov">La</span> nunca se apaga: el tanque rebalsa y F no se entera.' },
+        por: 'Con La siempre en 0, la bomba nunca recibe la orden de parar: el tanque rebalsa y F no se entera.' },
       { id: 'e3', tipo: 'ejercicio', g: 1, ejercicio: 'e3' },
       { id: 'pq', tipo: 'explica', g: 1, titulo: 'Para pensar: la bomba', idea: '¿Qué no puede hacer un circuito combinacional?' },
       { id: 'r7', tipo: 'rapida', g: 1, titulo: 'Predicción', t: 'Prensa con Y = I·D. Con cinta en el botón I, ¿baja si presionas solo D?', o: ['Sí, baja', 'No, la AND lo impide', 'Solo si la guarda está cerrada', 'Depende del tiempo'], c: 0,

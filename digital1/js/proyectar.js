@@ -644,31 +644,34 @@
   })();
   (function () { // diseño de la bomba
     const PN = ['C', 'Lb', 'La'];
-    const pumpM = (m) => ((m >> 2 & 1) && !(m & 1) ? 1 : 0), pumpF = (m) => (!(m >> 1 & 1) && (m & 1) ? 1 : 0);
+    // M = 'M' en la fila 110: entre los dos sensores la bomba sigue haciendo lo que hacía (memoria)
+    const pumpM = (m) => ((m >> 2 & 1) && !(m & 1) ? ((m >> 1 & 1) ? 'M' : 1) : 0), pumpF = (m) => (!(m >> 1 & 1) && (m & 1) ? 1 : 0);
     const T = $('#c2PDT'), rev = Array(8).fill(false); let hl = -1;
     const WHY = ['Cisterna vacía: la bomba no debe trabajar en seco.', 'Agua arriba pero no abajo: imposible → un sensor está fallando.',
       'Cisterna vacía: no se bombea aunque el tanque esté a medias.', 'Tanque lleno y cisterna vacía: no hay nada que hacer.',
-      'Tanque casi vacío y hay agua abajo: ¡a llenar!', 'Lectura imposible: alarma, y bomba apagada por seguridad.',
-      'Tanque a medias y hay agua abajo: sigue llenando.', 'Tanque lleno: la bomba se apaga.'];
+      'El agua bajó del sensor bajo: el tanque está vacío → ¡arranca la bomba!', 'Lectura imposible: alarma, y bomba apagada por seguridad.',
+      'Entre los dos sensores: si la bomba estaba llenando, sigue llenando; si estaba apagada, sigue apagada. <b>La tabla no alcanza: depende de lo que pasó antes.</b>', 'El agua llegó al sensor alto: la bomba se apaga y termina el ciclo.'];
     function draw() {
       let h = '<tr><th>C</th><th>Lb</th><th>La</th><th>M</th><th>F</th></tr>';
       for (let m = 0; m < 8; m++) {
         const M = pumpM(m), F = pumpF(m);
         h += '<tr data-m="' + m + '" class="' + (m === hl ? 'hl' : '') + '"><td>' + (m >> 2 & 1) + '</td><td>' + (m >> 1 & 1) + '</td><td>' + (m & 1) + '</td>' +
-          (rev[m] ? '<td class="' + (M ? 'v1' : '') + '">' + M + '</td><td class="' + (F ? 'al' : '') + '">' + F + '</td>' : '<td class="unk">?</td><td class="unk">?</td>') + '</tr>';
+          (rev[m] ? '<td class="' + (M === 'M' ? 'vx' : M ? 'v1' : '') + '">' + M + '</td><td class="' + (F ? 'al' : '') + '">' + F + '</td>' : '<td class="unk">?</td><td class="unk">?</td>') + '</tr>';
       }
       T.innerHTML = h;
       $('#c2PDWhy').innerHTML = hl < 0 ? 'Toca una fila: primero propongan qué deben valer M y F, y después revélalo.'
-        : '<b>C = ' + (hl >> 2 & 1) + ', Lb = ' + (hl >> 1 & 1) + ', La = ' + (hl & 1) + '</b><br>' + WHY[hl] + '<br>→ M = ' + pumpM(hl) + ', F = ' + pumpF(hl);
+        : '<b>C = ' + (hl >> 2 & 1) + ', Lb = ' + (hl >> 1 & 1) + ', La = ' + (hl & 1) + '</b><br>' + WHY[hl] + '<br>→ M = ' + (pumpM(hl) === 'M' ? 'M (lo que estaba: memoria)' : pumpM(hl)) + ', F = ' + pumpF(hl);
     }
     T.onclick = (e) => { const tr = e.target.closest('tr[data-m]'); if (!tr) return; const m = +tr.dataset.m; rev[m] = true; hl = m; draw(); refit(); };
     $('#c2PDAll').onclick = () => { rev.fill(true); hl = -1; draw(); refit(); };
-    const vM = Array.from({ length: 8 }, (_, m) => pumpM(m)), vF = Array.from({ length: 8 }, (_, m) => pumpF(m)), sM = K.resolver(3, vM), sF = K.resolver(3, vF);
-    $('#c2PDMaps').innerHTML = '<div class="maps"><div>' + K.estatico(3, vM, { nombres: PN, grupos: sM.cubos }) + '<p class="expr">M = ' + K.expr(sM.cubos, 3, PN, true) + '</p></div><div>' +
+    // M⁺ con memoria: mapa de 4 variables (C, Lb, La y lo que estaba haciendo la bomba, M)
+    const PN4 = ['C', 'Lb', 'La', 'M'];
+    const vM = Array.from({ length: 16 }, (_, m) => ((m & 8) && !(m & 2) && (!(m & 4) || (m & 1)) ? 1 : 0)), vF = Array.from({ length: 8 }, (_, m) => pumpF(m)), sM = K.resolver(4, vM), sF = K.resolver(3, vF);
+    $('#c2PDMaps').innerHTML = '<div class="maps m4"><div>' + K.estatico(4, vM, { nombres: PN4, grupos: sM.cubos }) + '<p class="expr">M⁺ = ' + K.expr(sM.cubos, 4, PN4, true) + '</p><p class="nota">M = lo que estaba haciendo la bomba (memoria)</p></div><div>' +
       K.estatico(3, vF, { nombres: PN, grupos: sF.cubos }) + '<p class="expr">F = ' + K.expr(sF.cubos, 3, PN, true) + '</p></div></div>';
     draw();
   })();
-  (function () { // simulación de la bomba con llave de salida
+  (function () { // simulación de la bomba: arranca bajo Lb y para en La
     const zona = $('#c2PSZona');
     const b = D1.diag.bomba(zona, { botonesFalla: true });
     const q = $('#c2PSQ');

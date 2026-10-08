@@ -191,6 +191,8 @@ mark{background:#ffe066;color:inherit;border-radius:.15em;padding:0 .1em}
 #pop svg{max-height:52vh}
 #pop .maps{display:flex;gap:1em;align-items:flex-start}
 #pop .maps>div{flex:1;min-width:0;text-align:center}
+#pop .maps .nota{font-size:.8em;color:var(--muted);margin:.2em 0 0}
+#pop .maps.m4>div:first-child{flex:1.4}#pop .maps.m4>div:first-child svg{max-height:54vh}
 /* bomba */
 .pipe{fill:none;stroke:#ced4da;stroke-width:6;stroke-linejoin:round}
 .flow{fill:none;stroke:#4dabf7;stroke-width:3.5;stroke-dasharray:7 7;stroke-linejoin:round;animation:flow .5s linear infinite}

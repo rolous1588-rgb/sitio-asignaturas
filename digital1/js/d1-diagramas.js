@@ -1,7 +1,8 @@
 // ============================================================
 // Electrónica Digital 1 — diagramas que funcionan en la TV y en el celular
 //   D1.seg   → display de 7 segmentos (tabla y dibujo)
-//   D1.diag.bomba(contenedor, opc) → simulación del tanque con llave de salida
+//   D1.diag.bomba(contenedor, opc) → tanque con control de dos niveles y llave de salida:
+//     la bomba arranca cuando el agua baja de Lb y para cuando llega a La (M⁺ = C·L̄a·(L̄b + M))
 //     opc: { falla: null | 'fb' | 'fa' | 'fc' (oculta), botonesFalla: true/false }
 //     API: estado(), movimientos(), segundos(), alCambiar(fn), parar(), destruir()
 // ============================================================
@@ -41,10 +42,11 @@
   D1.diag.bomba = function (cont, opc) {
     opc = opc || {};
     const LB = 20, LA = 85, BANDA = 2;          // umbrales (%) y banda de los electrodos
-    const SUBE = 0.5, BAJA = [0, 0.15, 0.3];     // % por paso de 0,1 s
+    const SUBE = 1.0, BAJA = [0, 0.35, 0.7];     // % por paso de 0,1 s
     const LLAVE = ['cerrada', 'media', 'abierta'];
     const ty = (v) => 128 - v * 1.06;
-    const P = { lv: 40, run: false, C: 1, llave: 0, fb: 0, fa: 0, sa: 0, sb: 1, arranques: 0, M: 0, F: 0, t: null, rebalse: false };
+    const INI = { lv: 30, run: false, C: 1, llave: 1, fb: 0, fa: 0, sa: 0, sb: 1, arranques: 0, M: 0, F: 0, t: null, rebalse: false };
+    const P = Object.assign({}, INI);
     const oculta = opc.falla || null;
     let mov = 0, vivo = true;
     const t0 = Date.now(), oyentes = [];
@@ -95,7 +97,8 @@
     }
     function salidas() {
       const i = sensores();
-      const M = i.C && !i.La ? 1 : 0;
+      // memoria: arranca con el tanque vacío (Lb = 0), sigue mientras no llegue a La
+      const M = i.C && !i.La && (!i.Lb || P.M) ? 1 : 0;
       if (P.run && M && !P.M) P.arranques++;
       P.M = M;
       P.F = !i.Lb && i.La ? 1 : 0;
@@ -129,7 +132,8 @@
       const b = (n, x) => '<span class="sb">' + n + ' <b class="' + (x ? 'one' : '') + '">' + x + '</b></span>';
       q('.leds').innerHTML = b('C', i.C) + b('Lb', i.Lb) + b('La', i.La) +
         '<span class="ld' + (P.M ? ' on' : '') + '"><i></i>M</span><span class="ld al' + (P.F ? ' on' : '') + '"><i></i>F</span>';
-      q('.binfo').innerHTML = 'Arranques: <b class="' + (P.arranques > 6 ? 'bad-t' : '') + '">' + P.arranques + '</b> · toca la <b>llave</b> para abrirla';
+      const qhace = P.rebalse ? '¡rebalsando!' : !i.C ? 'apagada (cisterna sin agua)' : P.M ? 'llenando hasta La' : i.La ? 'apagada (llegó a La)' : 'apagada, espera que baje de Lb';
+      q('.binfo').innerHTML = 'Bomba: <b>' + qhace + '</b> · arranques: <b>' + P.arranques + '</b><br>Toca la <b>llave</b> para cambiar el consumo.';
       q('[data-b="run"]').textContent = P.run ? '❚❚ Pausa' : '▶ Simular';
       q('[data-b="C"]').classList.toggle('sel', !!P.C);
       raiz.querySelectorAll('[data-b="fb"],[data-b="fa"]').forEach((bt) => bt.classList.toggle('sel', !!P[bt.dataset.b]));
@@ -150,7 +154,7 @@
       if (!bt) return;
       const k = bt.dataset.b;
       if (k === 'run') { if (P.run) parar(); else { P.run = true; if (P.M) P.arranques++; P.t = setInterval(paso, 100); pintar(); } }
-      else if (k === 'rst') { clearInterval(P.t); Object.assign(P, { lv: 40, run: false, C: 1, llave: 0, fb: 0, fa: 0, sa: 0, sb: 1, arranques: 0, M: 0, F: 0, t: null, rebalse: false }); pintar(); }
+      else if (k === 'rst') { clearInterval(P.t); Object.assign(P, INI); pintar(); }
       else { P[k] ^= 1; pintar(); }
       avisar();
     });
