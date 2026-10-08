@@ -393,3 +393,35 @@ body.est{background:var(--bg);color:var(--ink);font-family:Roboto,"Segoe UI",sys
 .portada .item h3{margin:0;font-size:1rem}
 .portada .item p{margin:2px 0 0;color:var(--muted);font-size:.86rem}
 .migas a{color:var(--pri);text-decoration:none;font-weight:600}
+
+/* ---------- E5: problema común (tabla → mapa → circuito) ---------- */
+.e5-tabs{display:flex;gap:6px;margin:10px 0 6px}
+.e5-tabs button{flex:1;padding:10px 4px;border-radius:10px;border:1.5px solid #ced4da;background:#fff;font-weight:700;font-size:14px;color:var(--ink)}
+.e5-tabs button.hecho{border-color:var(--on);color:var(--on)}
+.e5-tabs button.hecho::after{content:" ✓"}
+.e5-tabs button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.e5-sig{margin-top:12px}
+.e5-circ{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px;margin:8px 0}
+.e5-circ svg{width:100%;height:auto;display:block}
+.e5-and{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:12px;padding:8px;margin:8px 0;background:#fff}
+.e5-n{font-weight:800;font-size:14px;min-width:3.6em}
+.e5-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;flex:1}
+.e5-chip{padding:8px 0;border-radius:9px;border:1.5px solid #ced4da;background:#fff;font-weight:800;font-size:17px;color:var(--ink)}
+.e5-chip.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
+.e5-x{border:0;background:var(--off2);border-radius:9px;width:34px;height:34px;font-size:16px;color:var(--muted)}
+.e5-cuenta{margin-top:8px}
+svg.circ .cw{stroke:#495057;stroke-width:2;fill:none}
+svg.circ .cd{fill:#495057}
+svg.circ .cg{fill:#fff;stroke:#495057;stroke-width:2.2}
+svg.circ .cv{font-size:15px;font-weight:800;fill:var(--ink)}
+svg.circ .cvn{font-size:13px;fill:var(--muted)}
+svg.circ .cvac{font-size:13px;fill:var(--muted)}
+.e5-sol{align-items:flex-start}
+.e5-sol .sol-circ{min-width:240px;flex:1;max-width:420px;text-align:center}
+.e5-sol .sol-circ svg{width:100%;height:auto}
+body.tv .solo-cel{display:none}
+body.tv .e5-sol{flex-wrap:nowrap}
+body.tv .e5-sol{gap:2em;align-items:center}
+body.tv .e5-sol .sol-circ{max-width:none;flex:1.2}
+body.tv .e5-sol .sol-circ svg{max-height:60vh}
+.vars{font-size:.8em;color:var(--muted)}

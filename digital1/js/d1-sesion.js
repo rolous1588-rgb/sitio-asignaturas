@@ -188,6 +188,143 @@
     }
   };
 
+  // ---------- E5: problema común para todos (tabla → mapa → circuito) ----------
+  const INC = {
+    t: 'Alarma de incendio «2 de 3»',
+    txt: 'La sirena suena si alguien presiona el pulsador manual, o si al menos dos de los tres detectores se activan. Un solo detector puede ser una falsa alarma (polvo, vapor de la cocina).',
+    v: [['P', 'alguien presiona el pulsador manual'], ['A', 'el detector de humo A se activa'], ['B', 'el detector de humo B se activa'], ['T', 'el detector de temperatura se activa']],
+    f: (p, a, b, t) => p || (a && b) || (a && t) || (b && t)
+  };
+  E.e5 = {
+    titulo: 'Alarma de incendio', puntos: 6, tipo: 'diseno', comun: true,
+    tv: '<b>' + INC.t + '.</b> ' + INC.txt + '<br><span class="vars">' + INC.v.map((x) => '<b>' + x[0] + '</b> = ' + x[1]).join(' · ') + ' · <b>F</b> = sirena</span>',
+    generar() {
+      const f = Array.from({ length: 16 }, (_, m) => (INC.f(!!(m & 8), !!(m & 4), !!(m & 2), !!(m & 1)) ? 1 : 0));
+      return { nv: 4, f, nombres: INC.v.map((x) => x[0]) };
+    },
+    resumen: () => INC.t,
+    enunciado: () => '<div class="problema"><b>' + esc(INC.t) + '.</b> ' + esc(INC.txt) + '<ul>' +
+      INC.v.map((x) => '<li><b>' + x[0] + '</b> = 1 si ' + esc(x[1]) + '</li>').join('') + '<li><b>F</b> = 1 si suena la sirena</li></ul>' +
+      '<p class="lbl" style="margin:6px 0 0">Haz los tres pasos: <b>1</b> tabla · <b>2</b> mapa · <b>3</b> circuito.</p></div>',
+    montar(cont, d) {
+      const N = 16, n = d.nombres;
+      const tabla = Array(N).fill(null);
+      let puertas = [[]], tab = 0, mov = 0;
+      const t0 = Date.now(), oyentes = [];
+      const caja = document.createElement('div');
+      caja.className = 'e5';
+      caja.innerHTML = '<div class="e5-tabs"><button data-t="0">1 · Tabla</button><button data-t="1">2 · Mapa</button><button data-t="2">3 · Circuito</button></div>' +
+        '<div class="e5-p" data-p="0"><p class="paso-t">Toca cada fila para poner F = 1 o 0:</p><div class="centro"><table class="tt tight tabla-y"></table></div>' +
+        '<button class="boton bloque e5-sig" data-ir="1">Siguiente: el mapa →</button></div>' +
+        '<div class="e5-p" data-p="1"><p class="paso-t">El mapa se llena con tu tabla. Forma los grupos:</p><div class="zona-ed"></div>' +
+        '<button class="boton bloque e5-sig" data-ir="2">Siguiente: el circuito →</button></div>' +
+        '<div class="e5-p" data-p="2"><p class="paso-t">Tu expresión del mapa: <b class="e5-mia"></b></p>' +
+        '<p class="lbl">Arma el circuito: en cada compuerta AND toca las entradas que llegan. Una compuerta con una sola entrada es un cable directo a la OR.</p>' +
+        '<div class="e5-circ"></div><div class="e5-puertas"></div>' +
+        '<button class="boton bloque" data-a="mas">+ Agregar compuerta AND</button><p class="e5-cuenta lbl"></p></div>';
+      cont.appendChild(caja);
+      const q = (x) => caja.querySelector(x);
+      const T = q('table');
+      const ed = K.editor(q('.zona-ed'), { nv: 4, nombres: n, fijo: true, salida: 'F' });
+      const valores = () => tabla.map((x) => (x === 1 ? 1 : 0));
+      const avisar = () => { mov++; oyentes.forEach((fn) => fn()); };
+      function dibujarTabla() {
+        let h = '<tr>' + n.map((x) => '<th>' + x + '</th>').join('') + '<th>F</th></tr>';
+        for (let m = 0; m < N; m++) h += '<tr data-m="' + m + '">' + [8, 4, 2, 1].map((b) => '<td>' + (m & b ? 1 : 0) + '</td>').join('') +
+          '<td class="yc ' + (tabla[m] === null ? 'unk' : tabla[m] ? 'v1' : '') + '">' + (tabla[m] === null ? '?' : tabla[m]) + '</td></tr>';
+        T.innerHTML = h;
+      }
+      function dibujarCirc() {
+        const gr = ed.estado().grupos;
+        q('.e5-mia').innerHTML = gr.length ? 'F = ' + K.expr(gr, 4, n, false) : '(todavía sin grupos)';
+        q('.e5-circ').innerHTML = D1.circ.svg(4, puertas, n);
+        q('.e5-puertas').innerHTML = puertas.map((g, k) => '<div class="e5-and" data-g="' + k + '"><span class="e5-n" style="color:' + K.GC[k % 8] + '">AND ' + (k + 1) + '</span><div class="e5-chips">' +
+          [0, 1, 2, 3].map((i) => [0, 1].map((ng) => { const c = 2 * i + ng; return '<button class="e5-chip' + (g.includes(c) ? ' on' : '') + '" data-c="' + c + '">' + (ng ? '<span class="ov">' + n[i] + '</span>' : n[i]) + '</button>'; }).join('')).join('') +
+          '</div><button class="e5-x" data-x="' + k + '" aria-label="Quitar">✕</button></div>').join('');
+        const c = D1.circ.cuenta(puertas);
+        q('.e5-cuenta').innerHTML = 'Tu circuito: <b>F = ' + D1.circ.expr(puertas, n, true) + '</b><br>' + c.not + ' NOT · ' + c.and + ' AND · ' + c.or + ' OR';
+      }
+      function marcar() {
+        const hecho = [tabla.every((x) => x !== null), ed.estado().grupos.length > 0, puertas.some((g) => g.length)];
+        caja.querySelectorAll('.e5-tabs button').forEach((b) => { const t = +b.dataset.t; b.classList.toggle('on', t === tab); b.classList.toggle('hecho', hecho[t]); });
+        caja.querySelectorAll('.e5-p').forEach((x) => { x.hidden = +x.dataset.p !== tab; });
+      }
+      function ir(t) { tab = t; if (t === 2) dibujarCirc(); marcar(); window.scrollTo({ top: Math.max(0, caja.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' }); }
+      caja.addEventListener('click', (e) => {
+        const tb = e.target.closest('.e5-tabs [data-t]'); if (tb) { ir(+tb.dataset.t); return; }
+        const sg = e.target.closest('[data-ir]'); if (sg) { ir(+sg.dataset.ir); return; }
+        const tr = e.target.closest('tr[data-m]');
+        if (tr && T.contains(tr)) { const m = +tr.dataset.m; tabla[m] = tabla[m] === 1 ? 0 : 1; dibujarTabla(); ed.fijarValores(valores()); marcar(); avisar(); return; }
+        const ch = e.target.closest('.e5-chip');
+        if (ch) {
+          const k = +ch.closest('.e5-and').dataset.g, c = +ch.dataset.c, g = puertas[k];
+          const i = g.indexOf(c); if (i >= 0) g.splice(i, 1); else g.push(c);
+          dibujarCirc(); marcar(); avisar(); return;
+        }
+        const x = e.target.closest('.e5-x');
+        if (x) { puertas.splice(+x.dataset.x, 1); if (!puertas.length) puertas.push([]); dibujarCirc(); marcar(); avisar(); return; }
+        if (e.target.closest('[data-a="mas"]')) { if (puertas.length < 8) puertas.push([]); dibujarCirc(); marcar(); avisar(); }
+      });
+      ed.alCambiar(() => { marcar(); avisar(); });
+      dibujarTabla(); ed.fijarValores(valores()); dibujarCirc(); marcar();
+      return {
+        estado: () => ({ tabla: tabla.slice(), vals: valores(), grupos: ed.estado().grupos, puertas: puertas.map((g) => g.slice()) }),
+        fijar(e) {
+          if (!e) return;
+          if (e.tabla) e.tabla.forEach((v, m) => { tabla[m] = v; });
+          dibujarTabla(); ed.fijarValores(valores());
+          if (e.grupos) ed.fijar({ grupos: e.grupos });
+          if (e.puertas && e.puertas.length) puertas = e.puertas.map((g) => g.slice());
+          dibujarCirc(); marcar();
+        },
+        movimientos: () => mov,
+        segundos: () => Math.round((Date.now() - t0) / 1000),
+        alCambiar: (fn) => oyentes.push(fn),
+        destruir: () => { ed.destruir(); caja.remove(); }
+      };
+    },
+    evaluar(est, d) {
+      const tabla = (est && est.tabla) || [];
+      const bien = d.f.filter((v, m) => tabla[m] === v).length;
+      const ptsTabla = Math.round((2 * bien / 16) * 2) / 2;
+      const grupos = (est && est.grupos) || [];
+      const funcOK = grupos.length > 0 && K.equivale(4, grupos, d.f);
+      const opt = K.resolver(4, d.f);
+      const minOK = funcOK && grupos.length === opt.cubos.length && K.lits(grupos) === opt.lits;
+      const puertas = ((est && est.puertas) || []).filter((g) => g.length);
+      const fc = D1.circ.funcion(4, puertas);
+      const circOK = puertas.length > 0 && fc.every((v, m) => v === d.f[m]);
+      const suya = tabla.map((x) => (x === 1 ? 1 : 0));
+      const circSuyo = !circOK && puertas.length > 0 && grupos.length > 0 && fc.every((v, m) => v === K.evaluar(4, grupos)[m]);
+      const ptsCirc = circOK ? 2 : circSuyo ? 1 : 0;
+      const puntos = ptsTabla + (funcOK ? 1 : 0) + (minOK ? 1 : 0) + ptsCirc;
+      return {
+        puntos, ok: puntos === 6, valor: puntos, suya,
+        texto: 'Tabla: ' + bien + '/16 filas · ' + (funcOK ? '✓' : '✗') + ' expresión correcta · ' + (minOK ? '✓' : '✗') + ' mínima · ' +
+          (circOK ? '✓ circuito correcto' : circSuyo ? '½ circuito igual a tu mapa (pero el mapa tiene errores)' : '✗ circuito')
+      };
+    },
+    solucion(d) {
+      const opt = K.resolver(4, d.f), pu = D1.circ.deCubos(4, opt.cubos), c = D1.circ.cuenta(pu);
+      return {
+        html: '<div class="sol-dos e5-sol"><div class="solo-cel">' + K.tablaHTML(4, d.f, { nombres: d.nombres, salida: 'F' }) + '</div>' +
+          '<div class="sol-mapa">' + K.estatico(4, d.f, { nombres: d.nombres, grupos: opt.cubos }) +
+          '<p class="expr">F = ' + K.expr(opt.cubos, 4, d.nombres, true) + '</p></div>' +
+          '<div class="sol-circ">' + D1.circ.svg(4, pu, d.nombres) + '<p class="lbl">' + c.not + ' NOT · ' + c.and + ' AND · ' + c.or + ' OR de ' + pu.length + ' entradas</p></div></div>'
+      };
+    },
+    vista(est, d) {
+      const tabla = (est && est.tabla) || [];
+      const ft = tabla.map((x) => (x === null || x === undefined ? 0 : x));
+      while (ft.length < 16) ft.push(0);
+      const grupos = (est && est.grupos) || [], pu = (est && est.puertas) || [];
+      return '<div class="sol-dos e5-sol"><div class="solo-cel">' + K.tablaHTML(4, ft, { nombres: d.nombres, salida: 'F' }) + '</div>' +
+        '<div class="sol-mapa">' + K.estatico(4, ft, { nombres: d.nombres, grupos, cls: (m) => (ft[m] !== d.f[m] ? 'mal' : '') }) +
+        '<p class="expr">F = ' + (grupos.length ? K.expr(grupos, 4, d.nombres, true) : '—') + '</p></div>' +
+        '<div class="sol-circ">' + (pu.some((g) => g.length) ? D1.circ.svg(4, pu, d.nombres) + '<p class="expr">F = ' + D1.circ.expr(pu, d.nombres, true) + '</p>' : '<p class="lbl">No armó el circuito.</p>') + '</div></div>';
+    }
+  };
+
   // ---------- E3: encontrar la falla de la bomba ----------
   const FALLAS = ['fb', 'fa', 'fc', 'ok'];
   const OPC_FALLA = ['El sensor bajo (Lb) está dañado', 'El sensor alto (La) está dañado', 'El sensor de la cisterna (C) está dañado', 'No hay ninguna falla'];
@@ -269,6 +406,7 @@
         por: 'Con La siempre en 0, la bomba nunca recibe la orden de parar: el tanque rebalsa y F no se entera.' },
       { id: 'e3', tipo: 'ejercicio', g: 1, ejercicio: 'e3' },
       { id: 'pq', tipo: 'explica', g: 1, titulo: 'Para pensar: la bomba', idea: '¿Qué no puede hacer un circuito combinacional?' },
+      { id: 'e5', tipo: 'ejercicio', g: 1, ejercicio: 'e5' },
       { id: 'r7', tipo: 'rapida', g: 1, titulo: 'Predicción', t: 'Prensa con Y = I·D. Con cinta en el botón I, ¿baja si presionas solo D?', o: ['Sí, baja', 'No, la AND lo impide', 'Solo si la guarda está cerrada', 'Depende del tiempo'], c: 0,
         por: 'La cinta deja I = 1 para siempre: la AND ya no exige las dos manos.' },
       { id: 'press', tipo: 'explica', g: 1, titulo: 'Problema 2 · Prensa a dos manos', idea: 'Una AND no alcanza para la seguridad real.' },

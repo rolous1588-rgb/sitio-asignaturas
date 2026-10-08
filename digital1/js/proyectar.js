@@ -156,14 +156,15 @@
     if (fz !== 'cerrado') {
       el.innerHTML = '<h2>Ejercicio: ' + ej.titulo + '</h2><div class="esc"><div class="izq">' +
         '<span class="etq">Ejercicio · ' + ej.puntos + ' puntos</span><p class="preg">' + ej.tv + '</p>' +
-        '<p class="lbl">Tus datos son distintos a los de tu compañero: están en tu celular. Al cerrar se envía lo que tengas.</p></div>' +
+        '<p class="lbl">' + (ej.comun ? 'Es el mismo problema para todos: tabla → mapa → circuito en su celular. Al cerrar se envía lo que tengas.' : 'Tus datos son distintos a los de tu compañero: están en tu celular. Al cerrar se envía lo que tengas.') + '</p></div>' +
         '<div class="der">' + panelEstado(p) + '</div></div>';
       return;
     }
     if (vista === 'solucion') {
       const d = D1.datosDe(p.ejercicio, D1.CARNET_EJEMPLO);
+      if (ej.comun) { el.innerHTML = '<h2>Solución · ' + ej.titulo + '</h2><div class="esc"><div class="izq">' + ej.solucion(d).html + '</div></div>'; return; }
       el.innerHTML = '<h2>Solución · ' + ej.titulo + '</h2><div class="esc"><div class="izq">' + ej.solucion(d).html + '</div>' +
-        '<div class="der"><div class="tvp"><span class="etq">Datos de ejemplo</span><p>' + ej.resumen(d) + '</p>' +
+        '<div class="der"><div class="tvp"><span class="etq">' + (ej.comun ? 'Problema' : 'Datos de ejemplo') + '</span><p>' + ej.resumen(d) + '</p>' +
         (p.ejercicio === 'e2' ? '<p class="lbl">' + II.esc(D1.PROBLEMAS[d.k].txt) + '</p>' : '') + '</div></div></div>';
       return;
     }
