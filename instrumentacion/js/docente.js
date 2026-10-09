@@ -359,6 +359,12 @@
     if (!II.$('#panel')) return;
     II.$$('.pestanas button').forEach((b) => b.classList.toggle('activo', b.dataset.p === D.pestana));
     const cont = II.$('#panel');
+    if (S.foro) {
+      if (document.activeElement && /^fo-/.test(document.activeElement.id || '')) return; // no repintar mientras escribe una fecha
+      cont.innerHTML = D.pestana === 'control' ? vistaControlForo() : vistaReporteForo();
+      if (D.detalle && D.pestana === 'reporte') verDetalleForo(D.detalle);
+      return;
+    }
     if (S.asincrona) {
       const foco = document.activeElement && ['ce-cierra', 'ex-min'].includes(document.activeElement.id) ? document.activeElement.value : null;
       if (foco != null) return; // no repintar mientras el docente escribe la fecha de cierre
@@ -375,6 +381,7 @@
       </div>`;
 
   const iniciarPanel = () => {
+    if (S.foro) return iniciarForo();
     if (S.asincrona) return iniciarAsincrona();
     main.innerHTML = `<div class="contenido" style="max-width:760px">
       ${selectorSesiones()}
@@ -726,6 +733,171 @@
       }, 500);
     }
     // si no existe la fila (falta aplicar el SQL), se avisa en la vista de control
+    II.sb.from('estado_sesion').select('*').eq('sesion', SES).maybeSingle().then(({ data }) => { if (!data) { D.fila = null; pintar(); } });
+  };
+
+  // ============================================================
+  // FORO CON COEVALUACIÓN (ii-foro): fases, avance y nota automática
+  // ============================================================
+  const FO = II.FORO;
+  const faseForo = () => {
+    const ex = extraCE(), t = Date.now();
+    const ab = ex.abre ? Date.parse(ex.abre) : null, f1 = ex.fase1 ? Date.parse(ex.fase1) : null, f2 = ex.fase2 ? Date.parse(ex.fase2) : null;
+    const estado = !D.fila ? 'sin-fila' : !ab || t < ab ? 'antes' : f1 && t <= f1 ? 'f1' : f2 && t <= f2 ? 'f2' : 'fin';
+    return { estado, ab, f1, f2 };
+  };
+  const notasForo = () => (FO ? FO.notas(D.respuestas, alumnos()) : []);
+  const vistaControlForo = () => {
+    const v = faseForo();
+    const filas = notasForo();
+    const aportes = filas.filter((f) => f.aporte).length;
+    const evs = D.respuestas.filter((r) => r.actividad === 'foro-eval').length;
+    const esperadas = filas.reduce((s, f) => s + f.asignadas, 0);
+    const vals = new Set(D.respuestas.filter((r) => r.actividad === 'foro-util').map((r) => r.respuesta && r.respuesta.eval)).size;
+    const txt = { 'sin-fila': '<b style="color:var(--mal)">Falta pegar el SQL del foro en Supabase</b>', antes: '<b style="color:var(--duda)">No abierto</b>',
+      f1: '<b style="color:var(--ok)">Fase 1 · aportes</b>', f2: '<b style="color:var(--acento)">Fase 2 · evaluaciones</b>', fin: '<b style="color:var(--mal)">Terminado</b> · ya no se registra nada' }[v.estado];
+    return `
+      <div class="paso-actual"><span class="etiqueta">Foro con coevaluación · vale ${FO.peso} %</span>
+        <div class="titulo">${FO.titulo}</div><div class="nota">Estado: ${txt}</div></div>
+      <div class="tarjeta" style="padding:14px;margin-bottom:12px">
+        <div style="display:grid;gap:4px;font-size:.95rem">
+          <div><b>Abre:</b> ${v.ab ? fechaBO(v.ab) : 'todavía no'}</div>
+          <div><b>Fase 1 (aportes) hasta:</b> ${fechaBO(v.f1)}</div>
+          <div><b>Fase 2 (evaluaciones) hasta:</b> ${fechaBO(v.f2)}</div></div>
+        <div class="controles" style="margin-top:10px">
+          ${v.estado === 'antes' ? '<button class="boton primario" data-acc="fo-abrir">Abrir ahora</button>' : ''}
+        </div>
+        <div style="display:grid;gap:8px;margin-top:12px">
+          <label class="campo" style="margin:0"><span>Cambiar el cierre de la fase 1 (hora de Bolivia)</span><input class="entrada" type="datetime-local" id="fo-f1" value="${v.f1 ? aEntradaBO(v.f1) : ''}" style="max-width:260px"></label>
+          <label class="campo" style="margin:0"><span>Cambiar el cierre de la fase 2</span><input class="entrada" type="datetime-local" id="fo-f2" value="${v.f2 ? aEntradaBO(v.f2) : ''}" style="max-width:260px"></label>
+          <div><button class="boton" data-acc="fo-fechas">Guardar fechas</button></div>
+        </div>
+        <p class="nota" style="margin:8px 0 0">La fase 2 se abre sola cuando cierra la fase 1. No cambies la fecha de la fase 1 después de que empiece la fase 2: cambiaría qué aportes le tocan a cada uno.</p>
+      </div>
+      <div class="metricas"><div class="metrica"><b>${filas.length}</b><span>Entraron</span></div><div class="metrica"><b>${aportes}</b><span>Aportes publicados</span></div>
+        <div class="metrica"><b>${evs}/${esperadas || '—'}</b><span>Evaluaciones</span></div><div class="metrica"><b>${vals}</b><span>Comentarios valorados</span></div></div>
+      <div class="tarjeta" style="padding:14px">
+        <div class="controles" style="margin-bottom:8px"><button class="boton chico" data-acc="fo-copiar">Copiar enlace de estudiantes</button></div>
+        <div class="nota" style="word-break:break-all">${II.esc(urlForo())}</div>
+      </div>`;
+  };
+  const urlForo = () => location.href.replace(/[^/]*$/, '') + 'foro.html';
+  const vistaReporteForo = () => {
+    const filas = notasForo();
+    const f2 = faseForo().estado;
+    return `
+      <div class="controles" style="margin-bottom:12px">
+        <button class="boton primario" data-acc="fo-csv">Descargar para Excel (.csv)</button>
+        <button class="boton" data-acc="recargar">Actualizar</button>
+      </div>
+      <p class="nota" style="margin:0 0 8px">Nota automática: aporte 20 + calidad según los pares 50 + evaluaciones hechas 15 + evaluar con criterio 15. Ponderada = nota × 0,25. ${f2 !== 'fin' ? '<b>Es provisional hasta que cierre la fase 2.</b>' : ''} Toca un nombre para ver el detalle.</p>
+      <div class="tabla-envoltura"><table class="tabla">
+        <tr><th>Nombre</th><th>Nota /100</th><th>Pond. /25</th><th>Aporte /20</th><th>Calidad /50</th><th>Evaluó /15</th><th>Criterio /15</th><th>Avisos</th></tr>
+        ${filas.map((f) => `<tr data-fo="${II.esc(f.a.carnet)}" style="cursor:pointer"><td><b>${II.esc(f.a.nombre)}</b></td><td class="n"><b>${II.fmt(f.nota, 1)}</b></td><td class="n">${II.fmt(f.pond, 2)}</td>
+          <td class="n">${f.aporte ? II.fmt(f.ptsCumpl, 1) + ` <span class="nota">(${f.palabras} pal.)</span>` : '—'}</td>
+          <td class="n">${f.aporte ? II.fmt(f.ptsCal, 1) + ` <span class="nota">(${f.nRecibidas} ev.)</span>` : '—'}</td>
+          <td class="n">${II.fmt(f.ptsEval, 1)} <span class="nota">(${f.hechas}/${f.asignadas})</span></td><td class="n">${II.fmt(f.ptsBuen, 1)}</td>
+          <td style="white-space:normal;min-width:160px">${f.alertas.map((a) => `<span class="chip duda" style="white-space:normal;margin:1px">${II.esc(a)}</span>`).join('') || ''}</td></tr>`).join('') || '<tr><td colspan="8" class="nota">Aún no hay datos.</td></tr>'}
+      </table></div>
+      <div id="detalle-foro" style="margin-top:14px"></div>
+      <div class="tarjeta" style="margin-top:24px;padding:14px">
+        <h3>Datos de prueba</h3>
+        <p class="nota">Borra todos los aportes, evaluaciones e ingresos del foro. Úsalo solo después de probar, <b>antes</b> de enviar el enlace a los estudiantes.</p>
+        <button class="boton peligro" data-acc="fo-borrar">Borrar datos de esta sesión</button>
+      </div>`;
+  };
+  const verDetalleForo = (carnet) => {
+    const cont = II.$('#detalle-foro');
+    const f = notasForo().find((x) => x.a.carnet === carnet);
+    if (!cont || !f) return;
+    const r = f.aporte ? f.aporte.respuesta || {} : null;
+    const evTxt = (e) => `<div class="grupo-campo" style="border-left:3px solid var(--borde-2);padding-left:10px">
+      <div class="nota">Rúbrica: ${(e.respuesta.rubrica || []).map((x, i) => `${FO.rubrica[i].t} <b>${x}</b>`).join(' · ')} · total <b>${e.respuesta.total}/8</b></div>
+      <p style="margin:4px 0 0;white-space:pre-wrap">${II.esc(e.respuesta.comentario || '')}</p></div>`;
+    cont.innerHTML = `<div class="tarjeta" style="padding:14px"><h3>${II.esc(f.a.nombre)} <span class="nota">· CI ${II.esc(carnet)} · nota ${II.fmt(f.nota, 1)}</span></h3>
+      ${r ? `<div class="etiqueta" style="margin:8px 0 4px">Aporte: ${II.esc(r.titulo || '')} (${f.palabras} palabras)</div>
+        ${FO.preguntas.map((p, i) => `<p class="nota" style="margin:6px 0 2px"><b>${i + 1}. ${p}</b></p><p style="margin:0;white-space:pre-wrap">${II.esc(r['c' + (i + 1)] || '')}</p>`).join('')}
+        ${r.enlace ? `<p style="margin:8px 0 0">🔗 <a href="${II.esc(/^https?:\/\//i.test(r.enlace) ? r.enlace : 'https://' + r.enlace)}" target="_blank" rel="noopener nofollow">${II.esc(r.enlace)}</a></p>` : r.propio ? '<p class="nota">Indicó que todo es de su autoría.</p>' : ''}
+        <div class="etiqueta" style="margin:12px 0 4px">Evaluaciones que recibió (${f.recibidas.length})</div>${f.recibidas.map(evTxt).join('') || '<p class="nota">Ninguna todavía.</p>'}`
+        : '<p class="nota">No publicó aporte.</p>'}
+      <div class="etiqueta" style="margin:12px 0 4px">Evaluaciones que hizo (${f.comentarios.length})</div>${f.comentarios.map(evTxt).join('') || '<p class="nota">Ninguna todavía.</p>'}
+    </div>`;
+  };
+  const csvForo = () => {
+    const n = (x) => (x == null ? '' : String(Math.round(x * 100) / 100).replace('.', ','));
+    const q = (s) => '"' + String(s ?? '').replace(/"/g, '""') + '"';
+    const cab = ['Nombre', 'Carnet', 'Área', 'Nota (/100)', 'Ponderada (/25)', 'Aporte: cumplimiento (/20)', 'Palabras', 'Calidad según pares (/50)', 'Evaluaciones recibidas',
+      'Evaluaciones hechas', 'Asignadas', 'Evaluó (/15)', 'Evaluar con criterio (/15)', 'Avisos', 'Instrumento', ...FO.preguntas.map((p, i) => `Respuesta ${i + 1}`), 'Enlace'];
+    const filas = notasForo().map((f) => {
+      const r = f.aporte ? f.aporte.respuesta || {} : {};
+      return [q(f.a.nombre), q(f.a.carnet), q(f.a.info && f.a.info.area), n(f.nota), n(f.pond), n(f.ptsCumpl), f.palabras, n(f.ptsCal), f.nRecibidas, f.hechas, f.asignadas, n(f.ptsEval), n(f.ptsBuen),
+        q(f.alertas.join(' | ')), q(r.titulo), q(r.c1), q(r.c2), q(r.c3), q(r.c4), q(r.enlace)].join(';');
+    });
+    const csv = '\ufeff' + [cab.map(q).join(';'), ...filas].join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `foro-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+  const iniciarForo = () => {
+    if (D.pestana === 'pizarra') D.pestana = 'control';
+    main.innerHTML = `<div class="contenido" style="max-width:900px">
+      ${selectorSesiones()}
+      <div class="pestanas"><button data-p="control">Control</button><button data-p="reporte">Reporte</button></div>
+      <div id="panel"></div></div>`;
+    II.$$('.pestanas button').forEach((b) => b.addEventListener('click', () => { D.pestana = b.dataset.p; D.detalle = null; pintar(); }));
+    II.$('#sel-sesion').addEventListener('change', (e) => { location.search = '?s=' + e.target.value; });
+    const cambiar = async (b, cambios, okMsg) => {
+      b.disabled = true;
+      const r = await II.fijarExtra(SES, cambios, extraCE());
+      if (!r.ok) { aviso('No se pudo cambiar: ' + r.error); b.disabled = false; return; }
+      D.fila = { ...(D.fila || {}), extra: r.extra };
+      pintar();
+      if (okMsg) { const a = II.html(`<div class="aviso ok aviso-flotante">${okMsg}</div>`); document.body.appendChild(a); setTimeout(() => a.remove(), 3500); }
+    };
+    let borrarFo = false;
+    II.$('#panel').addEventListener('click', async (e) => {
+      const fila = e.target.closest('[data-fo]');
+      if (fila) { D.detalle = fila.dataset.fo; verDetalleForo(D.detalle); II.$('#detalle-foro').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      const b = e.target.closest('button');
+      if (!b) return;
+      const acc = b.dataset.acc;
+      if (acc === 'fo-abrir') cambiar(b, { abre: new Date(await ahoraServidor()).toISOString() }, 'Foro abierto.');
+      else if (acc === 'fo-fechas') {
+        const v1 = II.$('#fo-f1').value, v2 = II.$('#fo-f2').value;
+        const m1 = v1 ? deEntradaBO(v1) : NaN, m2 = v2 ? deEntradaBO(v2) : NaN;
+        if (!isFinite(m1) || !isFinite(m2) || m2 <= m1) return aviso('Revisa las fechas: la fase 2 debe cerrar después de la fase 1.');
+        II.$('#fo-f1').blur(); II.$('#fo-f2').blur();
+        cambiar(b, { fase1: new Date(m1).toISOString(), fase2: new Date(m2).toISOString(), cierra: new Date(m2).toISOString() }, 'Fechas guardadas.');
+      } else if (acc === 'fo-csv') csvForo();
+      else if (acc === 'recargar') cargar();
+      else if (acc === 'fo-copiar') {
+        try { await navigator.clipboard.writeText(urlForo()); b.textContent = '¡Copiado!'; }
+        catch (err) { b.textContent = 'Mantén presionado el enlace para copiarlo'; }
+        setTimeout(() => { if (b.isConnected) b.textContent = 'Copiar enlace de estudiantes'; }, 2500);
+      } else if (acc === 'fo-borrar') {
+        if (!borrarFo) {
+          borrarFo = true; b.classList.add('confirmar'); b.textContent = 'Toca otra vez para confirmar';
+          setTimeout(() => { borrarFo = false; if (b.isConnected) { b.classList.remove('confirmar'); b.textContent = 'Borrar datos de esta sesión'; } }, 4000);
+          return;
+        }
+        borrarFo = false; b.disabled = true; b.textContent = 'Borrando…';
+        const r1 = await II.sb.from('respuestas').delete().eq('sesion', SES);
+        const r2 = await II.sb.from('ingresos').delete().eq('sesion', SES);
+        if (r1.error || r2.error) aviso('No se pudo borrar: ' + (r1.error || r2.error).message);
+        D.respuestas = []; D.ingresos = []; D.detalle = null;
+        cargar();
+      }
+    });
+    II.seguirEstado(SES, (fila) => { D.fila = fila; pintar(); });
+    setInterval(async () => {
+      const { data } = await II.sb.from('estado_sesion').select('*').eq('sesion', SES).maybeSingle();
+      if (data && JSON.stringify(data.extra) !== JSON.stringify(extraCE())) { D.fila = data; pintar(); }
+    }, 30000);
+    cargar();
+    suscribir();
+    setInterval(cargar, 20000);
     II.sb.from('estado_sesion').select('*').eq('sesion', SES).maybeSingle().then(({ data }) => { if (!data) { D.fila = null; pintar(); } });
   };
 
