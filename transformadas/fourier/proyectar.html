@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Proyección · Series de Fourier</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="../../medidas/css/me.css?v=2">
+<link rel="stylesheet" href="css/fs.css?v=2">
+</head>
+<body class="tv">
+<div class="tv-app">
+  <header class="tv-cab">
+    <div class="titulos"><h1 id="t-titulo">Series de Fourier</h1><p class="idea" id="t-idea"></p></div>
+    <nav class="fs-etapas" id="t-etapas" aria-label="Etapas"></nav>
+    <span class="gente" id="t-gente">👥 0</span>
+    <button class="num" id="t-num" aria-label="Ir a un paso"></button>
+    <span class="punto" id="t-con"></span>
+  </header>
+  <main class="tv-cuerpo" id="cuerpo"></main>
+  <footer class="tv-pie">
+    <button class="tv-btn" id="b-ant" aria-label="Anterior">◀</button>
+    <button class="tv-btn prim oculto" id="b-acc"></button>
+    <button class="tv-btn oculto" id="b-extra"></button>
+    <span class="espacio"></span>
+    <button class="tv-btn" id="b-menu" aria-label="Menú">⋮</button>
+    <button class="tv-btn" id="b-qr">QR</button>
+    <button class="tv-btn" id="b-pant" aria-label="Pantalla completa">⛶</button>
+    <button class="tv-btn" id="b-sig" aria-label="Siguiente">▶</button>
+  </footer>
+</div>
+<div class="aviso info oculto" id="aviso" style="position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:60;font-size:calc(var(--u)*4.4);max-width:80vw"></div>
+<div class="girar"><p>Gira el celular a horizontal para proyectar.</p></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="../../instrumentacion/js/config.js?v=me2"></script>
+<script src="../../instrumentacion/js/nucleo.js?v=me2"></script>
+<script src="js/fs-onda.js?v=2"></script>
+<script src="js/fs-sesion.js?v=1"></script>
+<script src="js/proyectar.js?v=2"></script>
+</body>
+</html>

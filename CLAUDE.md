@@ -125,6 +125,22 @@ Carpeta `transformadas/`. Examen presencial en el aula con TV: el docente proyec
 - Reporte: nota del `eval`; si no hay, la última `eval-avance` («Última copia automática»). Las copias se piden aparte y de la más nueva a la más antigua (límite de 1000 filas de Supabase).
 - Pruebas: simulador de supabase-js con un servidor compartido entre contextos (docente + 3 estudiantes en Playwright), incluido el reporte con copia automática.
 
+## Transformadas · Series de Fourier (clase presencial, desde 12/10/2026)
+
+Carpeta `transformadas/fourier/` (sesión `tf-fourier`, fila creada en `estado_sesion` el 12/10). Mismo esquema que Medidas (proyecta el celular del docente en horizontal; aula de 5–7 m) y reutiliza `../../instrumentacion/js/config.js`, `nucleo.js` y `../../medidas/css/me.css` (+ `css/fs.css`). No cambia la base: el «habilitar de nuevo» y la nota por fecha se resuelven con `estado_sesion.extra` y las respuestas.
+
+| Archivo | Rol |
+|---|---|
+| `proyectar.html` + `js/proyectar.js` | Proyección + control. Pestañas de etapas (1 La idea · 2 Calcular · 3 Reconocer · 4 Usar) en la cabecera. Habilitar → **Enviaron** (lista con «Habilitar» por estudiante, solo con la actividad abierta: `extra.rehab = { act, c: { carnet: n } }`) → Cerrar (cuenta regresiva que activa el docente) → Resultados / Solución / Intento. ⋮: Ir a un paso, **Terminar la clase de hoy** (`extra.dia = { fecha, acts, max }`: TV y celulares muestran la nota de hoy /100), Descargar notas |
+| `clase.html` + `js/estudiante.js` | Registro: apellidos, nombres, C.I., **C.U. (carnet de referencia)** y carrera (lista con solo Ing. Electromecánica / Ing. Biomédica). **Confirmación antes de enviar** (Cancelar vuelve al ejercicio; avisa cuántas partes faltan). Al cerrar o avanzar se envía lo que tenga. Si el docente lo habilita, borra su envío local y reenvía con `respuesta.rehab = n` (vale el último) |
+| `js/fs-onda.js` | `FS.BASE` (cuadrada, triangular, diente, rectificadas, pulsos, ECG, cargador), `FS.coef` (numérico), `FS.plot`, `FS.barras`, `FS.simetrias` y `FS.diagrama(cont, { modo, params })` con modos `periodica`, `seno`, `suma`, `sintesis`, `ortogonal`, `simetria`, `potencia`, `filtro`, `complejo` |
+| `js/fs-sesion.js` | 41 pasos en 4 etapas (12 rápidas de 1 pt) y `FS.EJERCICIOS` e1–e7 (genérico: `generar(r, carrera)`, `enunciado`, `figura`, `items` num/op, `solucion`; un punto parcial por ítem, ±2 %). `porCarrera: true` en e1 (vibración de motor / oxímetro) y e6 (Parseval: corriente con armónicos y THD / oxímetro). La carrera viaja en `respuesta.car` |
+
+- Notación acordada: período T, ω₀ = 2π/T; sin libro de referencia. Coeficientes con π se piden como valor numérico.
+- **Nota por fecha**: cada actividad pertenece a la fecha de su primera respuesta; el CSV trae, por fecha, puntos por actividad, asistencia, puntos, máximo y nota /100, más la columna «Habilitado de nuevo en».
+- Pruebas: simulador local de supabase-js + servidor compartido y Playwright (docente + 3 estudiantes, todas las actividades probadas, habilitar de nuevo, cierre del día y CSV).
+- Pendiente: cuando se pruebe en el aula, llevar la confirmación y el «habilitar de nuevo» a Medidas y Digital 1 (pedido del docente).
+
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
