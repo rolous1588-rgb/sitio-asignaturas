@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#f6f5f1">
 <meta name="robots" content="noindex">
 <title>Proyección · Electrónica Digital 1</title>
-<link rel="stylesheet" href="css/d1.css?v=2">
+<link rel="stylesheet" href="css/d1.css?v=3">
 </head>
 <body class="tv">
 
@@ -235,6 +235,34 @@
     <p class="card"><b>Para cada reto:</b> tabla, mapas, expresión mínima, circuito en Falstad, lista de chips 74xx y montaje en protoboard.</p>
   </div></div>
 </section>
+
+<section class="slide" id="p-prac">
+  <h2>Práctica: del circuito a la función</h2>
+  <div class="body"><div class="stack">
+    <p class="preg">Hasta ahora fuimos del problema al circuito. Hoy también al revés: <b>leer un circuito</b> y escribir su función.</p>
+    <div class="row" style="gap:.6em;flex-wrap:wrap">
+      <span class="card"><b>1</b> Del circuito a la tabla</span>
+      <span class="card"><b>2</b> De la expresión al mapa</span>
+      <span class="card"><b>3</b> Mapas que obligan a solapar</span>
+      <span class="card"><b>4</b> Solo con NAND</span>
+    </div>
+    <p class="lbl">Cada uno tiene su propio circuito y sus propios mapas en el celular. Los puntos cuentan para prácticas.</p>
+  </div></div>
+</section>
+
+<section class="slide" id="p-pq9">
+  <h2>Para pensar: circuitos</h2>
+  <div class="body">
+    <div class="col">
+      <div class="q"><p class="qt">Dos circuitos distintos, ¿pueden hacer exactamente lo mismo? ¿Cómo lo compruebas?</p><button class="rv">Revelar</button>
+        <div class="ans">Sí. Por ejemplo, NAND–NAND y AND–OR dan la misma función. Para comprobarlo se comparan las <b>tablas de verdad</b> fila por fila (o se lleva una expresión a la otra con álgebra y De Morgan). Si las 2ⁿ filas coinciden, son equivalentes.</div></div>
+    </div>
+    <div class="col">
+      <div class="q"><p class="qt">¿Por qué un fabricante preferiría armar todo solo con NAND?</p><button class="rv">Revelar</button>
+        <div class="ans">Porque con un solo tipo de chip (el 7400) se arma cualquier función: se compra, se almacena y se repone un solo modelo. Además, en la tecnología CMOS y TTL la NAND es de las compuertas más simples y rápidas de fabricar.</div></div>
+    </div>
+  </div>
+</section>
 </main>
 
 <button class="nav prev" id="prev" aria-label="Anterior">‹</button>
@@ -249,8 +277,8 @@
 <script src="../instrumentacion/js/config.js?v=d1"></script>
 <script src="../instrumentacion/js/nucleo.js?v=d1"></script>
 <script src="js/d1-kmap.js?v=1"></script>
-<script src="js/d1-diagramas.js?v=2"></script>
-<script src="js/d1-sesion.js?v=2"></script>
-<script src="js/proyectar.js?v=2"></script>
+<script src="js/d1-diagramas.js?v=3"></script>
+<script src="js/d1-sesion.js?v=3"></script>
+<script src="js/proyectar.js?v=3"></script>
 </body>
 </html>

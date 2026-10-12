@@ -425,3 +425,9 @@ body.tv .e5-sol{gap:2em;align-items:center}
 body.tv .e5-sol .sol-circ{max-width:none;flex:1.2}
 body.tv .e5-sol .sol-circ svg{max-height:60vh}
 .vars{font-size:.8em;color:var(--muted)}
+
+/* ---------- Práctica (pestaña 9) ---------- */
+.fig-tv{display:flex;justify-content:center}
+.fig-tv svg{max-height:36vh;width:auto;max-width:100%;height:auto}
+.fig-tv svg.kmapa{max-height:40vh}
+.z-op .opciones-est{margin-top:4px}

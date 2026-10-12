@@ -123,6 +123,7 @@
       '<div class="der"><div class="tvp centro"><div class="qrbox grande">' + qr(300) + '</div><div class="cifra" id="c-gente">' + conectados + ' <small>conectados</small></div></div></div></div>';
   }
   function figura(p) {
+    if (p.fig === 'html' && typeof p.figura === 'function') return p.figura();
     if (p.fig !== 'validos') return '';
     const ej = [['a', [4, 5, 7]], ['b', [0, 2]], ['c', [1, 7]], ['d', [1, 3, 5, 7]]];
     return '<div class="fig-min">' + ej.map(([l, c]) => {

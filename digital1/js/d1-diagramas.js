@@ -190,25 +190,47 @@
     const neg = new Set(); u.forEach((g) => g.forEach((c) => { if (c & 1) neg.add(c >> 1); }));
     return { not: neg.size, and: u.filter((g) => g.length > 1).length, or: u.length > 1 ? 1 : 0 };
   };
+  // valor del circuito de dos niveles: t1 = compuerta de cada término ('and' | 'or' | 'nand'), t2 = compuerta de salida ('or' | 'and' | 'nand')
+  //   En 'and'/'or' un término de una sola entrada es un cable directo; en 'nand' es una NAND que hace de inversor.
+  C.funcion2 = (nv, puertas, t1, t2) => Array.from({ length: 1 << nv }, (_, m) => {
+    const lit = (c) => (((m >> (nv - 1 - (c >> 1))) & 1) ^ (c & 1)) === 1;
+    const u = (puertas || []).filter((g) => g.length);
+    if (!u.length) return 0;
+    const v1 = u.map((g) => {
+      if (g.length === 1 && t1 !== 'nand') return lit(g[0]);
+      const y = t1 === 'or' ? g.some(lit) : g.every(lit);
+      return t1 === 'nand' ? !y : y;
+    });
+    const y2 = t2 === 'and' || t2 === 'nand' ? v1.every(Boolean) : v1.some(Boolean);
+    return (t2 === 'nand' ? !y2 : y2) ? 1 : 0;
+  });
+  // texto de la expresión: forma 'sop' (A·B̄ + C) o 'pos' ((A + B̄)·C)
+  C.texto = (puertas, n, forma) => {
+    const u = (puertas || []).filter((g) => g.length).map(orden);
+    const L = (c) => (c & 1 ? OVc(n[c >> 1]) : n[c >> 1]);
+    if (forma === 'pos') return u.map((g) => (g.length > 1 ? '(' + g.map(L).join(' + ') + ')' : L(g[0]))).join('·');
+    return u.map((g) => g.map(L).join('·')).join(' + ');
+  };
   C.svg = function (nv, puertas, n, opc) {
     opc = opc || {};
-    const sal = opc.salida || 'F', GC = GCc();
+    const sal = opc.salida || 'F', GC = GCc(), t1 = opc.t1 || 'and', t2 = opc.t2 || 'or', mono = !!opc.mono;
     const u = (puertas || []).map((g, k) => ({ g: orden(g), k })).filter((x) => x.g.length);
     const neg = Array(nv).fill(false);
     u.forEach((x) => x.g.forEach((c) => { if (c & 1) neg[c >> 1] = true; }));
     const RX = (i, ng) => 18 + i * 48 + (ng ? 22 : 0);
     const TOP = 46, GX = 18 + nv * 48 + 4;
+    const cable = (g) => g.length === 1 && t1 !== 'nand';
     let y = TOP + 8;
     const fil = u.map((x) => {
-      const k = x.g.length, h = k === 1 ? 12 : Math.max(24, k * 12 + 4);
+      const k = x.g.length, h = cable(x.g) ? 12 : Math.max(24, k * 12 + 4);
       const r = { g: x.g, k: x.k, y0: y, h, yc: y + h / 2, ins: x.g.map((c, j) => y + h / 2 + (j - (k - 1) / 2) * 12) };
       y += h + 14;
       return r;
     });
     const H = Math.max(y + 2, TOP + 60);
-    const OX = GX + 70, W = OX + (u.length > 1 ? 86 : 50);
+    const OX = GX + 76, W = OX + (u.length > 1 ? 92 : 50);
+    const bur = (x, yy, col) => '<circle cx="' + (x + 3.5) + '" cy="' + yy + '" r="3.5" class="cg" style="stroke:' + col + '"/>';
     let s = '';
-    // entradas: carril de cada variable y, si se usa, su negada con un inversor
     for (let i = 0; i < nv; i++) {
       const xt = RX(i, false), xn = RX(i, true);
       s += '<text x="' + xt + '" y="15" text-anchor="middle" class="cv">' + n[i] + '</text>';
@@ -220,32 +242,50 @@
           '<text x="' + (xn + 4) + '" y="15" text-anchor="middle" class="cv cvn">' + OVt(n[i]) + '</text>';
       }
     }
-    // compuertas AND (o cable directo) y sus conexiones
+    // primer nivel
     fil.forEach((f) => {
-      const col = GC[f.k % 8];
+      const col = mono ? '#495057' : GC[f.k % 8];
+      const r = f.h / 2, y1 = f.y0 + f.h;
+      const back1 = (yy) => { const t = (yy - f.y0) / f.h; return GX - 4 + 24 * t * (1 - t); };
       f.g.forEach((c, j) => {
         const xr = RX(c >> 1, c & 1), yy = f.ins[j];
-        s += '<line x1="' + xr + '" y1="' + yy + '" x2="' + (f.g.length === 1 ? OX : GX) + '" y2="' + yy + '" class="cw" style="stroke:' + col + '"/><circle cx="' + xr + '" cy="' + yy + '" r="3" class="cd" style="fill:' + col + '"/>';
+        const xe = cable(f.g) ? OX : t1 === 'or' ? back1(yy) : GX;
+        s += '<line x1="' + xr + '" y1="' + yy + '" x2="' + xe + '" y2="' + yy + '" class="cw" style="stroke:' + col + '"/><circle cx="' + xr + '" cy="' + yy + '" r="3" class="cd" style="fill:' + col + '"/>';
       });
-      if (f.g.length > 1) {
-        const r = f.h / 2;
-        s += '<path d="M' + GX + ',' + f.y0 + ' H' + (GX + 10) + ' A' + r + ',' + r + ' 0 0 1 ' + (GX + 10) + ',' + (f.y0 + f.h) + ' H' + GX + ' Z" class="cg" style="stroke:' + col + '"/>';
+      if (cable(f.g)) { f.xo = null; return; }
+      if (t1 === 'or') {
+        s += '<path d="M' + (GX - 4) + ',' + f.y0 + ' Q' + (GX + 8) + ',' + f.yc + ' ' + (GX - 4) + ',' + y1 + ' Q' + (GX + 18) + ',' + y1 + ' ' + (GX + 34) + ',' + f.yc + ' Q' + (GX + 18) + ',' + f.y0 + ' ' + (GX - 4) + ',' + f.y0 + ' Z" class="cg" style="stroke:' + col + '"/>';
+        f.xo = GX + 34;
+      } else {
+        s += '<path d="M' + GX + ',' + f.y0 + ' H' + (GX + 10) + ' A' + r + ',' + r + ' 0 0 1 ' + (GX + 10) + ',' + y1 + ' H' + GX + ' Z" class="cg" style="stroke:' + col + '"/>';
         f.xo = GX + 10 + r;
-      } else f.xo = null;
+        if (t1 === 'nand') { s += bur(f.xo, f.yc, col); f.xo += 7; }
+      }
     });
+    // segundo nivel (o salida directa si hay un solo término)
     if (u.length > 1) {
-      const oy0 = Math.min(fil[0].yc - 12, fil[0].yc), oy1 = Math.max(fil[fil.length - 1].yc + 12, oy0 + 30), om = (oy0 + oy1) / 2;
-      const back = (yy) => { const t = (yy - oy0) / (oy1 - oy0); return OX - 4 + 24 * t * (1 - t); };
-      fil.forEach((f) => { s += '<line x1="' + (f.xo || OX) + '" y1="' + f.yc + '" x2="' + back(f.yc) + '" y2="' + f.yc + '" class="cw"/>'; });
-      s += '<path d="M' + (OX - 4) + ',' + oy0 + ' Q' + (OX + 8) + ',' + om + ' ' + (OX - 4) + ',' + oy1 + ' Q' + (OX + 26) + ',' + oy1 + ' ' + (OX + 44) + ',' + om + ' Q' + (OX + 26) + ',' + oy0 + ' ' + (OX - 4) + ',' + oy0 + ' Z" class="cg"/>';
-      s += '<line x1="' + (OX + 44) + '" y1="' + om + '" x2="' + (W - 22) + '" y2="' + om + '" class="cw"/><text x="' + (W - 18) + '" y="' + (om + 5) + '" class="cv">' + sal + '</text>';
+      const oy0 = fil[0].yc - 12, oy1 = Math.max(fil[fil.length - 1].yc + 12, oy0 + 30), om = (oy0 + oy1) / 2, oh = oy1 - oy0;
+      let xs;
+      if (t2 === 'or') {
+        const back = (yy) => { const t = (yy - oy0) / oh; return OX - 4 + 24 * t * (1 - t); };
+        fil.forEach((f) => { s += '<line x1="' + (f.xo || OX) + '" y1="' + f.yc + '" x2="' + back(f.yc) + '" y2="' + f.yc + '" class="cw"/>'; });
+        s += '<path d="M' + (OX - 4) + ',' + oy0 + ' Q' + (OX + 8) + ',' + om + ' ' + (OX - 4) + ',' + oy1 + ' Q' + (OX + 26) + ',' + oy1 + ' ' + (OX + 44) + ',' + om + ' Q' + (OX + 26) + ',' + oy0 + ' ' + (OX - 4) + ',' + oy0 + ' Z" class="cg"/>';
+        xs = OX + 44;
+      } else {
+        const r = oh / 2;
+        fil.forEach((f) => { s += '<line x1="' + (f.xo || OX) + '" y1="' + f.yc + '" x2="' + OX + '" y2="' + f.yc + '" class="cw"/>'; });
+        s += '<path d="M' + OX + ',' + oy0 + ' H' + (OX + 8) + ' A' + r + ',' + r + ' 0 0 1 ' + (OX + 8) + ',' + oy1 + ' H' + OX + ' Z" class="cg"/>';
+        xs = OX + 8 + r;
+        if (t2 === 'nand') { s += bur(xs, om, '#495057'); xs += 7; }
+      }
+      s += '<line x1="' + xs + '" y1="' + om + '" x2="' + (W - 22) + '" y2="' + om + '" class="cw"/><text x="' + (W - 18) + '" y="' + (om + 5) + '" class="cv">' + sal + '</text>';
     } else if (u.length === 1) {
       const f = fil[0];
       s += '<line x1="' + (f.xo || OX) + '" y1="' + f.yc + '" x2="' + (W - 22) + '" y2="' + f.yc + '" class="cw"/><text x="' + (W - 18) + '" y="' + (f.yc + 5) + '" class="cv">' + sal + '</text>';
     } else {
       s += '<text x="' + (GX + 4) + '" y="' + (TOP + 30) + '" class="cvac">Agrega una compuerta</text>';
     }
-    return '<svg class="circ" viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
+    return '<svg class="circ" viewBox="0 0 ' + Math.max(W, OX + 60) + ' ' + H + '">' + s + '</svg>';
   };
   function OVt(x) { return x + '̅'; }
 })();

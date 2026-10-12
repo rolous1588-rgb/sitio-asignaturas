@@ -108,6 +108,7 @@ Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular
 | `css/d1.css` | Estilos (`body.tv` proyección, `body.est` celular) |
 
 - Base: fila `d1-c3` en `estado_sesion` (creada el 05/10). Fases en `extra` iguales a Medidas.
+- **Pestaña 9 · Práctica** (agregada el 12/10, antes del cierre; pasos `prac`, `r9`–`r12`, `e6`–`e9`, `pq9`): `e6` del circuito a la tabla + elegir la expresión (circuito propio AND→OR, OR→AND o NAND→NAND, 3 pts), `e7` de la expresión al mapa (cada término es un grupo, 3), `e8` mapa de 4 variables cuya mínima obliga a solapar grupos (4), `e9` solo con NAND + contar NAND de 2 entradas (3). Rápidas con figura: `fig: 'html'` + `figura()`. `D1.circ.svg` acepta `{ t1, t2, mono }` y `D1.circ.funcion2/texto`. Motivo: en `e5` 6 de 9 no solaparon grupos (datos del 08/10).
 - Puntaje de los mapas: mapa bien llenado 1 + expresión correcta 2 + mínima 1. Diseño completo: tabla (hasta 2, proporcional) + correcta 1 + mínima 1.
 - Pruebas: como el contenedor de Claude no llega a Supabase ni a jsDelivr, se probó con un simulador local de supabase-js (servidor de consultas compartido) y Playwright: docente + 3 estudiantes, todas las actividades, reporte CSV.
 
