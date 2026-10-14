@@ -142,6 +142,20 @@ Carpeta `transformadas/fourier/` (sesión `tf-fourier`, fila creada en `estado_s
 - Pruebas: simulador local de supabase-js + servidor compartido y Playwright (docente + 3 estudiantes, todas las actividades probadas, habilitar de nuevo, cierre del día y CSV).
 - Pendiente: cuando se pruebe en el aula, llevar la confirmación y el «habilitar de nuevo» a Medidas y Digital 1 (pedido del docente).
 
+## Métodos Numéricos · Repaso de raíces (clase presencial, 14/10/2026)
+
+Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion` el 14/10). Copia adaptada de `transformadas/fourier/` (mismo esquema: el docente proyecta su celular en horizontal; los estudiantes entran por QR con datos móviles). Reutiliza `../../instrumentacion/js/config.js`, `nucleo.js` y `../../medidas/css/me.css`; trae su propia copia de `fs-onda.js`, `estudiante.js` y `proyectar.js`. Entrenamiento para el examen del viernes 16/10.
+
+| Archivo | Rol |
+|---|---|
+| `proyectar.html` + `js/proyectar.js` | Proyección + control (igual que Fourier). En ejercicios con `filas`, «Resultados» muestra el acierto por columna |
+| `clase.html` + `js/estudiante.js` | Estudiante. Agrega **«Comprobar fila»** en ejercicios con `filas`: 2 intentos por fila, en orden; si falla los dos, se muestra el valor. Guarda `estado._chk`, `_int` (intento en que quedó bien) y `_rev` (mostrado) |
+| `js/mn-sesion.js` | `FS.SESIONES['mn-raices']` (14 pasos, 3 etapas: calentamiento · falsa posición guiada · Newton individual), `MN.grafica` (SVG liviano con secante o tangente), `MN.tablaFP`, `MN.tablaNR` (4 decimales en cada paso) |
+
+- Falsa posición guiada `fp1`–`fp4`: f(x) = x·eˣ − 2 en [0, 1], misma para todos; 2 pts por fila = 1 por participar + 1 según aciertos (±0,0006; error ±0,01).
+- Newton individual `nr`: f(x) = x³ + a·sen(x) − b, x₀ = 1, (a, b) por carnet de `NR.variantes`; 16 celdas, 8 pts. Los valores esperados se calculan con los números del propio estudiante (`items(d, est)`), así un error no se arrastra. Puntaje por celda: 1.er intento o sin comprobar = completo, 2.º = mitad, mostrado = 0.
+- Pruebas: cálculos con Node (300 carnets, todo correcto = 8 pts) y la vista del estudiante en modo libre con Playwright. La proyección no se pudo probar contra la base desde el contenedor.
+
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
@@ -151,3 +165,4 @@ Carpeta `transformadas/fourier/` (sesión `tf-fourier`, fila creada en `estado_s
 - Viernes: tabla completa de participación (por sesión, por persona, cada reto y rápida, total /100, promedio y ponderado a 25).
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
 - Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html`, probar con un celular y luego **⋮ → Borrar datos de esta clase**. Al terminar, dejar el paso en `cierre`.
+- Métodos Numéricos: antes de la clase, entrar como docente en `numericos/raices/proyectar.html` y probar con un celular. Al terminar, dejar el paso en `cierre`.
