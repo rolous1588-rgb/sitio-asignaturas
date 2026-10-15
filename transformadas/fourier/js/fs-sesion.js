@@ -9,6 +9,7 @@
 (function () {
   const FS = (window.FS = window.FS || {});
   const PI = Math.PI;
+  const X = String.raw; // textos con LaTeX: X`\(\dfrac{a}{b}\)`
   const f = (x, d = 2) => FS.f(x, d);
   FS.SESIONES = FS.SESIONES || {};
   const E = (FS.EJERCICIOS = {});
@@ -71,7 +72,7 @@
     generar: (r) => ({ A: entre(r, 2, 8), V0: elegir(r, [-3, -2, -1, 1, 2, 3]) }),
     resumen: (d) => 'A = ' + d.A + ', V₀ = ' + d.V0,
     enunciado: (d) => `<p>Tu onda vale <b>${f(d.V0 + d.A)}</b> en la primera mitad del período y <b>${f(d.V0 - d.A)}</b> en la segunda. Calcula sus coeficientes (usa las fórmulas o razona con la cuadrada del ejemplo).</p>`,
-    formulas: ['a₀ = (1/T)∫ f dt', 'bₙ = (2/T)∫ f·sen(nω₀t) dt', 'Ejemplo: cuadrada ±A → bₙ = 4A/(nπ), n impar'],
+    formulas: [X`\(a_0 = \dfrac{1}{T}\displaystyle\int_0^T f\,dt\)`, X`\(b_n = \dfrac{2}{T}\displaystyle\int_0^T f\sen(n\omega_0 t)\,dt\)`, X`Cuadrada \(\pm A\): \(b_n = \dfrac{4A}{n\pi}\), \(n\) impar`, X`\(A = \dfrac{\text{alto} - \text{bajo}}{2}\), \(\;V_0 = \dfrac{\text{alto} + \text{bajo}}{2}\)`],
     figura: (d) => FS.plot({ curvas: [{ f: FS.onda('cuadrada', { A: d.A, c: d.V0 }), ancho: 6 }], u0: 0, u1: 2, ymin: Math.min(0, d.V0 - d.A) - 1, ymax: Math.max(0, d.V0 + d.A) + 1, ejeY: [d.V0 - d.A, 0, d.V0 + d.A] }),
     items: (d) => [
       { id: 'a0', et: 'a₀', tipo: 'num', ok: d.V0, tolAbs: 0.02 },
@@ -293,17 +294,83 @@
       { id: 'sint', etapa: 1, tipo: 'explica', titulo: 'La idea de Fourier', idea: 'Casi toda señal periódica es una receta: cuánto de cada armónico.', modo: 'sintesis', params: { onda: 'cuadrada', N: 1 } },
 
       // ===== Etapa 2: calcular =====
-      { id: 'r5', etapa: 2, tipo: 'rapida', titulo: 'Predicción: el promedio', t: 'Multiplico sen(ω₀t)·sen(2ω₀t) y promedio en un período. ¿Qué da?', o: ['0', '0,5', '1', 'Depende de T'], c: 0, por: 'Las áreas positivas y negativas se cancelan: armónicos distintos son ortogonales.' },
+      // Fórmulas en LaTeX (X`...` = String.raw): \( … \) en línea; las dibuja js/fs-tex.js con KaTeX.
+      {
+        id: 'rep2', etapa: 2, tipo: 'teoria', titulo: 'Antes de calcular: lo que costó el lunes', idea: 'Cuatro cuidados que evitan la mayoría de los errores.',
+        puntos: [
+          X`<b>T en segundos</b> antes de calcular \(\omega_0\): \(20\ \text{ms} = 0{,}020\ \text{s}\).`,
+          X`<b>Valor medio</b> de un seno con nivel: el centro entre el máximo y el mínimo.`,
+          X`<b>No redondees</b> hasta el final: \(1/0{,}6 = 1{,}667\ \text{Hz}\), no \(1{,}6\).`,
+          X`La <b>fase</b> solo corre la onda en el tiempo: no cambia su altura, su período ni su valor medio.`
+        ],
+        derecha: 'Ejemplo',
+        formulas: [
+          X`\(\omega_0 = \dfrac{2\pi}{T} = \dfrac{2\pi}{0{,}020\ \text{s}} = 314\ \text{rad/s}\)`,
+          X`\(a_0 = \dfrac{\text{máx} + \text{mín}}{2}\)`
+        ]
+      },
+      { id: 'r5', etapa: 2, tipo: 'rapida', titulo: 'Predicción: el promedio', t: X`Multiplico \(\sen(\omega_0 t)\cdot\sen(2\omega_0 t)\) y promedio en un período. ¿Qué da?`, o: ['0', '0,5', '1', 'Depende de T'], c: 0, por: 'Las áreas positivas y negativas se cancelan: armónicos distintos son ortogonales.' },
       { id: 'orto', etapa: 2, tipo: 'explica', titulo: 'Cómo se encuentra cada ingrediente', idea: 'Multiplica por un seno y promedia: distintos dan 0; el mismo da ½.', modo: 'ortogonal', params: { m: 1, n: 2, tipo: 'sen' } },
       {
         id: 't-form', etapa: 2, tipo: 'teoria', titulo: 'Las fórmulas de Fourier', idea: 'Cada coeficiente mide cuánto se parece la señal a un armónico.',
-        puntos: ['<b>a₀</b> es el promedio de la señal.', '<b>aₙ</b>: cuánto se parece a cos(nω₀t).', '<b>bₙ</b>: cuánto se parece a sen(nω₀t).', 'El 2 delante compensa que el promedio de sen² es ½.', 'Las integrales se hacen sobre <b>un período</b> cualquiera.'],
-        formulas: ['f(t) = a₀ + Σ [aₙ cos(nω₀t) + bₙ sen(nω₀t)]', 'a₀ = (1/T) ∫ f(t) dt', 'aₙ = (2/T) ∫ f(t)·cos(nω₀t) dt', 'bₙ = (2/T) ∫ f(t)·sen(nω₀t) dt']
+        puntos: [
+          X`\(a_0\) es el <b>promedio</b> de la señal.`,
+          X`\(a_n\): cuánto se parece a \(\cos(n\omega_0 t)\).`,
+          X`\(b_n\): cuánto se parece a \(\sen(n\omega_0 t)\).`,
+          X`El \(2\) delante compensa que el promedio de \(\sen^2\) es \(\tfrac{1}{2}\).`,
+          'Las integrales se hacen sobre <b>un período</b> cualquiera.'
+        ],
+        formulas: [
+          X`\(f(t) = a_0 + \sum_{n=1}^{\infty}\big[a_n\cos(n\omega_0 t)\)`,
+          X`\(\qquad\quad + \; b_n\sen(n\omega_0 t)\big]\)`,
+          X`\(a_0 = \dfrac{1}{T}\displaystyle\int_0^T f(t)\,dt\)`,
+          X`\(a_n = \dfrac{2}{T}\displaystyle\int_0^T f(t)\cos(n\omega_0 t)\,dt\)`,
+          X`\(b_n = \dfrac{2}{T}\displaystyle\int_0^T f(t)\sen(n\omega_0 t)\,dt\)`
+        ]
       },
+      // --- Resolvamos juntos: la cuadrada ±A, un paso por pregunta (pedido del docente 15/10) ---
       {
-        id: 't-cuad', etapa: 2, tipo: 'teoria', titulo: 'Ejemplo: onda cuadrada ±A', idea: 'Vale A en la primera mitad y −A en la segunda.',
-        puntos: ['<b>a₀ = 0</b>: las dos mitades se compensan.', '<b>aₙ = 0</b>: al multiplicar por cos, las áreas se cancelan.', 'bₙ = (2/T)[∫₀^{T/2} A·sen − ∫_{T/2}^{T} A·sen] = (2A/nπ)(1 − cos nπ)', 'n impar: 1 − cos nπ = 2 → <b>bₙ = 4A/(nπ)</b>. n par: <b>bₙ = 0</b>.'],
-        derecha: 'Resultado', formulas: ['f(t) = (4A/π)·[sen ω₀t', '  + sen 3ω₀t/3 + sen 5ω₀t/5 + …]', 'b₁ = 4A/π ≈ 1,27·A', 'b₃ = 4A/(3π) ≈ 0,42·A']
+        id: 'j0', etapa: 2, tipo: 'teoria', titulo: 'Resolvamos juntos: la onda cuadrada', idea: 'Tú decides cada paso desde tu celular.',
+        puntos: [
+          X`La señal vale \(A\) en la primera mitad del período y \(-A\) en la segunda.`,
+          X`Buscamos su receta: \(a_0\), \(a_n\) y \(b_n\).`,
+          'En cada paso eliges el movimiento siguiente. Las opciones incorrectas son los errores más comunes: <b>piensa antes de tocar</b>.',
+          'Ten a mano papel y lápiz.'
+        ],
+        derecha: 'La señal',
+        formulas: [
+          X`\(f(t) = \begin{cases} \;\;A, & 0 \lt t \lt T/2 \\ -A, & T/2 \lt t \lt T \end{cases}\)`,
+          X`\(\omega_0 = \dfrac{2\pi}{T}\)`
+        ]
+      },
+      { id: 'rj1', etapa: 2, tipo: 'rapida', titulo: 'Paso 1 · El promedio a₀', t: X`Empecemos por lo fácil: \(a_0 = \dfrac{1}{T}\displaystyle\int_0^T f(t)\,dt\) es el promedio. ¿Cuánto vale?`, o: [X`\(A\)`, X`\(\dfrac{A}{2}\)`, X`\(0\)`, X`\(2A\)`], c: 2, por: X`Área \(+A\cdot\tfrac{T}{2}\) arriba y \(-A\cdot\tfrac{T}{2}\) abajo: se cancelan. \(a_0 = \tfrac{1}{T}\big[A\tfrac{T}{2} - A\tfrac{T}{2}\big] = 0\).` },
+      { id: 'rj2', etapa: 2, tipo: 'rapida', una: true, titulo: 'Paso 2 · Partir la integral', t: X`Con \(s = \sen(n\omega_0 t)\), ¿qué va dentro de \(b_n = \tfrac{2}{T}\,[\;\cdots\;]\)?`, o: [X`\(\int_0^{T} A\,s\,dt\)`, X`\(\int_0^{T/2} A\,s\,dt\)`, X`\(\int_0^{T/2} A\,s\,dt + \int_{T/2}^{T} A\,s\,dt\)`, X`\(\int_0^{T/2} A\,s\,dt + \int_{T/2}^{T} (-A)\,s\,dt\)`], c: 3, por: X`Donde la señal cambia, la integral se parte: de \(0\) a \(T/2\) vale \(A\); de \(T/2\) a \(T\) vale \(-A\).` },
+      { id: 'rj3', etapa: 2, tipo: 'rapida', pi: true, titulo: 'Paso 3 · La primitiva (1.er voto)', t: X`Necesitamos \(\displaystyle\int \sen(n\omega_0 t)\,dt\). ¿Cuánto vale?`, o: [X`\(\dfrac{\cos(n\omega_0 t)}{n\omega_0}\)`, X`\(-\dfrac{\cos(n\omega_0 t)}{n\omega_0}\)`, X`\(-n\omega_0\cos(n\omega_0 t)\)`, X`\(-\cos(n\omega_0 t)\)`], c: 1 },
+      { id: 'rj3b', etapa: 2, tipo: 'rapida', titulo: 'Paso 3 · La primitiva (vuelve a votar)', t: X`Después de discutir con tu vecino: \(\displaystyle\int \sen(n\omega_0 t)\,dt = \;?\)`, o: [X`\(-n\omega_0\cos(n\omega_0 t)\)`, X`\(\dfrac{\cos(n\omega_0 t)}{n\omega_0}\)`, X`\(-\cos(n\omega_0 t)\)`, X`\(-\dfrac{\cos(n\omega_0 t)}{n\omega_0}\)`], c: 3, por: X`Compruébalo derivando: \(\tfrac{d}{dt}\Big[-\tfrac{\cos(n\omega_0 t)}{n\omega_0}\Big] = \sen(n\omega_0 t)\). El signo menos y el \(n\omega_0\) abajo son los dos olvidos más comunes.` },
+      { id: 'rj4', etapa: 2, tipo: 'rapida', titulo: 'Paso 4 · El dato clave', t: X`Al evaluar en \(t = T/2\) aparece \(n\omega_0\cdot\dfrac{T}{2}\). Con \(\omega_0 = \dfrac{2\pi}{T}\), ¿cuánto vale?`, o: [X`\(2n\pi\)`, X`\(\dfrac{n\pi}{2}\)`, X`\(\pi\)`, X`\(n\pi\)`], c: 3, por: X`\(\tfrac{2\pi}{T}\cdot n\cdot\tfrac{T}{2} = n\pi\). Y en \(t = T\): \(n\omega_0 T = 2n\pi\). La \(T\) desaparece: por eso conviene usar \(\omega_0 T = 2\pi\).` },
+      { id: 'rj5', etapa: 2, tipo: 'rapida', titulo: 'Paso 5 · El coseno de nπ', t: X`¿Cuánto vale \(\cos(n\pi)\) cuando \(n\) es entero?`, o: [X`\(1\)`, X`\((-1)^n\)`, X`\(0\)`, X`\(-1\)`], c: 1, por: X`\(n=1\): \(-1\) · \(n=2\): \(+1\) · \(n=3\): \(-1\)… Va alternando: \(\cos(n\pi) = (-1)^n\). Además \(\sen(n\pi) = 0\) y \(\cos(2n\pi) = 1\).` },
+      { id: 'rj6', etapa: 2, tipo: 'rapida', titulo: 'Paso 6 · ¿Y los aₙ?', t: X`\(\int\cos(n\omega_0 t)\,dt = \tfrac{\sen(n\omega_0 t)}{n\omega_0}\). Evaluado en \(0\), \(T/2\) y \(T\), ¿cuánto vale \(a_n\)?`, o: [X`\(\dfrac{2A}{n\pi}\)`, X`\(A\)`, 'Depende de n', X`\(0\)`], c: 3, por: X`Solo aparecen \(\sen 0\), \(\sen(n\pi)\) y \(\sen(2n\pi)\), y todos valen \(0\). Por eso \(a_n = 0\): esta señal no tiene cosenos.` },
+      { id: 'rj7', etapa: 2, tipo: 'rapida', titulo: 'Paso 7 · La primera mitad', t: X`\(\int_0^{T/2} A\sen(n\omega_0 t)\,dt = -\dfrac{A}{n\omega_0}\Big[\cos(n\omega_0 t)\Big]_0^{T/2} = \;?\)`, o: [X`\(\dfrac{A}{n\omega_0}(\cos n\pi - 1)\)`, X`\(0\)`, X`\(\dfrac{A}{n\omega_0}(1-\cos n\pi)\)`, X`\(\dfrac{A}{n\omega_0}(1+\cos n\pi)\)`], c: 2, por: X`\(-\tfrac{A}{n\omega_0}\big[\cos(n\pi) - \cos 0\big] = \tfrac{A}{n\omega_0}(1-\cos n\pi)\). El menos de la primitiva da vuelta el paréntesis.` },
+      { id: 'rj8', etapa: 2, tipo: 'rapida', titulo: 'Paso 8 · La segunda mitad', t: X`\(\int_{T/2}^{T} (-A)\sen(n\omega_0 t)\,dt = \dfrac{A}{n\omega_0}\Big[\cos(n\omega_0 t)\Big]_{T/2}^{T} = \;?\)`, o: [X`\(-\dfrac{A}{n\omega_0}(1-\cos n\pi)\)`, X`\(\dfrac{A}{n\omega_0}(1-\cos n\pi)\)`, X`\(0\)`, X`\(\dfrac{2A}{n\omega_0}\)`], c: 1, por: X`\(\tfrac{A}{n\omega_0}\big[\cos(2n\pi) - \cos(n\pi)\big] = \tfrac{A}{n\omega_0}(1-\cos n\pi)\): igual que la primera. La señal y el seno cambian de signo juntos, así que las dos mitades suman.` },
+      { id: 'rj9', etapa: 2, tipo: 'rapida', pi: true, titulo: 'Paso 9 · Juntar (1.er voto)', t: X`Sumamos las dos mitades: \(b_n = \dfrac{2}{T}\cdot\dfrac{2A}{n\omega_0}(1-\cos n\pi)\). Usa \(\omega_0 T = 2\pi\). ¿Qué queda?`, o: [X`\(\dfrac{4A}{n\pi}(1-\cos n\pi)\)`, X`\(\dfrac{2A}{\pi}(1-\cos n\pi)\)`, X`\(\dfrac{A}{n\pi}(1-\cos n\pi)\)`, X`\(\dfrac{2A}{n\pi}(1-\cos n\pi)\)`], c: 3 },
+      { id: 'rj9b', etapa: 2, tipo: 'rapida', titulo: 'Paso 9 · Juntar (vuelve a votar)', t: X`Después de discutir: \(b_n = \dfrac{2}{T}\cdot\dfrac{2A}{n\omega_0}(1-\cos n\pi) = \;?\)`, o: [X`\(\dfrac{2A}{n\pi}(1-\cos n\pi)\)`, X`\(\dfrac{A}{n\pi}(1-\cos n\pi)\)`, X`\(\dfrac{4A}{n\pi}(1-\cos n\pi)\)`, X`\(\dfrac{2A}{\pi}(1-\cos n\pi)\)`], c: 0, por: X`\(\tfrac{4A}{n\,\omega_0 T} = \tfrac{4A}{2\pi n} = \tfrac{2A}{n\pi}\). Entonces \(b_n = \tfrac{2A}{n\pi}\big(1-(-1)^n\big)\).` },
+      { id: 'rj10', etapa: 2, tipo: 'rapida', titulo: 'Paso 10 · Los armónicos pares', t: X`Con \(b_n = \dfrac{2A}{n\pi}\big(1-(-1)^n\big)\), ¿cuánto vale \(b_n\) cuando \(n\) es par?`, o: [X`\(\dfrac{4A}{n\pi}\)`, X`\(0\)`, X`\(\dfrac{2A}{n\pi}\)`, X`\(-\dfrac{4A}{n\pi}\)`], c: 1, por: X`\(n\) par: \(1-(+1) = 0\), así que \(b_n = 0\). \(n\) impar: \(1-(-1) = 2\), así que \(b_n = \tfrac{4A}{n\pi}\). La cuadrada solo tiene armónicos impares.` },
+      { id: 'rj11', etapa: 2, tipo: 'rapida', titulo: 'Paso 11 · Un número', t: X`Con \(A = 1\), ¿cuánto vale \(b_3\)?`, o: [X`\(1{,}273\)`, X`\(0\)`, X`\(0{,}212\)`, X`\(0{,}424\)`], c: 3, por: X`\(b_3 = \tfrac{4\cdot 1}{3\pi} = 0{,}424\). Es un tercio de \(b_1 = \tfrac{4}{\pi} = 1{,}273\).` },
+      {
+        id: 't-cuad', etapa: 2, tipo: 'teoria', titulo: 'Resultado: la receta de la cuadrada', idea: 'Lo que acabamos de deducir entre todos.',
+        puntos: [
+          X`\(a_0 = 0\) y \(a_n = 0\): las mitades se compensan y solo quedan senos.`,
+          X`\(b_n = \tfrac{4A}{n\pi}\) si \(n\) es impar; \(0\) si es par.`,
+          '<b>Electromecánica:</b> un inversor de onda cuadrada da un 3.er armónico del 33 % y un 5.º del 20 %, que calientan los motores.',
+          '<b>Biomédica:</b> los estimuladores (TENS) usan pulsos rectangulares: estos coeficientes dicen qué frecuencias llegan al tejido.'
+        ],
+        derecha: 'Resultado',
+        formulas: [
+          X`\(f(t) = \dfrac{4A}{\pi}\Big[\sen\omega_0 t\)`,
+          X`\(\qquad + \dfrac{\sen 3\omega_0 t}{3} + \dfrac{\sen 5\omega_0 t}{5} + \cdots\Big]\)`,
+          X`\(b_1 = \dfrac{4A}{\pi} \approx 1{,}27\,A\)`,
+          X`\(b_3 = \dfrac{4A}{3\pi} \approx 0{,}42\,A\)`
+        ]
       },
       { id: 'e2', etapa: 2, tipo: 'ejercicio', ejercicio: 'e2' },
       { id: 'r6', etapa: 2, tipo: 'rapida', titulo: 'Predicción: simetría', t: 'Una onda es par: f(−t) = f(t). ¿Qué coeficientes son cero?', o: ['Todos los bₙ (senos)', 'Todos los aₙ (cosenos)', 'Solo a₀', 'Ninguno'], c: 0, por: 'El seno es impar: una función par no puede contener senos.' },

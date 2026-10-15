@@ -92,3 +92,14 @@
 /* emparejar: ondas a la izquierda y espectros a la derecha */
 .tv .fs-fig:has(.fs-grid4) { flex-direction: row; align-items: center; }
 .tv .fs-fig .fs-grid4 { flex: 1; }
+
+/* fórmulas en LaTeX con KaTeX (js/fs-tex.js, 15/10) */
+.katex { font-size: 1.06em; }
+.opcion-tv .txt, .opcion-est > span:last-child { min-width: 0; overflow-x: auto; overflow-y: hidden; padding: .25em 0; }
+.formulas-tv div .katex, .formulas-est div .katex { font-size: 1.1em; }
+.opciones-tv.una { gap: calc(var(--u) * 1); }
+.opciones-tv.una .opcion-tv { padding: calc(var(--u) * .4) calc(var(--u) * 2); font-size: calc(var(--u) * 4.2); }
+/* rápida cerrada: explicación en el panel derecho */
+.fs-por-panel { display: flex; flex-direction: column; gap: calc(var(--u) * 2); align-items: flex-start; overflow: auto; }
+.fs-por-panel .fs-por { margin: 0; font-size: calc(var(--u) * 4.3); line-height: 1.4; }
+.formulas-est div { line-height: 1.9; }

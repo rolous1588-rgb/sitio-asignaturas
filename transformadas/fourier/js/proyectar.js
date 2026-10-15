@@ -150,16 +150,23 @@
     const fz = fase(p);
     const conteo = p.o.map((_, k) => respuestas.filter((r) => r.respuesta && r.respuesta.opcion === k).length);
     const total = conteo.reduce((a, b) => a + b, 0) || 1;
+    // p.pi = primer voto de Peer Instruction: al cerrar se ven las barras, pero no la correcta ni la explicación
+    const rev = fz === 'cerrado' && !p.pi;
     const ops = p.o.map((t, k) => {
       const cerr = fz === 'cerrado';
       const ancho = cerr ? (conteo[k] / total) * 100 : 0;
-      return `<div class="opcion-tv ${cerr && k === p.c ? 'correcta' : ''}"><span class="barra" style="width:${ancho}%"></span>
+      return `<div class="opcion-tv ${rev && k === p.c ? 'correcta' : ''}"><span class="barra" style="width:${ancho}%"></span>
         <span class="letra">${LETRAS[k]}</span><span class="txt">${II.esc(t)}</span>${cerr ? `<span class="n">${conteo[k]}</span>` : ''}</div>`;
     }).join('');
-    const por = fz === 'cerrado' && p.por ? `<p class="medio fs-por">${II.esc(p.por)}</p>` : '';
+    const por = rev && p.por ? `<p class="medio fs-por">${II.esc(p.por)}</p>`
+      : fz === 'cerrado' && p.pi ? '<p class="medio fs-por"><b>Discute con tu vecino:</b> ¿por qué elegiste esa? Enseguida votan de nuevo.</p>' : '';
+    // cerrada: la explicación va en el panel derecho (a la izquierda no entra con las fórmulas)
+    const derecha = fz === 'cerrado' && por
+      ? `<div class="panel fs-por-panel"><span class="estado cerrado">Cerrado · ${respuestas.length} respondieron</span>${por}</div>`
+      : panelEstado(p);
     $('#cuerpo').innerHTML = `<div class="esc">
-      <div class="panel"><p class="grande" style="font-size:calc(var(--u)*5.4)">${II.esc(p.t)}</p><div class="opciones-tv">${ops}</div>${por}</div>
-      ${panelEstado(p)}</div>`;
+      <div class="panel"><p class="grande" style="font-size:calc(var(--u)*${p.una ? 4.6 : 5.4})">${II.esc(p.t)}</p><div class="opciones-tv${p.una ? ' una' : ''}">${ops}</div></div>
+      ${derecha}</div>`;
   }
 
   function escEjercicio() {

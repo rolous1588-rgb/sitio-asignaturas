@@ -154,14 +154,18 @@
     }
     const orden = II.mezclar(II.rng(alumno.carnet + '|' + p.id), p.o.map((_, k) => k));
     const cerrado = fz === 'cerrado';
+    const rev = cerrado && !p.pi; // p.pi = primer voto de Peer Instruction: no se revela la correcta
     const ops = orden.map((k) => {
       let cls = '';
-      if (cerrado) cls = k === p.c ? 'correcta' : r && r.opcion === k ? 'errada' : '';
+      if (rev) cls = k === p.c ? 'correcta' : r && r.opcion === k ? 'errada' : '';
       else if ((r && r.opcion === k) || elegida[p.id] === k) cls = 'elegida';
       return `<button class="opcion-est ${cls}" data-k="${k}" ${r || cerrado ? 'disabled' : ''}><span class="letra">${LETRAS[k]}</span><span>${II.esc(p.o[k])}</span></button>`;
     }).join('');
     let pie = '';
-    if (cerrado) {
+    if (cerrado && p.pi) {
+      pie = r ? '<div class="aviso info">Votaste. Convence a tu vecino (o déjate convencer): enseguida votan de nuevo.</div>'
+        : '<div class="aviso duda">No votaste. Escucha la discusión: enseguida votan de nuevo.</div>';
+    } else if (cerrado) {
       if (r) { r.visto = true; guardarResp(); }
       pie = (!r ? '<div class="aviso duda">No respondiste esta pregunta.</div>'
         : r.ok ? '<div class="aviso ok">¡Correcto! +1 punto</div>' : '<div class="aviso mal">No era esa. Mira la correcta en verde.</div>') + (p.por ? `<p class="idea-est">${II.esc(p.por)}</p>` : '');
