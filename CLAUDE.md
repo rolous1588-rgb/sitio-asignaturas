@@ -160,6 +160,24 @@ Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion`
 - Newton individual `nr`: f(x) = x³ + a·sen(x) − b, x₀ = 1, (a, b) por carnet de `NR.variantes`; 16 celdas, 8 pts. Los valores esperados se calculan con los números del propio estudiante (`items(d, est)`), así un error no se arrastra. Puntaje por celda: 1.er intento o sin comprobar = completo, 2.º = mitad, mostrado = 0.
 - Pruebas: cálculos con Node (300 carnets, todo correcto = 8 pts) y la vista del estudiante en modo libre con Playwright. La proyección no se pudo probar contra la base desde el contenedor.
 
+## Métodos Numéricos · Práctica autónoma de raíces (ensayo del examen, 16/10/2026)
+
+Carpeta `numericos/practica/` (sesión asíncrona `mn-practica`, fila creada el 16/10). El estudiante la hace por su cuenta en el celular; **no tiene nota**. El docente la abre y la cierra desde `panel.html` (`estado_sesion.extra = { asincrona: true, abre, cierra }`: la política de inserción de `respuestas` ya acepta envíos solo entre `abre` y `cierra`). Reutiliza `../../instrumentacion/js/config.js`, `nucleo.js` y `../../medidas/css/me.css`. El formato acordado vale también para el examen.
+
+| Archivo | Rol |
+|---|---|
+| `index.html` + `js/mp-estudiante.js` | Estudiante: registro (apellidos, nombres, C.I., C.U., carrera: Mecatrónica / Electrónica / Eléctrica) → inicio con 5 bloques (#red, #bis, #fp, #nr, #res). Avance en el celular (`mp-prog-<carnet>`). Cola de envíos propia (`mp-cola`) que relee la cola en cada paso. `?modo=prueba` = funciona cerrada y no guarda nada |
+| `panel.html` + `js/mp-panel.js` | Docente: Abrir ahora / Cerrar ahora / cerrar sola a una hora; enlace para compartir; resumen; «Dónde fallan más» (1.er intento por columna); lista con detalle por estudiante (cada función, cada fila, 1.er intento y cómo quedó); CSV `;`; borrar datos de un estudiante o de toda la práctica |
+| `js/mp-motor.js` | `MP`: funciones por carnet (`MP.datos(met, carnet, semilla)`, «Otra función» = semilla + 1), casillas por fila (`MP.celdas`), revisión con los números del propio estudiante (`MP.evaluar`, `MP.comprobar`, 2 intentos), puntaje «como examen» (`MP.puntaje`, solo 1.er intento), ejercicios de redondeo (`MP.redondeo`) |
+
+- Redondeo: 4 decimales al más cercano; solo se redondea lo que se anota; se sigue con el valor anotado. Acepta coma o punto decimal y el signo − del teclado.
+- Revisión de cada casilla: **ok** = igual en 4 decimales; **red** = difiere hasta 0,0005 o le faltan/sobran decimales (vale la mitad en el examen); **mal** = 0. Una casilla bien que depende de otra con error queda abierta («bien con tus números»).
+- Bisección y falsa posición, 3 filas: fila 1 da Xa y Xb y piden f(Xa), f(Xb), Xr, f(Xr) (error ---); filas 2–3 piden también copiar Xa, Xb, f(Xa), f(Xb); filas 1–2 preguntan «¿Xr reemplazará a Xa o a Xb?». Newton: elegir f'(x) entre 4 (se corrige al momento), luego f(Xₙ), f'(Xₙ), Xₙ₊₁, error (Xₙ copiado en filas 2–3).
+- Puntaje sobre 100: bisección 30, falsa posición 35, Newton 35 (detalle en `MP.PTS` y `MP.PTS_DER`).
+- Familias: bisección x² + ln(x) − a y eˣ − x − a (Xr reemplaza a extremos distintos en las filas 1 y 2); falsa posición eˣ + x − a y 2·sen(x) + x − a; Newton x² − a·cos(x) y eˣ + a·x − b. Variantes revisadas sin empates en el 5.º decimal.
+- Pruebas: Node (todas las variantes, 200 carnets por método, casos de redondeo, copia cruzada, derivada mal) y Playwright con un supabase-js falso (panel + estudiante: abrir, registrar, filas, cierre del método, detalle, CSV, cerrar).
+- Hallazgo (sin corregir, consultar con el docente): en `instrumentacion/js/nucleo.js`, `II.vaciarCola` guarda su copia vieja de la cola después de cada envío; si llega un envío nuevo mientras está enviando, ese envío se pierde. Por eso esta práctica usa su propia cola.
+
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
@@ -170,3 +188,4 @@ Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion`
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
 - Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html`, probar con un celular y luego **⋮ → Borrar datos de esta clase**. Al terminar, dejar el paso en `cierre`.
 - Métodos Numéricos: antes de la clase, entrar como docente en `numericos/raices/proyectar.html` y probar con un celular. Al terminar, dejar el paso en `cierre`.
+- Práctica de raíces (`mn-practica`): el docente la prueba, borra sus datos desde el panel, la abre y comparte el enlace. Cerrarla antes del examen.

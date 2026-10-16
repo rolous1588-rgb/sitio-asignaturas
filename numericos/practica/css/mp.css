@@ -1,0 +1,169 @@
+/* ============================================================
+   Métodos Numéricos · Práctica de raíces — estilos propios
+   Usa la paleta clara de ../../medidas/css/me.css
+   ============================================================ */
+body.est { font-size: 17px; }
+.est-cont { padding-bottom: 60px; }
+.mp-volver { display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 12px; padding: 8px 14px; border-radius: 99px; border: 1.5px solid var(--borde-2); background: #fff; font-weight: 700; color: var(--acento-2); cursor: pointer; }
+.mp-sub { color: var(--texto-2); margin: 0 0 10px; }
+.mp-nota { font-size: .9rem; color: var(--texto-2); }
+
+/* menú de inicio */
+.mp-menu { display: grid; gap: 10px; }
+.mp-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 14px; border-radius: 14px; border: 1.5px solid var(--borde); background: #fff; cursor: pointer; }
+.mp-item:active { background: var(--superficie-2); }
+.mp-item .num { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-weight: 800; background: var(--acento-claro); color: var(--acento-2); }
+.mp-item .txt { flex: 1; min-width: 0; }
+.mp-item .txt b { display: block; font-size: 1.05rem; }
+.mp-item .txt small { display: block; color: var(--texto-3); font-weight: 600; font-size: .85rem; }
+.mp-item.hecho .num { background: var(--ok-claro); color: var(--ok); }
+.mp-item .flecha { color: var(--texto-3); font-size: 1.3rem; }
+
+/* tarjetas de repaso */
+.mp-repaso { border: 1.5px solid #c9dcf3; background: #f7fbff; }
+.mp-repaso summary { cursor: pointer; font-weight: 800; color: var(--acento-2); list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.mp-repaso summary::-webkit-details-marker { display: none; }
+.mp-repaso summary::after { content: '▾'; font-size: 1.1rem; }
+.mp-repaso[open] summary::after { content: '▴'; }
+.mp-repaso ol, .mp-repaso ul { margin: 10px 0 6px; padding-left: 22px; display: grid; gap: 6px; }
+.mp-form { background: #fff; border: 1px solid #c9dcf3; border-radius: 12px; padding: 10px 12px; margin: 10px 0; font-family: var(--mono); font-weight: 700; color: var(--acento-2); font-size: .92rem; display: grid; gap: 6px; overflow-x: auto; }
+.mp-form .c { font-family: 'Inter', system-ui, sans-serif; font-weight: 500; color: var(--texto-2); font-size: .86rem; }
+.mp-ej { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 8px 0; }
+.mp-ej td { padding: 6px 8px; border-bottom: 1px solid var(--borde); }
+.mp-ej td:nth-child(2), .mp-ej td:nth-child(3) { font-family: var(--mono); font-weight: 700; white-space: nowrap; }
+.mp-ej td:nth-child(3) { color: var(--ok); }
+
+/* datos de la función */
+.mp-func { font-family: var(--mono); font-weight: 800; font-size: 1.15rem; color: var(--texto); margin: 2px 0 8px; overflow-x: auto; white-space: nowrap; }
+.mp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+.mp-chip { font-family: var(--mono); font-weight: 700; background: var(--superficie-2); border-radius: 99px; padding: 4px 12px; font-size: .92rem; }
+.mp-chip.rad { background: var(--duda-claro); color: var(--duda); }
+.mp-graf { border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; margin: 10px 0 2px; background: #fff; }
+.mp-graf svg { display: block; width: 100%; height: auto; }
+
+/* filas */
+.mp-fila { border: 1.5px solid var(--borde-2); border-radius: 16px; background: #fff; padding: 12px; margin-bottom: 12px; }
+.mp-fila.bloq { opacity: .55; }
+.mp-fila.lista { border-color: #bfe5d0; }
+.mp-fila-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.mp-fila-cab h3 { margin: 0; font-size: 1.08rem; }
+.mp-fila-cab span { font-size: .85rem; font-weight: 700; color: var(--texto-3); }
+.mp-celdas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mp-celda { display: block; min-width: 0; }
+.mp-celda > .et { display: block; font-size: .92rem; font-weight: 700; color: var(--texto-2); margin-bottom: 4px; }
+.mp-celda > .et small { font-weight: 600; color: var(--texto-3); }
+.mp-num { display: flex; gap: 6px; min-width: 0; }
+.mp-num input { flex: 1; min-width: 0; width: 100%; padding: 11px 10px; border: 1.5px solid var(--borde-2); border-radius: 10px; background: #fff; font-size: 1.02rem; font-family: var(--mono); font-weight: 700; outline: none; }
+.mp-num input:focus { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-claro); }
+.mp-num input:disabled { opacity: 1; -webkit-text-fill-color: currentColor; }
+.mp-signo { flex: none; width: 40px; border: 1.5px solid var(--borde-2); border-radius: 10px; background: #fff; font-size: 1.15rem; font-weight: 800; color: var(--acento); }
+.mp-signo:disabled { opacity: .4; }
+.mp-fijo { padding: 11px 10px; border-radius: 10px; background: var(--superficie-2); font-family: var(--mono); font-weight: 700; font-size: 1.02rem; border: 1.5px dashed var(--borde-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mp-marca { display: block; min-height: 1.2em; font-size: .82rem; font-weight: 800; margin-top: 3px; }
+.mp-celda.ok input, .mp-celda.ok1 input, .mp-celda.ok2 input { border-color: var(--ok); background: var(--ok-claro); color: var(--ok); }
+.mp-celda.ok .mp-marca, .mp-celda.ok1 .mp-marca, .mp-celda.ok2 .mp-marca { color: var(--ok); }
+.mp-celda.dep input { border-color: var(--ok); background: #f3fbf6; }
+.mp-celda.dep .mp-marca { color: var(--ok); }
+.mp-celda.mal input { border-color: var(--mal); background: var(--mal-claro); }
+.mp-celda.mal .mp-marca { color: var(--mal); }
+.mp-celda.red input { border-color: var(--duda); background: var(--duda-claro); }
+.mp-celda.red .mp-marca { color: var(--duda); }
+.mp-celda.rev input, .mp-celda.aj input { border-color: #94a3b8; background: #f1f5f9; color: #334155; }
+.mp-celda.rev .mp-marca, .mp-celda.aj .mp-marca { color: #475569; }
+.mp-celda.falta input { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-claro); }
+
+/* pregunta: ¿qué extremo reemplaza Xr? */
+.mp-dec { grid-column: 1 / -1; border-top: 1px dashed var(--borde-2); padding-top: 10px; margin-top: 2px; }
+.mp-dec p { margin: 0 0 8px; font-weight: 700; }
+.mp-dec .ops { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mp-op { min-height: 48px; padding: 10px; border: 2px solid var(--borde); border-radius: 12px; background: #fff; font-weight: 700; cursor: pointer; text-align: center; }
+.mp-op.elegida { border-color: var(--acento); background: var(--acento-claro); color: var(--acento-2); }
+.mp-op.ok { border-color: var(--ok); background: var(--ok-claro); color: var(--ok); }
+.mp-op.mal { border-color: var(--mal); background: var(--mal-claro); color: var(--mal); }
+.mp-op:disabled { cursor: default; }
+.mp-dec.mal .mp-marca { color: var(--mal); }
+.mp-dec .mp-marca { color: var(--ok); }
+
+.mp-pie { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.mp-int { font-size: .88rem; font-weight: 700; color: var(--texto-3); }
+.mp-int.ok { color: var(--ok); }
+.mp-int.mal { color: var(--mal); }
+.mp-ayuda { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: #fffaf0; border: 1px solid #f0dbb2; font-size: .9rem; display: grid; gap: 6px; }
+.mp-ayuda p { margin: 0; }
+.mp-ayuda b { color: var(--texto); }
+.mp-ayuda .fx { font-family: var(--mono); font-weight: 700; color: var(--acento-2); word-break: break-word; }
+.mp-examen { font-size: .82rem; font-weight: 700; color: var(--duda); background: var(--duda-claro); border-radius: 99px; padding: 3px 10px; }
+
+/* derivada (Newton) */
+.mp-der { display: grid; gap: 8px; margin-top: 8px; }
+.mp-der .mp-op { text-align: left; font-family: var(--mono); font-size: 1rem; }
+
+/* tabla final */
+.mp-tabla-scroll { overflow-x: auto; margin: 10px 0; }
+.mp-tabla { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: .82rem; text-align: center; }
+.mp-tabla th { background: var(--acento-claro); padding: 6px 4px; border: 1px solid var(--borde); white-space: nowrap; }
+.mp-tabla td { padding: 6px 4px; border: 1px solid var(--borde); font-weight: 700; white-space: nowrap; }
+.mp-res { text-align: center; padding: 6px 0 2px; }
+.mp-res .grande { font-family: var(--mono); font-size: 2.6rem; font-weight: 800; color: var(--acento-2); line-height: 1.1; }
+.mp-res .grande small { font-size: 1.1rem; color: var(--texto-3); }
+.mp-botones { display: grid; gap: 10px; margin-top: 12px; }
+
+/* ejercicios de redondeo */
+.mp-q { border: 1.5px solid var(--borde-2); border-radius: 14px; padding: 12px; margin-bottom: 10px; background: #fff; }
+.mp-q.ok { border-color: #bfe5d0; }
+.mp-q h3 { margin: 0 0 8px; font-size: 1rem; line-height: 1.35; font-weight: 600; }
+.mp-q h3 .n { color: var(--acento); font-weight: 800; margin-right: 4px; }
+.mp-q .fila-r { display: flex; gap: 8px; align-items: center; }
+.mp-q .fila-r .mp-num { flex: 1; }
+.mp-q .ops { display: grid; gap: 8px; }
+.mp-q .ops .mp-op { text-align: left; }
+.mp-q .expl { margin: 8px 0 0; font-size: .92rem; color: var(--texto-2); }
+.mp-barra-prog { height: 10px; border-radius: 99px; background: var(--superficie-2); overflow: hidden; margin: 8px 0 4px; }
+.mp-barra-prog span { display: block; height: 100%; background: var(--ok); border-radius: 99px; }
+
+/* ---------- panel del docente ---------- */
+.mpp-estado { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 12px; }
+.mpp-pill { font-weight: 800; border-radius: 99px; padding: 5px 14px; font-size: .95rem; }
+.mpp-pill.ok { background: var(--ok-claro); color: var(--ok); }
+.mpp-pill.mal { background: var(--mal-claro); color: var(--mal); }
+.mpp-pill.duda { background: var(--duda-claro); color: var(--duda); }
+.mpp-bt { display: flex; gap: 8px; flex-wrap: wrap; }
+.mpp-bt .boton { text-decoration: none; color: inherit; }
+.mpp-bt .boton.prim { color: #fff; }
+.mpp-prog { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--borde-2); font-weight: 600; color: var(--texto-2); }
+.mpp-prog input { padding: 9px 10px; border: 1.5px solid var(--borde-2); border-radius: 10px; font-size: 1rem; margin-left: 6px; }
+.mpp-url { word-break: break-all; font-size: .85rem; background: var(--superficie-2); border-radius: 10px; padding: 8px 10px; }
+.mpp-met { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.mpp-met div { background: var(--superficie-2); border-radius: 12px; padding: 8px 12px; }
+.mpp-met span { display: block; font-size: .78rem; font-weight: 700; color: var(--texto-3); }
+.mpp-met b { font-family: var(--mono); font-size: 1.5rem; }
+.mpp-bloque { margin-bottom: 12px; }
+.mpp-bloque > b { display: block; margin-bottom: 6px; }
+.mpp-falla { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 44px; gap: 8px; align-items: center; font-size: .88rem; padding: 3px 0; }
+.mpp-falla .bar { display: flex; height: 12px; border-radius: 99px; background: var(--superficie-2); overflow: hidden; }
+.mpp-falla .bar i { display: block; height: 100%; }
+.mpp-falla .bar i.mal { background: var(--mal); }
+.mpp-falla .bar i.red { background: var(--duda); }
+.mpp-falla .n { font-family: var(--mono); font-weight: 700; text-align: right; }
+.mpp-al { display: block; width: 100%; text-align: left; border: 1.5px solid var(--borde); border-radius: 14px; background: #fff; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; }
+.mpp-al .l1 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.mpp-al .tot { font-family: var(--mono); font-weight: 800; color: var(--acento-2); white-space: nowrap; }
+.mpp-al .l2 { font-size: .8rem; color: var(--texto-3); margin: 2px 0 6px; }
+.mpp-al .l3 { display: flex; flex-wrap: wrap; gap: 5px; }
+.mpp-c { font-size: .78rem; font-weight: 700; border-radius: 99px; padding: 2px 8px; background: var(--acento-claro); color: var(--acento-2); white-space: nowrap; }
+.mpp-c.ok { background: var(--ok-claro); color: var(--ok); }
+.mpp-c.mal { background: var(--mal-claro); color: var(--mal); }
+.mpp-c.vacio { background: var(--superficie-2); color: var(--texto-3); }
+.mpp-dialogo { width: min(760px, 96vw); }
+.mpp-det { border-top: 1px solid var(--borde); padding: 10px 0; }
+.mpp-det > b { display: block; margin-bottom: 6px; }
+.mpp-int { margin-bottom: 10px; }
+.mpp-int .cab { font-size: .9rem; margin-bottom: 4px; }
+.mpp-dfila { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0; align-items: center; }
+.mpp-dfila .nf { font-size: .8rem; font-weight: 800; color: var(--texto-2); width: 100%; }
+.mpp-cel { font-size: .78rem; border-radius: 8px; padding: 3px 7px; background: var(--superficie-2); white-space: nowrap; }
+.mpp-cel b { font-family: var(--mono); }
+.mpp-cel.ok { background: var(--ok-claro); color: var(--ok); }
+.mpp-cel.mal { background: var(--mal-claro); color: var(--mal); }
+.mpp-cel.red { background: var(--duda-claro); color: var(--duda); }
+.mpp-cel small { color: var(--texto-2); }
