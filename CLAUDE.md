@@ -180,6 +180,21 @@ Carpeta `numericos/practica/` (sesión asíncrona `mn-practica`, fila creada el 
 - Pruebas: Node (todas las variantes, 200 carnets por método, casos de redondeo, copia cruzada, derivada mal) y Playwright con un supabase-js falso (panel + estudiante: abrir, registrar, filas, cierre del método, detalle, CSV, cerrar).
 - Hallazgo (sin corregir, consultar con el docente): en `instrumentacion/js/nucleo.js`, `II.vaciarCola` guarda su copia vieja de la cola después de cada envío; si llega un envío nuevo mientras está enviando, ese envío se pierde. Por eso esta práctica usa su propia cola.
 
+## Métodos Numéricos · Examen de raíces por celular (16/10/2026)
+
+Carpeta `numericos/examen/` (sesiones `mn-ex1` oficial y `mn-ex-prueba` ensayo; filas creadas el 16/10). Mismo formato que la práctica (`numericos/practica/`), con un solo envío por fila **sin bloquearla** y sin mostrar si está bien. Reutiliza `config.js`, `nucleo.js`, `me.css` y `../practica/css/mp.css`; trae una copia congelada de `mp-motor.js`.
+
+| Archivo | Rol |
+|---|---|
+| `index.html` + `js/ex-estudiante.js` | Estudiante: canje del QR (`?s=…&t=código`, RPC `mn_canjear_qr`) → registro → espera (con código de 3 cifras) → examen en 3 pestañas (filas editables, «Guardar fila», derivada de Newton una sola vez y corregida al momento) → terminado → nota publicada con detalle y solución. Envía el estado completo como `avance` (al guardar, cada 30 s si cambió, al salir y al final). Registro de salidas, pérdidas de foco, recargas y pantalla encendida (Wake Lock). Marca de agua con nombre y C.U. LaTeX con KaTeX (`js/ex-tex.js`) |
+| `panel.html` + `js/ex-panel.js` | Docente (celular vertical; `?s=prueba` = ensayo): QR en pantalla completa que cambia solo al escanearse + «Nuevo QR»; «Iniciar examen» (habilita a todos los registrados); «Llegaron tarde» con Habilitar; cuenta regresiva «Últimos N minutos» con Detener / Reanudar / +5 min; «Terminar examen» (20 s); «Reabrir 5 minutos»; «Publicar notas» (fila `<sesión>-notas`) / Ocultar; lista con salidas, foco, recargas, celulares y nota; detalle por estudiante; Excel; en el ensayo, «Reiniciar y borrar» |
+| `js/ex-motor.js` | `EX`: familias nuevas (bisección x·ln(x) − a; falsa posición eˣ − a·x²; Newton a·e^(−x) − x), `EX.datos(met, carnet)`, `EX.calificar` (cada casilla con los números del propio estudiante: ok completo, redondeo mitad, mal o vacía 0; derivada 6), `EX.nota`, `EX.firma`, `EX.codigo` |
+
+- `estado_sesion.extra = { asincrona, token, qr_n, abre, hab: { carnet: true }, fin, cierra, pausa: { rest }, publicado }`. `cierra = fin + 60 s` (margen de red); sin cuenta regresiva, `cierra = null`.
+- RPC `mn_canjear_qr(p_sesion, p_token)` (creada el 16/10, `security definer`, solo sesiones `mn-ex%`): si el código coincide, lo cambia por uno nuevo y devuelve `true`.
+- La nota publicada se guarda en `estado_sesion` fila `<sesión>-notas` (`extra.notas[carnet] = { n, h, p }`); `h` = `EX.firma` de lo calificado (el celular avisa si su copia no coincide).
+- Pruebas: Node (todas las variantes sin empates; 300 carnets con todo bien = 100) y Playwright con un supabase-js falso y base compartida entre contextos (docente + 3 estudiantes: QR de un solo uso, registro, iniciar, tardío habilitado, salidas, cuenta regresiva, detener, +5, terminar, publicar, detalle).
+
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
@@ -191,3 +206,4 @@ Carpeta `numericos/practica/` (sesión asíncrona `mn-practica`, fila creada el 
 - Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html`, probar con un celular y luego **⋮ → Borrar datos de esta clase**. Al terminar, dejar el paso en `cierre`.
 - Métodos Numéricos: antes de la clase, entrar como docente en `numericos/raices/proyectar.html` y probar con un celular. Al terminar, dejar el paso en `cierre`.
 - Práctica de raíces (`mn-practica`): el docente la prueba, borra sus datos desde el panel, la abre y comparte el enlace. Cerrarla antes del examen.
+- Examen de raíces (`mn-ex1`): el docente lo prueba en el ensayo (`panel.html?s=prueba`), reinicia el ensayo y a las 16:00 usa el oficial (`panel.html`). Después: Publicar notas y Descargar notas.
