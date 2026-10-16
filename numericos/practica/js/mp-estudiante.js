@@ -128,12 +128,12 @@
   }
 
   function barra() {
-    $('#e-nombre').textContent = !alumno ? 'Práctica · Raíces' : (PRUEBA ? 'Modo prueba · ' : '') + alumno.nombre;
+    $('#e-nombre').textContent = !alumno ? 'Práctica de raíces' : (PRUEBA ? 'Modo prueba; ' : '') + alumno.nombre;
   }
 
   // ---------------- registro ----------------
   function vRegistro() {
-    $('#cont').innerHTML = tarjeta(`<span class="etq">Métodos Numéricos · Práctica</span>
+    $('#cont').innerHTML = tarjeta(`<span class="etq">Métodos Numéricos; práctica</span>
       <h2>Ensayo del examen: raíces</h2>
       <p>Entra con tus datos. Tendrás <b>tus propias funciones</b> y podrás repetir con datos nuevos.</p>
       <form id="f-ingreso">
@@ -176,7 +176,7 @@
       'no-abierta': ['La práctica aún no está abierta', 'El docente la abrirá pronto. Esta página se actualiza sola.'],
       'cerrada': ['La práctica está cerrada', 'El docente cerró la práctica. Tu avance quedó guardado en este celular. ¡Éxitos en el examen!']
     }[est];
-    $('#cont').innerHTML = tarjeta(`<span class="etq">Métodos Numéricos · Práctica</span><h2>${t[0]}</h2><p>${t[1]}</p>
+    $('#cont').innerHTML = tarjeta(`<span class="etq">Métodos Numéricos; práctica</span><h2>${t[0]}</h2><p>${t[1]}</p>
       ${est === 'no-abierta' || est === 'sin-red' ? '<button class="boton bloque" id="b-act">Actualizar</button>' : ''}`);
     const b = $('#b-act');
     if (b) b.onclick = () => (II.sb ? leerEstado() : location.reload());
@@ -186,11 +186,11 @@
   function estadoMet(m) {
     const em = E[m];
     const last = E.hist[m].length ? E.hist[m][E.hist[m].length - 1] : null;
-    if (em.terminado) return { hecho: true, txt: `Terminado · ${ptsTxt(em.pts)} de ${MP.METODOS[m].max} (como examen)` };
+    if (em.terminado) return { hecho: true, txt: `Terminado; ${ptsTxt(em.pts)} de ${MP.METODOS[m].max} (como examen)` };
     const k = em.filas.filter((f) => f && f.lista).length;
-    if (m === 'nr' && em.der && !k) return { txt: 'Derivada lista · sigue con la tabla' };
+    if (m === 'nr' && em.der && !k) return { txt: 'Derivada lista; sigue con la tabla' };
     if (k || (em.filas[0] && em.filas[0].chk)) return { txt: `Vas en la fila ${Math.min(3, k + 1)} de 3` };
-    if (last) return { txt: `Función nueva · la anterior: ${ptsTxt(last.pts)} de ${MP.METODOS[m].max}` };
+    if (last) return { txt: `Función nueva; la anterior: ${ptsTxt(last.pts)} de ${MP.METODOS[m].max}` };
     return { txt: 'Sin empezar' };
   }
   function vInicio() {
@@ -198,7 +198,7 @@
     const bienRed = its.filter((q) => E.red.it[q.id] && E.red.it[q.id].ok).length;
     const item = (ir, num, titulo, sub, hecho) => `<button class="mp-item ${hecho ? 'hecho' : ''}" data-ir="${ir}">
       <span class="num">${num}</span><span class="txt"><b>${titulo}</b><small>${sub}</small></span><span class="flecha">›</span></button>`;
-    $('#cont').innerHTML = tarjeta(`<span class="etq">Práctica · ensayo del examen</span>
+    $('#cont').innerHTML = tarjeta(`<span class="etq">Práctica; ensayo del examen</span>
         <h2>Hola, ${II.esc(nombreCorto())}</h2>
         <p>Practica los tres métodos con el mismo formato del examen: <b>3 iteraciones</b>, <b>4 decimales</b> y calculadora simple en <b>RAD</b>.</p>
         <div class="aviso info">Esta práctica <b>no tiene nota</b>. Aquí tienes <b>2 intentos</b> por fila; <b>en el examen tendrás un solo intento</b>.</div>
@@ -313,7 +313,7 @@
         <div>f(Xa)·f(Xr) &lt; 0 → Xr reemplazará a Xb</div><div class="c">(la raíz está entre Xa y Xr)</div>
         <div>f(Xa)·f(Xr) &gt; 0 → Xr reemplazará a Xa</div><div class="c">(la raíz está entre Xr y Xb)</div>
         <div>Error % = |Xr − Xr anterior| / |Xr| × 100</div><div class="c">En la fila 1 no hay error: se anota ---</div></div>
-      <p><b>En cada fila:</b> 1) Xa, Xb y sus f · 2) Xr · 3) f(Xr) · 4) error % · 5) ¿Xr reemplazará a Xa o a Xb?</p>
+      <p><b>En cada fila:</b> 1) Xa, Xb y sus f; 2) Xr; 3) f(Xr); 4) error %; 5) ¿Xr reemplazará a Xa o a Xb?</p>
       <p class="mp-nota"><b>Ojo:</b> en la fila siguiente, el extremo que cambia toma el valor de Xr y su f es el f(Xr) que ya calculaste: no hace falta volver a calcularla. El otro extremo y su f se copian igual.</p></details>`,
     fp: `<details class="tarjeta mp-repaso" open><summary>Repasa: método de falsa posición</summary>
       <p><b>Idea.</b> Igual que bisección, pero Xr no es el punto medio: se unen (Xa, f(Xa)) y (Xb, f(Xb)) con una recta, y Xr es donde esa recta corta el eje x. Por eso suele acercarse más rápido.</p>
@@ -321,15 +321,15 @@
         <div>f(Xa)·f(Xr) &lt; 0 → Xr reemplazará a Xb</div>
         <div>f(Xa)·f(Xr) &gt; 0 → Xr reemplazará a Xa</div>
         <div>Error % = |Xr − Xr anterior| / |Xr| × 100</div><div class="c">En la fila 1 no hay error: se anota ---</div></div>
-      <p><b>En cada fila:</b> 1) Xa, Xb y sus f · 2) Xr con la fórmula (usa f(Xa) y f(Xb) de la tabla, ya redondeados) · 3) f(Xr) · 4) error % · 5) ¿qué extremo reemplazará Xr?</p>
+      <p><b>En cada fila:</b> 1) Xa, Xb y sus f; 2) Xr con la fórmula (usa f(Xa) y f(Xb) de la tabla, ya redondeados); 3) f(Xr); 4) error %; 5) ¿qué extremo reemplazará Xr?</p>
       <p class="mp-nota"><b>Es normal</b> que uno de los extremos se quede fijo en todas las filas: la recta corta siempre del mismo lado de la raíz.</p></details>`,
     nr: `<details class="tarjeta mp-repaso" open><summary>Repasa: método de Newton-Raphson</summary>
       <p><b>Idea.</b> Desde Xₙ se traza la recta tangente a la curva; Xₙ₊₁ es donde esa tangente corta el eje x. No necesita intervalo, pero sí la derivada f'(x).</p>
       <div class="mp-form"><div>Xₙ₊₁ = Xₙ − f(Xₙ) / f'(Xₙ)</div>
         <div>Error % = |Xₙ₊₁ − Xₙ| / |Xₙ₊₁| × 100</div>
         <div class="c">El Xₙ de la fila siguiente es el Xₙ₊₁ de esta fila.</div></div>
-      <div class="mp-form"><div class="c">Derivadas que vas a usar:</div><div>(xⁿ)' = n·xⁿ⁻¹ · (eˣ)' = eˣ</div><div>(sen x)' = cos x · (cos x)' = −sen x</div><div>(constante)' = 0</div></div>
-      <p><b>En cada fila:</b> 1) Xₙ · 2) f(Xₙ) · 3) f'(Xₙ) · 4) Xₙ₊₁ · 5) error %. Calculadora en <b>RAD</b>.</p></details>`
+      <div class="mp-form"><div class="c">Derivadas que vas a usar:</div><div>(xⁿ)' = n·xⁿ⁻¹&nbsp;;&nbsp;&nbsp;(eˣ)' = eˣ</div><div>(sen x)' = cos x&nbsp;;&nbsp;&nbsp;(cos x)' = −sen x</div><div>(constante)' = 0</div></div>
+      <p><b>En cada fila:</b> 1) Xₙ; 2) f(Xₙ); 3) f'(Xₙ); 4) Xₙ₊₁; 5) error %. Calculadora en <b>RAD</b>.</p></details>`
   };
 
   // ---------------- gráfica liviana ----------------
@@ -437,7 +437,7 @@
     const d = MP.datos(m, alumno.carnet, em.semilla);
     const max = MP.METODOS[m].max;
     const ini = m === 'nr' ? `<span class="mp-chip">x₀ = ${fmt(d.x0)}</span>` : `<span class="mp-chip">Xa = ${fmt(d.a)}</span><span class="mp-chip">Xb = ${fmt(d.b)}</span>`;
-    let html = volver() + REPASO[m] + tarjeta(`<span class="etq">${MP.METODOS[m].titulo} · tu función</span>
+    let html = volver() + REPASO[m] + tarjeta(`<span class="etq">${MP.METODOS[m].titulo}; tu función</span>
       <div class="mp-func">${d.txt}</div>
       <div class="mp-chips">${ini}<span class="mp-chip">3 iteraciones</span><span class="mp-chip">4 decimales</span>${d.rad ? '<span class="mp-chip rad">Calculadora en RAD</span>' : ''}</div>
       <div class="mp-graf">${grafica(d)}</div>

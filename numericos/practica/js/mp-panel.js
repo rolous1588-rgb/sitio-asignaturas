@@ -52,7 +52,7 @@
     } catch (e) { return false; }
   }
   function vIngreso(msg) {
-    $('#cont').innerHTML = `<div class="tarjeta"><span class="etq">Métodos Numéricos · Práctica</span><h2>Panel del docente</h2>
+    $('#cont').innerHTML = `<div class="tarjeta"><span class="etq">Métodos Numéricos; práctica</span><h2>Panel del docente</h2>
       <p>Entra con tu cuenta docente (la misma de las otras materias).</p>
       <form id="f-doc"><label class="campo"><span>Correo</span><input name="email" type="email" required autocomplete="username"></label>
       <label class="campo"><span>Contraseña</span><input name="clave" type="password" required autocomplete="current-password"></label>
@@ -102,7 +102,7 @@
     const ex = (fila && fila.extra) || {};
     const pill = { abierta: ['ok', 'Abierta'], cerrada: ['mal', 'Cerrada'], 'no-abierta': ['duda', 'Aún no abierta'] }[est];
     let det = '';
-    if (est === 'abierta') det = `Abierta desde las ${hora(ex.abre)}${ex.cierra ? ` · se cierra sola a las <b>${hora(ex.cierra)}</b>` : ' · sin hora de cierre'}`;
+    if (est === 'abierta') det = `Abierta desde las ${hora(ex.abre)}${ex.cierra ? `; se cierra sola a las <b>${hora(ex.cierra)}</b>` : '; sin hora de cierre'}`;
     else if (est === 'cerrada') det = `Se cerró a las ${hora(ex.cierra)}`;
     else det = 'Los estudiantes ven «La práctica aún no está abierta».';
     $('#estado').innerHTML = `<div class="mpp-estado"><span class="mpp-pill ${pill[0]}">${pill[1]}</span><span>${det}</span></div>
@@ -236,7 +236,7 @@
     const prom = conTotal.length ? conTotal.reduce((s, a) => s + a.total, 0) / conTotal.length : null;
     $('#resumen').innerHTML = `<div class="mpp-met"><div><span>Entraron</span><b>${n}</b></div><div><span>Practicaron</span><b>${practicaron}</b></div>
       <div><span>Terminaron los 3</span><b>${conTotal.length}</b></div><div><span>Promedio (como examen)</span><b>${prom == null ? '—' : II.fmt(prom, 1)}</b></div></div>
-      <p class="mp-nota" style="margin:8px 0 0">Terminaron: Bisección ${term('bis')} · Falsa posición ${term('fp')} · Newton ${term('nr')} · Actualizado a las ${hora(new Date())}</p>`;
+      <p class="mp-nota" style="margin:8px 0 0">Terminaron: Bisección ${term('bis')}; Falsa posición ${term('fp')}; Newton ${term('nr')}. Actualizado a las ${hora(new Date())}</p>`;
 
     const F = fallas();
     $('#fallas').innerHTML = MET.map((m) => {
@@ -246,7 +246,7 @@
         return `<div class="mpp-falla"><span class="t">${ETQ[k]}</span><span class="bar"><i class="mal" style="width:${pm}%"></i><i class="red" style="width:${pr}%"></i></span><span class="n">${pm + pr}%</span></div>`;
       }).join('');
       return `<div class="mpp-bloque"><b>${MP.METODOS[m].titulo}</b>${filas || '<p class="mp-nota">Aún sin datos.</p>'}</div>`;
-    }).join('') + '<p class="mp-nota">Porcentaje de casillas con error en el <b>primer intento</b>: <span style="color:var(--mal)">■</span> error · <span style="color:var(--duda)">■</span> solo redondeo.</p>';
+    }).join('') + '<p class="mp-nota">Porcentaje de casillas con error en el <b>primer intento</b>: <span style="color:var(--mal)">■</span> error; <span style="color:var(--duda)">■</span> solo redondeo.</p>';
 
     $('#lista').innerHTML = alumnos.length ? alumnos.map((a, i) => {
       const chip = (m) => {
@@ -256,7 +256,7 @@
         return `<span class="mpp-c vacio">${MP.METODOS[m].titulo.split(' ')[0]} —</span>`;
       };
       return `<button class="mpp-al" data-al="${i}"><div class="l1"><b>${esc(a.nombre)}</b><span class="tot">${a.total != null ? pts(a.total) + '/100' : a.registros ? 'en curso' : 'solo entró'}</span></div>
-        <div class="l2">${esc(a.info.carrera || '')} · C.U. ${esc(a.carnet)} · ${hora(a.primero)}–${hora(a.ultimo)} (${a.minutos} min)</div>
+        <div class="l2">${esc(a.info.carrera || '')}; C.U. ${esc(a.carnet)}; de ${hora(a.primero)} a ${hora(a.ultimo)} (${a.minutos} min)</div>
         <div class="l3"><span class="mpp-c">Redondeo ${a.redBien}/${Math.max(8, a.redHechos)}</span>${MET.map(chip).join('')}${a.res.nr.der ? `<span class="mpp-c ${a.res.nr.der.ok ? 'ok' : 'mal'}">f' ${a.res.nr.der.ok ? '✓' : '✗'}</span>` : ''}</div></button>`;
     }).join('') : '<p class="mp-nota">Todavía no entró nadie.</p>';
     $$('[data-al]').forEach((b) => { b.onclick = () => detalle(alumnos[Number(b.dataset.al)]); });
@@ -280,19 +280,19 @@
             const v = id === 'dec' ? (p.vals[id] === 'a' ? 'Xa' : p.vals[id] === 'b' ? 'Xb' : '—') : neg(p.vals[id] || '—');
             return `<span class="mpp-cel ${r1}">${id === 'dec' ? 'extremo' : id} <b>${esc(v)}</b> ${SIMB[r1] || ''}${fn && !/^ok1$/.test(fn) ? ` <small>→ ${FIN[fn] || fn}</small>` : ''}</span>`;
           }).join('');
-          return `<div class="mpp-dfila"><span class="nf">Fila ${nf} · ${u.chk || 1} intento${(u.chk || 1) > 1 ? 's' : ''}${u.lista ? '' : ' · sin terminar'}</span>${cel}</div>`;
+          return `<div class="mpp-dfila"><span class="nf">Fila ${nf}; ${u.chk || 1} intento${(u.chk || 1) > 1 ? 's' : ''}${u.lista ? '' : '; sin terminar'}</span>${cel}</div>`;
         }).join('');
-        return `<div class="mpp-int"><div class="cab">Función ${k + 1}: <span class="mono">${esc(it.fun || '')}</span> · ${fin ? `<b>${pts(fin.pts)}/${MP.METODOS[m].max}</b>` : 'sin terminar'}</div>
+        return `<div class="mpp-int"><div class="cab">Función ${k + 1}: <span class="mono">${esc(it.fun || '')}</span>; ${fin ? `<b>${pts(fin.pts)}/${MP.METODOS[m].max}</b>` : 'sin terminar'}</div>
           ${it.der ? `<div class="mpp-dfila"><span class="mpp-cel ${it.der.ok ? 'ok' : 'mal'}">derivada <b>${esc(it.der.t)}</b> ${it.der.ok ? '✓' : '✗'}</span></div>` : ''}${filas}</div>`;
       }).join('')}</div>`;
     }).join('');
     const red = Object.values(a.red).sort((p, q) => p.serie - q.serie || String(p.id).localeCompare(q.id));
     const capa = II.html(`<div class="capa"><div class="dialogo ancho mpp-dialogo">
       <h2>${esc(a.nombre)}</h2>
-      <p class="mp-nota">C.U. ${esc(a.carnet)} · C.I. ${esc(a.info.ci || '—')} · ${esc(a.info.carrera || '')}<br>Entró ${fechaHora(a.primero)} · último movimiento ${fechaHora(a.ultimo)} · ${a.minutos} min</p>
-      <div class="mpp-det"><b>Regla de redondeo</b><div class="mpp-dfila">${red.length ? red.map((x) => `<span class="mpp-cel ${x.ok ? 'ok' : 'mal'}">serie ${x.serie + 1} · ${x.id} ${x.ok ? '✓' : '✗'}${x.int > 1 ? ' <small>(2 int.)</small>' : ''}</span>`).join('') : '<span class="mp-nota">No hizo ejercicios.</span>'}</div></div>
+      <p class="mp-nota">C.U. ${esc(a.carnet)}; C.I. ${esc(a.info.ci || '—')}; ${esc(a.info.carrera || '')}<br>Entró ${fechaHora(a.primero)}; último movimiento ${fechaHora(a.ultimo)}; ${a.minutos} min</p>
+      <div class="mpp-det"><b>Regla de redondeo</b><div class="mpp-dfila">${red.length ? red.map((x) => `<span class="mpp-cel ${x.ok ? 'ok' : 'mal'}">serie ${x.serie + 1}; ${x.id} ${x.ok ? '✓' : '✗'}${x.int > 1 ? ' <small>(2 int.)</small>' : ''}</span>`).join('') : '<span class="mp-nota">No hizo ejercicios.</span>'}</div></div>
       ${bloques}
-      <p class="mp-nota">Primer intento: ✓ bien · ≈ solo redondeo · ✗ error. Después de la flecha, cómo quedó la casilla.</p>
+      <p class="mp-nota">Primer intento: ✓ bien; ≈ solo redondeo; ✗ error. Después de la flecha, cómo quedó la casilla.</p>
       <div class="fila-bt"><button class="boton" id="d-borrar" style="color:var(--mal);border-color:var(--mal)">Borrar sus datos</button><button class="boton prim" id="d-cerrar">Cerrar</button></div>
     </div></div>`);
     document.body.appendChild(capa);
@@ -343,7 +343,7 @@
   function vPanel() {
     $('#cont').innerHTML = `
       <div class="aviso oculto" id="aviso"></div>
-      <div class="tarjeta"><span class="etq">Práctica de raíces · ensayo del examen</span><h2>Abrir y cerrar</h2><div id="estado"></div></div>
+      <div class="tarjeta"><span class="etq">Práctica de raíces; ensayo del examen</span><h2>Abrir y cerrar</h2><div id="estado"></div></div>
       <div class="tarjeta"><span class="etq">Enlace para los estudiantes</span>
         <p class="mono mpp-url">${esc(URL_EST)}</p>
         <div class="mpp-bt"><button class="boton prim" id="b-compartir">Compartir</button><button class="boton" id="b-copiar">Copiar enlace</button>
