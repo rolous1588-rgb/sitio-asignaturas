@@ -431,3 +431,52 @@ body.tv .e5-sol .sol-circ svg{max-height:60vh}
 .fig-tv svg{max-height:36vh;width:auto;max-width:100%;height:auto}
 .fig-tv svg.kmapa{max-height:40vh}
 .z-op .opciones-est{margin-top:4px}
+
+/* ============================================================
+   Sesión d1-c4 (16/10): XOR, paridad y comparador
+   ============================================================ */
+.c4-sel{display:flex;flex-wrap:wrap;gap:.3em;margin-bottom:.35em}
+.c4-regla{margin-top:.35em}
+.c4-ondas{max-width:100%}
+.c4-malslot{fill:var(--bad2)}
+.c4-q{fill:var(--bad);font-weight:800;font-size:18px;text-anchor:middle}
+.c4-qg{fill:#adb5bd;font-weight:800;font-size:18px;text-anchor:middle}
+.c4-bits{font-family:ui-monospace,"Roboto Mono",Consolas,monospace;font-weight:800;letter-spacing:.06em;white-space:nowrap}
+.c4-cable{display:flex;align-items:baseline;gap:.6em;margin:.2em 0}
+.c4-cable .lbl{min-width:3.5em}
+.c4-tabla{border-collapse:separate;border-spacing:4px;margin:0 auto}
+.c4-tabla td{padding:0;text-align:center;vertical-align:middle}
+.c4-col{font-size:.8em;font-weight:700;color:var(--muted)}
+.c4-b{width:2.1em;height:2.1em;border-radius:.3em;border:2px solid var(--line);background:#fff;font-weight:800;font-size:1em;color:var(--ink);padding:0}
+.c4-b.uno{background:var(--on2);border-color:var(--on);color:var(--on)}
+.c4-b.danado{outline:3px solid var(--q);outline-offset:1px}
+.c4-b.elegido{background:var(--q2);border-color:var(--q);color:var(--q)}
+.c4-b.correcto{box-shadow:0 0 0 3px var(--on)}
+.c4-p{width:2.1em;height:2.1em;display:inline-flex;align-items:center;justify-content:center;border-radius:.3em;background:var(--pri2);color:var(--pri);font-weight:800;border:2px dashed var(--pri)}
+.c4-flag{font-weight:800}
+.c4-flag.ok{color:var(--on)}
+.c4-flag.mal{color:var(--bad)}
+.c4-bl{display:flex;gap:1em;align-items:center;flex-wrap:wrap}
+.c4-bl-txt{flex:1 1 12em;min-width:0;display:flex;flex-direction:column;gap:.4em}
+.c4-items{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.c4-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.c4-ops{display:flex;gap:6px;flex:0 0 auto}
+.c4-t{min-width:2.8em;height:2.6em;border-radius:8px;border:2px solid var(--line);background:#fff;font-weight:800;font-size:1em;color:var(--ink)}
+.c4-t.sel{background:var(--pri);border-color:var(--pri);color:#fff}
+.c4-faltan{color:var(--bad);font-weight:700;margin-top:6px}
+.c4-q-txt{color:var(--bad);font-weight:800}
+.c4-form{background:var(--pri2);border-radius:10px;padding:8px 12px;margin:8px 0;line-height:1.7}
+.c4-comp-in{display:flex;gap:1.2em;flex-wrap:wrap;margin-bottom:.4em}
+.c4-num{display:flex;align-items:center;gap:.35em}
+.c4-leds{display:flex;flex-wrap:wrap;gap:.4em 1em;margin:.3em 0}
+.c4-mot-fila{display:flex;align-items:center;gap:.45em;flex-wrap:wrap;margin:.15em 0}
+.c4-mot-fila .lbl{min-width:6.5em}
+.c4-pista{position:relative;height:2.2em;background:var(--off2);border-radius:1.1em;margin:.5em 0}
+.c4-pista span{position:absolute;top:50%;transform:translate(-50%,-50%);font-weight:800}
+.c4-cons{color:var(--q);top:20%!important}
+.c4-pos{color:var(--pri);font-size:1.3em}
+.c4-accion{font-size:1.4em;font-weight:800;margin:.2em 0}
+.formulas-est{background:var(--pri2);border-radius:10px;padding:8px 12px;margin:10px 0;line-height:1.8}
+body.est .c4-tiempos .btn,body.est .c4-paridad .btn,body.est .c4-bloque .btn,body.est .c4-motor .btn{font-size:14px;padding:8px 10px}
+body.est .c4-b,body.est .c4-p{font-size:15px}
+.boton.confirmar{background:var(--q);border-color:var(--q);color:#fff}

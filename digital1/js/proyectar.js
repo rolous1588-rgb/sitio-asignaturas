@@ -60,12 +60,13 @@
     }
   }
   const refit = () => fit(curEl());
+  D1.refit = refit;
 
   // ---------------- pestañas, puntos y flechas ----------------
   const tabsEl = $('#tabs');
   S.grupos.forEach((n, g) => {
     const b = document.createElement('button');
-    b.innerHTML = '<b>' + (7 + g) + '</b>' + n;
+    b.innerHTML = '<b>' + ((S.pestana0 || 7) + g) + '</b>' + n;
     b.onclick = () => irA(PASOS.findIndex((p) => p.g === g));
     tabsEl.appendChild(b);
   });
@@ -208,7 +209,7 @@
     const g = $('#c-graf'), met = $('#c-met');
     if (!g || !met) return;
     const filas = evaluados(), val = filas.filter((x) => !x.vacio);
-    const paso05 = p.ejercicio === 'e2';
+    const paso05 = p.ejercicio === 'e2' || !!ej.medios;
     const cats = [];
     for (let v = 0; v <= ej.puntos + 1e-9; v += paso05 ? 0.5 : 1) cats.push(Math.round(v * 10) / 10);
     const cnt = cats.map((c) => val.filter((x) => Math.abs(x.puntos - c) < 0.01).length);
@@ -241,7 +242,8 @@
     const gente = new Set(todas.filter((r) => r.actividad !== 'ingreso').map((r) => r.carnet));
     let suma = 0;
     gente.forEach((c) => acts.forEach((q) => { const r = por[q.id] && por[q.id][c]; if (r) suma += Number(r.puntaje) || 0; }));
-    const maxPts = acts.reduce((a, q) => a + D1.puntosPaso(q), 0);
+    const hechas = new Set(todas.map((r) => r.actividad));
+    const maxPts = acts.filter((q) => hechas.has(q.id)).reduce((a, q) => a + D1.puntosPaso(q), 0);
     const filas = acts.map((q, i) => {
       const rs = Object.values(por[q.id] || {});
       const ok = rs.filter((r) => r.correcta).length;
@@ -405,7 +407,8 @@
       II.sb.from('ingresos').select('carnet,nombre,creado').eq('sesion', SID).order('creado', { ascending: true }),
       II.sb.from('respuestas').select('actividad,carnet,nombre,puntaje,creado').eq('sesion', SID).order('creado', { ascending: true })
     ]);
-    const acts = PASOS.filter(actDe);
+    const hechas = new Set((res || []).map((r) => r.actividad));
+    const acts = PASOS.filter(actDe).filter((q) => hechas.has(q.id));
     const gente = {};
     (ing || []).forEach((r) => { gente[r.carnet] = gente[r.carnet] || { nombre: r.nombre, pts: {} }; gente[r.carnet].nombre = r.nombre; });
     (res || []).forEach((r) => {
@@ -431,22 +434,6 @@
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     aviso('Reporte descargado: ' + Object.keys(gente).length + ' estudiantes.');
   }
-  function borrarDatos() {
-    if (!docente) return;
-    const capa = II.html('<div class="capa"><div class="dialogo"><h3>Borrar datos de esta clase</h3><p>Se borran todas las respuestas e ingresos de «' + II.esc(S.titulo) + '». Úsalo solo para limpiar las pruebas antes de la clase.</p>' +
-      '<div class="fila-bt"><button class="boton" data-x>Cancelar</button><button class="boton peligro" data-ok>Borrar todo</button></div></div></div>');
-    document.body.appendChild(capa);
-    capa.querySelector('[data-x]').onclick = () => capa.remove();
-    capa.querySelector('[data-ok]').onclick = async () => {
-      const r1 = await II.sb.from('respuestas').delete().eq('sesion', SID);
-      const r2 = await II.sb.from('ingresos').delete().eq('sesion', SID);
-      capa.remove();
-      aviso(r1.error || r2.error ? 'No se pudo borrar: ' + ((r1.error || r2.error).message || '') : 'Datos de prueba borrados.');
-      respuestas = []; todas = []; conectados = 0;
-      contarGente(); montar();
-    };
-  }
-
   // ---------------- docente: ingreso y menú ----------------
   function dialogoLogin() {
     if (!II.sb) { aviso('Sin conexión con la base de datos: solo modo ensayo.'); return; }
@@ -481,7 +468,7 @@
   function menu() {
     const it = (k, t, s) => '<button class="menu-it" data-m="' + k + '">' + t + (s ? '<small>' + s + '</small>' : '') + '</button>';
     const capa = II.html('<div class="capa"><div class="dialogo"><h3>' + II.esc(S.titulo) + '</h3>' +
-      (docente ? it('rep', 'Descargar reporte (CSV)', 'Puntos por estudiante, para la nota de prácticas') + it('borrar', 'Borrar datos de esta clase', 'Solo para limpiar pruebas') + it('salir', 'Salir de la cuenta docente')
+      (docente ? it('rep', 'Descargar reporte (CSV)', 'Puntos por estudiante, para la nota de prácticas') + it('salir', 'Salir de la cuenta docente')
         : it('entrar', 'Entrar como docente', 'Para habilitar actividades y ver respuestas')) +
       it('inicio', 'Ir a la portada (QR)') + '<div class="fila-bt"><button class="boton" data-x>Cerrar</button></div></div></div>');
     document.body.appendChild(capa);
@@ -493,7 +480,6 @@
       const m = b.dataset.m;
       if (m === 'entrar') dialogoLogin();
       else if (m === 'rep') reporte();
-      else if (m === 'borrar') borrarDatos();
       else if (m === 'salir') { await II.sb.auth.signOut(); docente = false; barra(); montar(); }
       else if (m === 'inicio') irA(0);
     };

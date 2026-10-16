@@ -119,14 +119,15 @@
 
   function vExplica(p) {
     $('#cont').innerHTML = navLibre() + tarjeta('<span class="etq">Explicación</span><h2>' + p.titulo + '</h2>' +
-      (p.idea ? '<p class="idea-est">' + p.idea + '</p>' : '') + (LIBRE ? '' : mira()) +
+      (p.idea ? '<p class="idea-est">' + p.idea + '</p>' : '') + (p.formulas ? '<div class="formulas-est">' + p.formulas + '</div>' : '') + (LIBRE ? '' : mira()) +
       (p.explorar ? '<button class="boton bloque" id="b-explorar">' + (LIBRE ? 'Abrir el diagrama' : 'Explorar en mi celular') + '</button>' : '') +
       '<div id="zona-dg" style="margin-top:12px"></div>');
     const b = $('#b-explorar');
     if (b) b.onclick = () => {
       b.remove();
       quitarDiag();
-      diag = p.explorar === 'bomba' ? D1.diag.bomba($('#zona-dg'), { botonesFalla: true, celular: true }) : explorarMapa($('#zona-dg'));
+      const otro = D1.EXPLORAR && D1.EXPLORAR[p.explorar];
+      diag = p.explorar === 'bomba' ? D1.diag.bomba($('#zona-dg'), { botonesFalla: true, celular: true }) : otro ? otro($('#zona-dg')) : explorarMapa($('#zona-dg'));
     };
   }
 
@@ -200,7 +201,20 @@
     const borr = II.leer(kB, null);
     if (borr) diag.fijar(borr);
     diag.alCambiar(() => II.guardar(kB, diag.estado()));
-    $('#b-enviar').onclick = () => enviarEjercicio(p);
+    // confirmación antes de enviar: el primer toque pregunta, el segundo envía
+    let confirmarT = null;
+    $('#b-enviar').onclick = () => {
+      const b = $('#b-enviar');
+      if (!b.classList.contains('confirmar')) {
+        b.classList.add('confirmar');
+        b.textContent = '¿Enviar? Toca otra vez para confirmar';
+        clearTimeout(confirmarT);
+        confirmarT = setTimeout(() => { const x = $('#b-enviar'); if (x) { x.classList.remove('confirmar'); x.textContent = 'Enviar mi respuesta'; } }, 4000);
+        return;
+      }
+      clearTimeout(confirmarT);
+      enviarEjercicio(p);
+    };
   }
   async function enviarEjercicio(p, auto) {
     if (resp[p.id] || !diag || !diag.estado) return;

@@ -6,7 +6,8 @@
 <meta name="theme-color" content="#f6f5f1">
 <meta name="robots" content="noindex">
 <title>Proyección · Electrónica Digital 1</title>
-<link rel="stylesheet" href="css/d1.css?v=3">
+<link rel="stylesheet" href="css/d1.css?v=4">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 </head>
 <body class="tv">
 
@@ -263,6 +264,193 @@
     </div>
   </div>
 </section>
+
+<!-- =================== d1-c4 · XOR, paridad y comparador (16/10) =================== -->
+<section class="slide" id="p-xres">
+  <h2>Repaso: XOR y XNOR</h2>
+  <div class="body">
+    <div class="col">
+      <table class="tt tight"><tr><th>A</th><th>B</th><th>XOR</th><th>XNOR</th></tr>
+        <tr><td>0</td><td>0</td><td>0</td><td class="v1">1</td></tr>
+        <tr><td>0</td><td>1</td><td class="v1">1</td><td>0</td></tr>
+        <tr><td>1</td><td>0</td><td class="v1">1</td><td>0</td></tr>
+        <tr><td>1</td><td>1</td><td>0</td><td class="v1">1</td></tr></table>
+    </div>
+    <div class="col big">
+      <p class="expr">\(Y = A \oplus B = \overline{A}B + A\overline{B}\)</p>
+      <p class="lbl">XOR: vale 1 si las entradas son <b>distintas</b>.</p>
+      <p class="expr">\(Y = \overline{A \oplus B} = \overline{A}\,\overline{B} + AB\)</p>
+      <p class="lbl">XNOR: vale 1 si las entradas son <b>iguales</b>.</p>
+      <div class="q"><p class="qt">¿Por qué la XNOR sirve para comparar?</p><button class="rv">Revelar</button>
+        <div class="ans">Porque da 1 justo cuando los dos bits son iguales: es un detector de igualdad de un bit. Con varias XNOR se comparan números enteros (pestaña 12).</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-xtiempo">
+  <h2>Compuertas que dejan pasar una señal</h2>
+  <div class="body">
+    <div class="col big" id="c4-tiempos"></div>
+    <div class="col">
+      <div class="q"><p class="qt">¿Qué compuerta invierte A solo cuando B = 1?</p><button class="rv">Revelar</button>
+        <div class="ans">La XOR: \(A \oplus 0 = A\) y \(A \oplus 1 = \overline{A}\). Es un inversor controlado; así se arma un restador con un sumador (capítulo 6).</div></div>
+      <div class="q"><p class="qt">Un motor arranca con MARCHA solo si la puerta de protección está cerrada. ¿Qué compuerta?</p><button class="rv">Revelar</button>
+        <div class="ans">Una AND: \(M = \text{MARCHA} \cdot \text{PUERTA}\). PUERTA es la señal que habilita.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-xchip">
+  <h2>Del símbolo al chip: el 7486</h2>
+  <div class="body">
+    <div class="col big"><svg id="c4-pin" viewBox="0 0 400 168"></svg></div>
+    <div class="col">
+      <p class="card">Cuatro XOR con la misma distribución que el 7400, el 7408 y el 7432: pin 14 a +5 V; pin 7 a GND; la compuerta 1 entra por 1 y 2 y sale por 3.</p>
+      <div class="q"><p class="qt">Para \(\overline{A}B + A\overline{B}\) con AND, OR y NOT, ¿cuántos chips?</p><button class="rv">Revelar</button>
+        <div class="ans">2 NOT, 2 AND y 1 OR: tres chips (7404, 7408 y 7432). Con el 7486 es una sola de sus cuatro compuertas. Por eso existe un chip solo de XOR.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-pruido">
+  <h2>Un bit cambia en el cable</h2>
+  <div class="body">
+    <div class="col big">
+      <p class="card">Un sensor manda 4 bits por un cable de 20 m hasta un PLC. Junto al cable pasa el de un motor grande.</p>
+      <div class="c4-cable"><span class="lbl">Envía</span><span class="c4-bits kk">1 0 1 1</span></div>
+      <div class="c4-cable"><span class="lbl">Llega</span><span class="c4-bits kk">1 0 <span class="bad-t">0</span> 1</span></div>
+    </div>
+    <div class="col">
+      <div class="q"><p class="qt">¿Cómo se entera el PLC de que el dato llegó mal?</p><button class="rv">Revelar</button>
+        <div class="ans">Hay que mandar información extra. La más barata: un bit más que diga si la cantidad de unos es par o impar.</div></div>
+      <div class="q"><p class="qt">¿Y si fallan dos bits?</p><button class="rv">Revelar</button>
+        <div class="ans">Lo vemos en un rato: esa es la debilidad de la paridad.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-pajedrez">
+  <h2>El mapa que no se agrupa</h2>
+  <div class="body">
+    <div class="col"><svg id="c4-ajedrez"></svg></div>
+    <div class="col big">
+      <p>1 donde la cantidad de unos es impar: celdas 1, 2, 4, 7, 8, 11, 13 y 14.</p>
+      <div class="row"><button class="btn pri" id="c4-ajedrez-bt">Mostrar grupos</button><span class="lbl" id="c4-ajedrez-ex"></span></div>
+      <p class="expr">\(Y = A \oplus B \oplus C \oplus D\)</p>
+      <p class="lbl">3 XOR (un 7486) en vez de 8 AND de 4 entradas y una OR de 8.</p>
+      <div class="q"><p class="qt">¿Por qué no hay ni un grupo de 2?</p><button class="rv">Revelar</button>
+        <div class="ans">Pasar a una celda vecina cambia un solo bit, y cambiar un bit cambia la paridad. Dos vecinas nunca valen lo mismo: Karnaugh no sirve aquí, la XOR sí.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-pcadena">
+  <h2>XOR en cadena o en árbol</h2>
+  <div class="body">
+    <div class="col big" id="c4-paridad"></div>
+    <div class="col">
+      <p class="card">La XOR de muchos bits vale 1 si la cantidad de unos es <b>impar</b>.</p>
+      <div class="q"><p class="qt">¿Cadena o árbol: cuál responde más rápido?</p><button class="rv">Revelar</button>
+        <div class="ans">El árbol: la señal pasa por menos compuertas (3 niveles en vez de 7 con 8 bits). Las dos usan las mismas 7 XOR. Cada compuerta tarda unos nanosegundos y los retardos se suman.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-pbit">
+  <h2>Bit de paridad: generar y comprobar</h2>
+  <div class="body">
+    <div class="col">
+      <p class="lbl">Generador (paridad par)</p>
+      <p class="expr">\(P = A \oplus B \oplus C \oplus D\)</p>
+      <p class="lbl">Comprobador</p>
+      <p class="expr">\(E = A \oplus B \oplus C \oplus D \oplus P\)</p>
+      <p class="lbl">\(E = 0\): llegó bien; \(E = 1\): hubo error. Paridad impar: \(P = \overline{A \oplus B \oplus C \oplus D}\)</p>
+    </div>
+    <div class="col">
+      <p class="card">Datos <span class="c4-bits">1011</span>: tres unos, así que \(P = 1\) y se envía <span class="c4-bits">1011 1</span>, con cuatro unos.</p>
+      <p class="card">El comprobador de 4 datos más P son 4 XOR: exactamente un 7486.</p>
+      <div class="q"><p class="qt">Paridad par: ¿\(P = 0\) significa que el dato es par?</p><button class="rv">Revelar</button>
+        <div class="ans">No. P se elige para que el total de unos, contando P, quede par. Si el dato ya tiene una cantidad par de unos, entonces \(P = 0\).</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-p2d">
+  <h2>Paridad en filas y columnas</h2>
+  <div class="body">
+    <div class="col big" id="c4-bloque"></div>
+    <div class="col">
+      <p class="card">Un bit dañado marca su fila y su columna: se encuentra en el cruce y se corrige invirtiéndolo. Es la idea de los códigos de Hamming, que usan las memorias ECC.</p>
+      <div class="q"><p class="qt">¿Qué pasa si se dañan dos bits de la misma fila?</p><button class="rv">Revelar</button>
+        <div class="ans">Esa fila no marca error (dos cambios se tapan), pero sí dos columnas. Se sabe que hubo error, pero no exactamente dónde.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-puart">
+  <h2>Aplicación: la trama UART</h2>
+  <div class="body">
+    <div class="col big"><svg id="c4-uart" viewBox="0 0 440 150"></svg></div>
+    <div class="col">
+      <p class="card">La letra A (código 0100 0001) se envía empezando por el bit menos significativo. Tiene 2 unos: con paridad par, \(P = 0\).</p>
+      <p class="lbl">GPS, Bluetooth y Arduino hablan así, por ejemplo a 9600 bits por segundo.</p>
+      <div class="q"><p class="qt">A 9600 bits por segundo y 11 bits por trama, ¿cuántos caracteres por segundo?</p><button class="rv">Revelar</button>
+        <div class="ans">\(9600 / 11 \approx 872\) caracteres por segundo.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-cigual">
+  <h2>Igualdad con XNOR</h2>
+  <div class="body">
+    <div class="col big" id="c4-comp1"></div>
+    <div class="col">
+      <p class="expr">\(X_1 = \overline{A_1 \oplus B_1}\); \(X_0 = \overline{A_0 \oplus B_0}\)</p>
+      <p class="expr">\(\text{IGUAL} = X_1 \cdot X_0\)</p>
+      <p class="lbl">Por De Morgan: \(\text{IGUAL} = \overline{(A_1 \oplus B_1) + (A_0 \oplus B_0)}\), con un 7486 y un 7402.</p>
+      <div class="q"><p class="qt">¿Y para números de 4 bits?</p><button class="rv">Revelar</button>
+        <div class="ans">4 XOR (un 7486) y una NOR de 4 entradas: IGUAL vale 1 solo si las cuatro XOR dan 0.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-cmayor">
+  <h2>MAYOR y MENOR</h2>
+  <div class="body">
+    <div class="col big" id="c4-comp2"></div>
+    <div class="col">
+      <p class="expr">\(\text{MAYOR} = A_1\overline{B_1} + X_1\,A_0\overline{B_0}\)</p>
+      <p class="expr">\(\text{MENOR} = \overline{A_1}B_1 + X_1\,\overline{A_0}B_0\)</p>
+      <p class="lbl">Decide el bit más significativo; si empatan (\(X_1 = 1\)), decide el siguiente.</p>
+      <div class="q"><p class="qt">¿Pueden valer 1 a la vez MAYOR y MENOR?</p><button class="rv">Revelar</button>
+        <div class="ans">No: siempre vale 1 exactamente una de las tres salidas (MAYOR, IGUAL o MENOR).</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-c85">
+  <h2>El 74LS85: compara 4 bits</h2>
+  <div class="body">
+    <div class="col big"><svg id="c4-85" viewBox="0 0 440 190"></svg></div>
+    <div class="col">
+      <p class="card">Compara \(A_3 \dots A_0\) con \(B_3 \dots B_0\) y da A &gt; B, A = B y A &lt; B. Solo: entrada de cascada A = B a 1; A &gt; B y A &lt; B a 0.</p>
+      <div class="q"><p class="qt">En la cascada, ¿por qué manda el chip de los bits altos?</p><button class="rv">Revelar</button>
+        <div class="ans">Por la regla de hoy: decide el bit más significativo. El chip de los bits bajos solo decide cuando los altos empatan, y por eso entra por las entradas de cascada.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="p-cmotor">
+  <h2>Aplicación: llevar un motor a su posición</h2>
+  <div class="body">
+    <div class="col big" id="c4-motor"></div>
+    <div class="col">
+      <p class="card">Un encoder entrega la posición en binario. El comparador la compara con la consigna: MENOR, avanza; MAYOR, retrocede; IGUAL, para.</p>
+      <div class="q"><p class="qt">¿Qué pasa si un bit del encoder llega dañado?</p><button class="rv">Revelar</button>
+        <div class="ans">El motor se detiene en una posición equivocada creyendo que llegó. Por eso los encoders usan código Gray (cambia un bit a la vez) y en las comunicaciones se agrega paridad.</div></div>
+    </div>
+  </div>
+</section>
 </main>
 
 <button class="nav prev" id="prev" aria-label="Anterior">‹</button>
@@ -279,6 +467,10 @@
 <script src="js/d1-kmap.js?v=1"></script>
 <script src="js/d1-diagramas.js?v=3"></script>
 <script src="js/d1-sesion.js?v=3"></script>
-<script src="js/proyectar.js?v=3"></script>
+<script src="js/d1-c4.js?v=1"></script>
+<script src="js/proyectar.js?v=4"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="../transformadas/fourier/js/fs-tex.js?v=1"></script>
 </body>
 </html>
