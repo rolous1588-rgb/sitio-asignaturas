@@ -7,6 +7,7 @@ https://rolous1588-rgb.github.io/sitio-asignaturas/
 - Diseño: **colores claros siempre** (el docente no quiere fondos oscuros). Paleta en `instrumentacion/css/ii.css` (`:root`).
 - Sin paso de compilación: HTML + CSS + JS puro. Librerías solo por CDN (jsDelivr).
 - **Separadores** (pedido del docente, 16/10, para todo el material desde ahora): nunca usar el punto medio «·» para separar términos, funciones o elementos de una lista, porque se confunde con la multiplicación. Usar **punto y coma con espacios** («; »). El punto medio queda solo para multiplicar (2·sen(x), f(Xa)·f(Xr)).
+- **Escritura matemática en LaTeX** (pedido del docente, 16/10, para todo el material desde ahora): fórmulas, funciones y expresiones se muestran con KaTeX (jsDelivr), como en `transformadas/fourier/js/fs-tex.js` (`\( … \)` en línea, `\[ … \]` aparte; macro `\sen`). Decimales con coma escritos `0{,}7358` (sin `{}` LaTeX agrega un espacio después de la coma). Multiplicar con `\cdot`; separar elementos con `;\;`. Lo que escribe el estudiante (respuestas numéricas) sigue siendo texto simple.
 - El docente está aprendiendo VS Code: explica los pasos de Git (Commit, Sync) con claridad cuando publiques.
 
 ## Módulo Instrumentación Industrial (diplomado, 27/09 – 07/10/2026)
