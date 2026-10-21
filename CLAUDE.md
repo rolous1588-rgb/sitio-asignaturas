@@ -208,6 +208,22 @@ Carpeta `numericos/examen/` (sesiones `mn-ex1` oficial y `mn-ex-prueba` ensayo; 
 - La nota publicada se guarda en `estado_sesion` fila `<sesión>-notas` (`extra.notas[carnet] = { n, h, p }`); `h` = `EX.firma` de lo calificado (el celular avisa si su copia no coincide).
 - Pruebas: Node (todas las variantes sin empates; 300 carnets con todo bien = 100) y Playwright con un supabase-js falso y base compartida entre contextos (docente + 3 estudiantes: QR de un solo uso, registro, iniciar, tardío habilitado, salidas, cuenta regresiva, detener, +5, terminar, publicar, detalle).
 
+## Métodos Numéricos · Factorización LU (clase presencial, 21/10/2026)
+
+Carpeta `numericos/lu/` (sesión `mn-lu`, fila creada en `estado_sesion` el 21/10). Copia de `numericos/raices/` (mismo esquema: el docente proyecta su celular en horizontal; los estudiantes entran por QR) con `../base/` (`config.js`, `nucleo.js`, `me.css`) y KaTeX propio (`js/lu-tex.js`).
+
+| Archivo | Rol |
+|---|---|
+| `proyectar.html` + `js/proyectar.js` | Proyección + control (igual que el repaso de raíces). Las rápidas pueden llevar `ctx` (HTML con LaTeX que se ve sobre las opciones) |
+| `clase.html` + `js/estudiante.js` | Estudiante. «Comprobar fila» con 2 intentos; el encabezado de cada fila viene de `it.cab` |
+| `js/lu-sesion.js` | `FS.SESIONES['mn-lu']` (26 pasos, 3 etapas: La idea; Resolvamos juntos; Tu propio sistema; 17 rápidas de 1 pt) y `FS.EJERCICIOS.lu` (10 pts, 18 celdas con peso) |
+| `js/lu-diagrama.js` | `FS.diagrama` con modos `luCosto` (n y k: Gauss repetido frente a LU) y `luPaso` (eliminación paso a paso: los multiplicadores caen en L) |
+
+- Método: Doolittle (L con unos en la diagonal), sin pivoteo; Cholesky y PA = LU quedan fuera (solo una rápida sobre el pivote pequeño).
+- Guiado: circuito de 3 mallas, `A = [[4,-2,-2],[-2,6,-2],[-2,-2,6]]`, `b = (12, 0, 8)`; l₂₁ = l₃₁ = −0,5; u₂₂ = 5; u₂₃ = −3; l₃₂ = −0,6; u₃₃ = 3,2; x = (8; 4,5; 5,5). Con `b′ = (6, 6, 0)` da x′ = (4,5; 3,375; 2,625). 11 rápidas encadenadas `j1`–`j11` (cada una pide el paso siguiente; encima se ve L, U, d y x con «?» en lo que falta) + `j12` (b nuevo).
+- Individual `lu`: A 3×3 (diagonal 5–9, fuera de la diagonal ±1–4), b y b′ por carnet (`generar`, sin empates en el 5.º decimal). Seis filas: l₂₁ y l₃₁; u₂₂, u₂₃, l₃₂ y u₃₃; d con b; x con b; d′ con b′; x′ con b′ (reutiliza L y U). Pesos: L y U = 5; b = 3; b′ = 2. Cada celda se espera con los números del propio estudiante (`corre(d, est)`).
+- Pruebas: Node (500 carnets, estudiante perfecto = 10 pts, vacío = 0) y Playwright con supabase-js falso (docente + estudiante: registro, rápida habilitada, voto, cierre; vista del estudiante en modo libre; ejercicio con «Comprobar fila»).
+
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
@@ -218,5 +234,6 @@ Carpeta `numericos/examen/` (sesiones `mn-ex1` oficial y `mn-ex-prueba` ensayo; 
 - Antes de cada clase: probar con el panel docente y luego **Reporte → Borrar datos de esta sesión**.
 - Digital 1: antes de la clase, entrar como docente en `digital1/proyectar.html?s=<sesión>` y probar con el **repaso libre** (`clase.html?s=<sesión>&modo=libre`), que no registra nada. Ya no hay «Borrar datos». Al terminar, dejar el paso en `cierre`.
 - Métodos Numéricos: antes de la clase, entrar como docente en `numericos/raices/proyectar.html` y probar con un celular. Al terminar, dejar el paso en `cierre`.
+- Factorización LU (`mn-lu`): antes de la clase, entrar como docente en `numericos/lu/proyectar.html` y probar con un celular. Al terminar, dejar el paso en `cierre`.
 - Práctica de raíces (`mn-practica`): el docente la prueba, borra sus datos desde el panel, la abre y comparte el enlace. Cerrarla antes del examen.
 - Examen de raíces (`mn-ex1`): el docente lo prueba en el ensayo (`panel.html?s=prueba`), reinicia el ensayo y a las 16:00 usa el oficial (`panel.html`). Después: Publicar notas y Descargar notas.
