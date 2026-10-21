@@ -7,8 +7,18 @@ https://rolous1588-rgb.github.io/sitio-asignaturas/
 - Diseño: **colores claros siempre** (el docente no quiere fondos oscuros). Paleta en `instrumentacion/css/ii.css` (`:root`).
 - Sin paso de compilación: HTML + CSS + JS puro. Librerías solo por CDN (jsDelivr).
 - **Separadores** (pedido del docente, 16/10, para todo el material desde ahora): nunca usar el punto medio «·» para separar términos, funciones o elementos de una lista, porque se confunde con la multiplicación. Usar **punto y coma con espacios** («; »). El punto medio queda solo para multiplicar (2·sen(x), f(Xa)·f(Xr)).
-- **Escritura matemática en LaTeX** (pedido del docente, 16/10, para todo el material desde ahora): fórmulas, funciones y expresiones se muestran con KaTeX (jsDelivr), como en `transformadas/fourier/js/fs-tex.js` (`\( … \)` en línea, `\[ … \]` aparte; macro `\sen`). Decimales con coma escritos `0{,}7358` (sin `{}` LaTeX agrega un espacio después de la coma). Multiplicar con `\cdot`; separar elementos con `;\;`. Lo que escribe el estudiante (respuestas numéricas) sigue siendo texto simple.
+- **Escritura matemática en LaTeX** (pedido del docente, 16/10, para todo el material desde ahora): fórmulas, funciones y expresiones se muestran con KaTeX (jsDelivr), como en `transformadas/fourier/js/fs-tex.js` (cada materia tiene su copia; `\( … \)` en línea, `\[ … \]` aparte; macro `\sen`). Decimales con coma escritos `0{,}7358` (sin `{}` LaTeX agrega un espacio después de la coma). Multiplicar con `\cdot`; separar elementos con `;\;`. Lo que escribe el estudiante (respuestas numéricas) sigue siendo texto simple.
 - El docente está aprendiendo VS Code: explica los pasos de Git (Commit, Sync) con claridad cuando publiques.
+
+## Independencia de materias (desde el 20/10/2026)
+
+Reglas del proyecto «Preparación de clases» (documento `02_plataforma.md`, que mantiene el chat «Integrador de materias»):
+- **Cada materia es independiente**: su carpeta no carga archivos de la carpeta de otra materia ni del diplomado. Lo que antes era compartido tiene una copia propia en `<materia>/base/`: `config.js` y `nucleo.js` (origen: `instrumentacion/js/`), más `tex.js` (origen: `transformadas/fourier/js/fs-tex.js`) en Medidas y Digital 1, o `me.css` (origen: `medidas/css/me.css`) en Transformadas y Métodos. Cada copia lleva al inicio un comentario con su origen.
+- Dentro de una misma materia, sus subcarpetas sí comparten (por ejemplo `numericos/base/`, `transformadas/base/`, `../practica/css/mp.css` en el examen de Métodos).
+- Las copias **no cambian solas**: si se corrige un original (por ejemplo, la cola de `nucleo.js`), el integrador avisa a cada materia que tiene la pieza.
+- **Base de datos compartida** (Supabase «Instrumentación Industrial»): la fila de una sesión nueva la crea el chat de la materia con su prefijo (`me-`, `d1-`, `d2-`, `tf-`, `mn-`). Los cambios de estructura (tablas, columnas, funciones, permisos) los hace solo el integrador y siempre agregan; nunca renombrar ni borrar. No tocar las sesiones `ii-`.
+- `instrumentacion/` (diplomado) queda congelado.
+- **NOMADA es otro proyecto** del docente, con su propio Supabase: no usar ese nombre para esta plataforma de clases.
 
 ## Módulo Instrumentación Industrial (diplomado, 27/09 – 07/10/2026)
 
@@ -79,7 +89,7 @@ Simbología ISA: se reparte (etiquetas LT-101, FT-102, TT-103 desde S3) y se com
 
 ## Módulo Medidas Eléctricas (clases presenciales, desde oct 2026)
 
-Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televisor del aula (Skyworth 75", espejo por Chromecast; última fila a 9 m). La misma página proyecta y controla. Los estudiantes entran por QR con datos móviles (el Wi-Fi de la facultad casi no funciona). Reutiliza `../instrumentacion/js/config.js` y `nucleo.js` (misma base Supabase, misma cuenta docente).
+Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televisor del aula (Skyworth 75", espejo por Chromecast; última fila a 9 m). La misma página proyecta y controla. Los estudiantes entran por QR con datos móviles (el Wi-Fi de la facultad casi no funciona). Usa sus copias en `base/` (`config.js`, `nucleo.js` y `tex.js`; ver «Independencia de materias»): misma base Supabase, misma cuenta docente.
 
 | Archivo | Rol |
 |---|---|
@@ -97,7 +107,7 @@ Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televiso
 
 ## Módulo Electrónica Digital 1 (clases presenciales, desde oct 2026)
 
-Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular en horizontal** (Chromecast a la TV de 75", aula de ~6 m) y la misma página controla la clase; los estudiantes entran por QR con datos móviles. Reutiliza `../instrumentacion/js/config.js` y `nucleo.js` (misma base y cuenta docente). Mantiene el diseño de los HTML de clase de Digital 1 (pestañas + carrusel, letra base ≈ 20 px que se ajusta sola, botones A− / A+, respuestas de las preguntas en ventana grande).
+Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular en horizontal** (Chromecast a la TV de 75", aula de ~6 m) y la misma página controla la clase; los estudiantes entran por QR con datos móviles. Usa sus copias en `base/` (`config.js`, `nucleo.js` y `tex.js`): misma base y cuenta docente. Mantiene el diseño de los HTML de clase de Digital 1 (pestañas + carrusel, letra base ≈ 20 px que se ajusta sola, botones A− / A+, respuestas de las preguntas en ventana grande).
 
 | Archivo | Rol |
 |---|---|
@@ -115,11 +125,11 @@ Carpeta `digital1/`. Mismo esquema que Medidas: el docente proyecta **su celular
 - Pruebas: como el contenedor de Claude no llega a Supabase ni a jsDelivr, se probó con un simulador local de supabase-js (servidor de consultas compartido) y Playwright: docente + 3 estudiantes, todas las actividades, reporte CSV.
 - **Sesión `d1-c4` «XOR, paridad y comparador»** (16/10, fila creada el 16/10): `js/d1-c4.js` (cargado en `proyectar.html` y `clase.html`). Pestañas 10 Repaso XOR · 11 Paridad · 12 Comparador (`pestana0: 10`). 13 rápidas y 4 ejercicios por carnet: `x1` diagrama de tiempos (3 pts, medios puntos), `x2` dato con paridad (4), `x3` encontrar el bit dañado en un bloque 4 × 4 con paridad por fila y columna (3), `x4` comparador de 2 bits (3, medios). Diagramas `D1.W.tiempos`, `.paridad` (cadena/árbol), `.bloque`, `.comparador`, `.motor`, que sirven en la TV y en el celular (`D1.EXPLORAR`). Las diapositivas `explica` están en `proyectar.html` (`p-xres` … `p-cmotor`); los pasos `explica` pueden llevar `formulas` (se ven en el celular).
 - **Regla del «?»** (decisión del docente, 15/10): lo que el estudiante deja sin completar cuenta como incorrecto y en «Tu respuesta» se ve «?» en rojo con el aviso «hay que llenar todo»; sin aviso antes de enviar. Aplicada en `x1`–`x4`; falta llevarla a `e2`, `e5` y `e6` de `d1-c3`.
-- Desde el 16/10: **confirmación antes de enviar** los ejercicios (doble toque), **sin botón de borrar datos** (las sesiones tienen notas oficiales), el reporte CSV y el cierre cuentan solo las actividades realizadas, y escritura matemática con KaTeX (`../transformadas/fourier/js/fs-tex.js`).
+- Desde el 16/10: **confirmación antes de enviar** los ejercicios (doble toque), **sin botón de borrar datos** (las sesiones tienen notas oficiales), el reporte CSV y el cierre cuentan solo las actividades realizadas, y escritura matemática con KaTeX (`base/tex.js`).
 
 ## Módulo Transformadas y Funciones Especiales (examen desde el celular, desde 08/10/2026)
 
-Carpeta `transformadas/`. Examen presencial en el aula con TV: el docente proyecta `proyectar.html` (celular horizontal) y cada estudiante responde en `clase.html` por QR. Reutiliza `../instrumentacion/js/config.js`, `nucleo.js` y los estilos `../medidas/css/me.css` (+ `css/tf.css`). **No necesita cambios en la base**: usa el mecanismo de evaluación de un intento (`asincrona`, `eval-inicio`, `eval-avance`, `eval`).
+Carpeta `transformadas/`. Examen presencial en el aula con TV: el docente proyecta `proyectar.html` (celular horizontal) y cada estudiante responde en `clase.html` por QR. Usa sus copias en `base/` (`config.js`, `nucleo.js` y los estilos `me.css`) + `css/tf.css`. **No necesita cambios en la base**: usa el mecanismo de evaluación de un intento (`asincrona`, `eval-inicio`, `eval-avance`, `eval`).
 
 | Archivo | Rol |
 |---|---|
@@ -133,7 +143,7 @@ Carpeta `transformadas/`. Examen presencial en el aula con TV: el docente proyec
 
 ## Transformadas · Series de Fourier (clase presencial, desde 12/10/2026)
 
-Carpeta `transformadas/fourier/` (sesión `tf-fourier`, fila creada en `estado_sesion` el 12/10). Mismo esquema que Medidas (proyecta el celular del docente en horizontal; aula de 5–7 m) y reutiliza `../../instrumentacion/js/config.js`, `nucleo.js` y `../../medidas/css/me.css` (+ `css/fs.css`). No cambia la base: el «habilitar de nuevo» y la nota por fecha se resuelven con `estado_sesion.extra` y las respuestas.
+Carpeta `transformadas/fourier/` (sesión `tf-fourier`, fila creada en `estado_sesion` el 12/10). Mismo esquema que Medidas (proyecta el celular del docente en horizontal; aula de 5–7 m) y usa las copias de Transformadas en `../base/` (`config.js`, `nucleo.js`, `me.css`) + `css/fs.css`. No cambia la base: el «habilitar de nuevo» y la nota por fecha se resuelven con `estado_sesion.extra` y las respuestas.
 
 | Archivo | Rol |
 |---|---|
@@ -153,7 +163,7 @@ Carpeta `transformadas/fourier/` (sesión `tf-fourier`, fila creada en `estado_s
 
 ## Métodos Numéricos · Repaso de raíces (clase presencial, 14/10/2026)
 
-Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion` el 14/10). Copia adaptada de `transformadas/fourier/` (mismo esquema: el docente proyecta su celular en horizontal; los estudiantes entran por QR con datos móviles). Reutiliza `../../instrumentacion/js/config.js`, `nucleo.js` y `../../medidas/css/me.css`; trae su propia copia de `fs-onda.js`, `estudiante.js` y `proyectar.js`. Entrenamiento para el examen del viernes 16/10.
+Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion` el 14/10). Copia adaptada de `transformadas/fourier/` (mismo esquema: el docente proyecta su celular en horizontal; los estudiantes entran por QR con datos móviles). Usa las copias de Métodos en `../base/` (`config.js`, `nucleo.js`, `me.css`); trae su propia copia de `fs-onda.js`, `estudiante.js` y `proyectar.js`. Entrenamiento para el examen del viernes 16/10.
 
 | Archivo | Rol |
 |---|---|
@@ -167,7 +177,7 @@ Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion`
 
 ## Métodos Numéricos · Práctica autónoma de raíces (ensayo del examen, 16/10/2026)
 
-Carpeta `numericos/practica/` (sesión asíncrona `mn-practica`, fila creada el 16/10). El estudiante la hace por su cuenta en el celular; **no tiene nota**. El docente la abre y la cierra desde `panel.html` (`estado_sesion.extra = { asincrona: true, abre, cierra }`: la política de inserción de `respuestas` ya acepta envíos solo entre `abre` y `cierra`). Reutiliza `../../instrumentacion/js/config.js`, `nucleo.js` y `../../medidas/css/me.css`. El formato acordado vale también para el examen.
+Carpeta `numericos/practica/` (sesión asíncrona `mn-practica`, fila creada el 16/10). El estudiante la hace por su cuenta en el celular; **no tiene nota**. El docente la abre y la cierra desde `panel.html` (`estado_sesion.extra = { asincrona: true, abre, cierra }`: la política de inserción de `respuestas` ya acepta envíos solo entre `abre` y `cierra`). Usa las copias de Métodos en `../base/` (`config.js`, `nucleo.js`, `me.css`). El formato acordado vale también para el examen.
 
 | Archivo | Rol |
 |---|---|
@@ -181,11 +191,11 @@ Carpeta `numericos/practica/` (sesión asíncrona `mn-practica`, fila creada el 
 - Puntaje sobre 100: bisección 30, falsa posición 35, Newton 35 (detalle en `MP.PTS` y `MP.PTS_DER`).
 - Familias: bisección x² + ln(x) − a y eˣ − x − a (Xr reemplaza a extremos distintos en las filas 1 y 2); falsa posición eˣ + x − a y 2·sen(x) + x − a; Newton x² − a·cos(x) y eˣ + a·x − b. Variantes revisadas sin empates en el 5.º decimal.
 - Pruebas: Node (todas las variantes, 200 carnets por método, casos de redondeo, copia cruzada, derivada mal) y Playwright con un supabase-js falso (panel + estudiante: abrir, registrar, filas, cierre del método, detalle, CSV, cerrar).
-- Hallazgo (sin corregir, consultar con el docente): en `instrumentacion/js/nucleo.js`, `II.vaciarCola` guarda su copia vieja de la cola después de cada envío; si llega un envío nuevo mientras está enviando, ese envío se pierde. Por eso esta práctica usa su propia cola.
+- Hallazgo (sin corregir, consultar con el docente): en `instrumentacion/js/nucleo.js` (y en las copias `base/nucleo.js` de cada materia desde el 20/10), `II.vaciarCola` guarda su copia vieja de la cola después de cada envío; si llega un envío nuevo mientras está enviando, ese envío se pierde. Por eso esta práctica usa su propia cola.
 
 ## Métodos Numéricos · Examen de raíces por celular (16/10/2026)
 
-Carpeta `numericos/examen/` (sesiones `mn-ex1` oficial y `mn-ex-prueba` ensayo; filas creadas el 16/10). Mismo formato que la práctica (`numericos/practica/`), con un solo envío por fila **sin bloquearla** y sin mostrar si está bien. Reutiliza `config.js`, `nucleo.js`, `me.css` y `../practica/css/mp.css`; trae una copia congelada de `mp-motor.js`.
+Carpeta `numericos/examen/` (sesiones `mn-ex1` oficial y `mn-ex-prueba` ensayo; filas creadas el 16/10). Mismo formato que la práctica (`numericos/practica/`), con un solo envío por fila **sin bloquearla** y sin mostrar si está bien. Usa `../base/` (`config.js`, `nucleo.js`, `me.css`) y `../practica/css/mp.css`; trae una copia congelada de `mp-motor.js`.
 
 | Archivo | Rol |
 |---|---|
