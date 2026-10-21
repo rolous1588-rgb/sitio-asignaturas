@@ -156,3 +156,17 @@
 .lu-texto { margin: 0; line-height: 1.4; min-height: 3.4em; }
 .lu-botones { display: flex; flex-wrap: wrap; gap: 8px; }
 .tv .lu-botones .boton { min-height: calc(var(--u) * 7.4); font-size: calc(var(--u) * 3.6); }
+
+/* ---- LU: dibujos SVG 16:9 que se escalan al espacio (no se cortan) ---- */
+.lu-dg { min-height: 0; }
+.lu-sv { width: 100%; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.lu-svg { width: 100%; height: auto; max-height: 100%; aspect-ratio: 16 / 9; display: block; background: #f6f8fb; border: 1px solid var(--borde); border-radius: 12px; }
+.lu-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.lu-ctl .boton.activo { background: var(--acento); color: #fff; }
+.lu-et { font-weight: 700; }
+.tv .lu-dg { height: 100%; padding: calc(var(--u) * 1); gap: calc(var(--u) * 1.2); justify-content: flex-start; flex-direction: column; }
+.tv .lu-dg:not(.lu-paso) { flex-direction: column; align-items: stretch; }
+.tv .lu-svg { height: 100%; width: auto; max-width: 100%; }
+.tv .lu-sv { overflow: hidden; }
+.tv .lu-ctl .boton { min-height: calc(var(--u) * 6.2); font-size: calc(var(--u) * 3); }
+.tv .lu-et { font-size: calc(var(--u) * 3); }

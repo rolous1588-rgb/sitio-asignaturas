@@ -218,17 +218,7 @@
     titulo: 'Factorización LU',
     pasos: [
       { id: 'inicio', etapa: 1, tipo: 'inicio', titulo: 'Factorización LU: Gauss, pero guardado', idea: 'Escanea el QR y entra con tus datos.' },
-      {
-        id: 't-gancho', etapa: 1, tipo: 'teoria', titulo: 'Una red, muchas fuentes', idea: 'La matriz A no cambia; lo que cambia es b.',
-        puntos: [
-          X`Un circuito de 3 mallas da un sistema \(A\,\mathbf{x}=\mathbf{b}\): <b>A</b> son las resistencias; <b>b</b>, las fuentes.`,
-          'Un técnico prueba la <b>misma red</b> con 5 o 50 fuentes distintas: A no cambia, solo b.',
-          'Gauss procesa A y b <b>juntos</b>: con cada b nuevo repite toda la eliminación.',
-          'Hoy: <b>guardar</b> el trabajo de eliminar A y reutilizarlo con cada b.'
-        ],
-        formulas: ['Costo aproximado (multiplicaciones):', X`\(\text{Gauss repetido: }k\,(n^3/3+n^2)\)`, X`\(\text{LU: }n^3/3+k\,n^2\)`, 'n = tamaño de la matriz', 'k = número de fuentes distintas'],
-        derecha: 'El costo'
-      },
+      { id: 'x-red', etapa: 1, tipo: 'explica', titulo: 'Una red, muchas fuentes', idea: 'Prueba varias fuentes: la red es la misma, cambian las fuentes.', modo: 'luRed' },
       rap('g1', 1, 'Mismo A, otro b', 'La misma red se prueba con 5 fuentes distintas (5 vectores b). Con Gauss, ¿cuántas veces se repite la eliminación?',
         ['5 veces: una por cada b', '1 sola vez para las 5 fuentes', '10 veces', 'Ninguna: Gauss no sirve aquí'],
         'Gauss trabaja con la matriz aumentada [A | b]: si b cambia, hay que repetir todo. LU separa el trabajo: A se factoriza una sola vez.'),
@@ -236,18 +226,8 @@
         ['LU: unas 20 veces menos trabajo', 'Gauss: es más simple y cuesta lo mismo', 'LU: solo 2 veces menos', 'Da igual'],
         X`Gauss repetido: \(50\,(100^3/3+100^2)\approx 17\) millones. LU: \(100^3/3+50\cdot 100^2\approx 0{,}83\) millones. Cada b nuevo cuesta solo \(n^2\), no \(n^3/3\).`),
       { id: 'x-costo', etapa: 1, tipo: 'explica', titulo: '¿Cuánto cuesta cada camino?', idea: 'Mueve n y k: compara Gauss repetido con LU.', modo: 'luCosto' },
-      {
-        id: 't-idea', etapa: 1, tipo: 'teoria', titulo: 'Gauss guardado: A = L·U', idea: 'Los multiplicadores de la eliminación no se tiran: forman L.',
-        puntos: [
-          'Al eliminar, calculas multiplicadores (<b>l</b>) para anular lo que está bajo la diagonal. En Gauss se usan y se pierden.',
-          X`En LU se <b>guardan</b> en <b>L</b> (unos en la diagonal). Lo que queda arriba es <b>U</b>. Resultado: \(A=L\,U\).`,
-          X`Resolver \(A\mathbf{x}=\mathbf{b}\) pasa a ser <b>dos pasos fáciles</b>: \(L\,\mathbf{d}=\mathbf{b}\) hacia adelante y \(U\,\mathbf{x}=\mathbf{d}\) hacia atrás.`,
-          'Método de <b>Doolittle</b> (Chapra, cap. 10). Sin intercambio de filas por ahora.'
-        ],
-        formulas: [X`\(A\,x=b\;\Rightarrow\;L\,U\,x=b\)`, X`\(\text{Se define }d=U\,x\)`, X`\(L\,d=b\;\;(\text{adelante})\)`, X`\(U\,x=d\;\;(\text{atrás})\)`, X`\(l_{ij}=\dfrac{\text{elemento a anular}}{\text{pivote}}\)`],
-        derecha: 'La idea'
-      },
       { id: 'x-lu', etapa: 1, tipo: 'explica', titulo: 'Gauss guardado: mira cómo se llena L', idea: 'Avanza paso a paso. Cada multiplicador cae en L.', modo: 'luPaso' },
+      { id: 'x-sust', etapa: 1, tipo: 'explica', titulo: 'Las dos escaleras', idea: 'Con L y U guardados, cada fuente nueva es bajar y subir.', modo: 'luSust' },
       rap('c1', 1, '¿Qué guarda L?', 'En A = L·U, ¿qué contiene la matriz L?',
         ['Los multiplicadores de la eliminación, con unos en la diagonal', 'La matriz triangular que queda al terminar de eliminar', 'Las incógnitas x', 'La inversa de A'],
         'L guarda los multiplicadores. La matriz triangular que queda arriba al terminar de eliminar es U.'),
