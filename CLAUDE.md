@@ -161,6 +161,21 @@ Carpeta `transformadas/fourier/` (sesión `tf-fourier`, fila creada en `estado_s
 - **Fórmulas en LaTeX** con KaTeX 0.16.11 (jsDelivr) + `js/fs-tex.js`: todo texto con `\( … \)` o `\[ … \]` se dibuja solo (MutationObserver). Macro `\sen`. En `fs-sesion.js` se escribe con `` X`…` `` (= `String.raw`). En `puntos` (HTML sin escapar) usar `\lt` en vez de `<`. Las explicaciones (`por`) se escapan: no llevan HTML.
 - Pendiente: cuando se pruebe en el aula, llevar la confirmación y el «habilitar de nuevo» a Medidas y Digital 1 (pedido del docente).
 
+## Transformadas · Recuperatorio de Laplace por celular (22/10/2026)
+
+Carpeta `transformadas/recuperatorio/` (sesiones `tf-rec1` oficial y `tf-rec1-prueba` ensayo; filas creadas el 22/10). Adaptado (copiado, no cargado) del examen de raíces de Métodos (`numericos/examen/`). Usa `../base/` de Transformadas. No cambia la base: todo va en `estado_sesion.extra` y en `respuestas` (`ingreso`, `avance`).
+
+| Archivo | Rol |
+|---|---|
+| `index.html` + `js/rc-estudiante.js` | Estudiante: entra solo con el QR (`?t=token`; vale mientras `extra.qr` sea true y el token no cambie) → registro (crea un `reg` por registro) → espera → 5 problemas en pestañas, por pasos (casillas numéricas que aceptan entero, decimal con coma o punto y fracción a/b; opciones en P3 y P5) → «Enviar problema» (no bloquea; vale lo último) → «Terminar examen» con confirmación. Franja fija con nombre completo, C.U. y **código de 3 cifras** (`extra.cod[reg]`) y «Verificado por el docente». Observado = bloqueado. Salidas, foco, recargas, pantalla encendida y marca de agua como en Métodos. Cola de envíos propia |
+| `panel.html` + `js/rc-panel.js` | Docente, dos vistas: **QR** (para la TV: QR, «Nuevo QR» que invalida el anterior, «Bloquear/Habilitar QR», «Iniciar examen») y **Control** (no proyectar): avance promedio y por estudiante, verificar por código, «Examen observado» / «Quitar observación», «Reabrir» a quien terminó, cuenta regresiva con minutos a elección (detener, reanudar, sumar), «Terminar examen ahora» (20 s), publicar notas (fila `<sesión>-notas`, por `reg`), Excel; en el ensayo, reiniciar |
+| `js/rc-motor.js` | `RC`: P1 polo repetido (15), P2 raíces complejas (15), P3 convolución (20), P4 sistema de 2 EDO (25), P5 EDO con pulso (25); datos por carnet; `RC.calificar` con los números del propio estudiante (±2 %, mínimo 0,01); `RC.nota`, `RC.avance` (casillas con algo / 41), `RC.firma` |
+| `css/rc.css`, `js/rc-tex.js` | Copias de los estilos y del LaTeX de Métodos, más lo propio |
+
+- `extra = { asincrona, token, qr, abre, fin, cierra, pausa: { rest }, publicado, cod: { reg }, ver: { reg: hora }, obs: { reg: hora }, reab: { reg: n } }`. Sin cuenta regresiva, `cierra = null` (abierto). Con cuenta, `cierra = fin + 60 s`.
+- Lo que un estudiante observado envía después de la hora de observación no se califica.
+- Pruebas: motor con Node (400 carnets: todo correcto = 100; verificación matemática de cada solución) y Playwright con un supabase-js falso y base compartida (docente + 4 estudiantes: códigos distintos, QR viejo rechazado, QR bloqueado, iniciar, verificar, observar, terminar con confirmación, reabrir, cuenta regresiva, terminar, publicar).
+
 ## Métodos Numéricos · Repaso de raíces (clase presencial, 14/10/2026)
 
 Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion` el 14/10). Copia adaptada de `transformadas/fourier/` (mismo esquema: el docente proyecta su celular en horizontal; los estudiantes entran por QR con datos móviles). Usa las copias de Métodos en `../base/` (`config.js`, `nucleo.js`, `me.css`); trae su propia copia de `fs-onda.js`, `estudiante.js` y `proyectar.js`. Entrenamiento para el examen del viernes 16/10.
