@@ -482,6 +482,15 @@
       return data;
     } catch (e) { return null; }
   };
+  // Mis puntos de la sesión en el servidor: { actividad: puntos } (null si no se pudo)
+  II.misPuntos = async (sesion, cred) => {
+    if (!II.sb || !cred || !cred.fecha) return null;
+    try {
+      const { data, error } = await II.sb.rpc('mis_puntos', { p_sesion: sesion, p_carnet: cred.carnet, p_fecha: cred.fecha, p_pin: cred.pin || null });
+      if (error) throw error;
+      return data || null;
+    } catch (e) { return null; }
+  };
   // Candidatos de la ruleta: todos los que ingresaron a la sesión → [{ carnet, nombre, conectado, salio }]
   II.candidatosRuleta = async (sesion) => {
     if (!II.sb) return [];

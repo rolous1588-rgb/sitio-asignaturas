@@ -503,9 +503,9 @@
     const acts = actividades();
     const n = (x) => (x == null ? '' : String(Math.round(x * 100) / 100).replace('.', ','));
     const q = (s) => '"' + String(s ?? '').replace(/"/g, '""') + '"';
-    const cab = ['Nombre', 'Carnet', 'Área', 'Experiencia', 'Diagnóstico (/5)', ...acts.map((a) => `${a.nombre} (/${a.puntos})${realizada(a) ? '' : ' no se hizo'}`),
+    const cab = ['Nombre', 'Carnet', 'Ingresó', 'Diagnóstico (/5)', ...acts.map((a) => `${a.nombre} (/${a.puntos})${realizada(a) ? '' : ' no se hizo'}`),
       'Puntos obtenidos', 'Puntos posibles de lo realizado', 'Participación bruta (%)', 'Veces que no respondió a la ruleta', 'Penalización (puntos %)', 'Participación final del día (%)'];
-    const filas = tablaReporte().map((f) => [q(f.a.nombre), q(f.a.carnet), q(f.a.info.area), q(f.a.info.experiencia), n(f.diag), ...f.pts.map(n),
+    const filas = tablaReporte().map((f) => [q(f.a.nombre), q(f.a.carnet), q(f.a.ingreso ? 'Sí' : 'No'), n(f.diag), ...f.pts.map(n),
       n(f.obt), n(f.pos), n(f.bruta), f.nr, n(f.penalizacion), n(f.final)].join(';'));
     const csv = '﻿' + [cab.map(q).join(';'), ...filas].join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

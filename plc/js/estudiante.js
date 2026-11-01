@@ -35,8 +35,12 @@
       const a = II.leer(clave('reto', id)); if (a) return a.mejor || 0;
       const b = II.leer(clave('rap', id)); return b && b.revelada ? b.pts || 0 : 0;
     };
+    // los puntos se leen del servidor (así valen aunque hayas respondido desde otro celular); si no se puede, los de este dispositivo
+    const c = II.leerCred(); const cred = c && c.carnet === alumno.carnet ? c : (alumno.fecha ? alumno : null);
+    const srv = II.configurado ? await II.misPuntos(SES, cred) : null;
+    const puntos = (id) => Math.max(puntosDe(id), srv ? +srv[id] || 0 : 0);
     const realizadas = rd && rd.realizadas ? rd.realizadas : II.actividadesDe(S, tras).map((a) => a.id);   // sin conexión: se asume todo
-    return II.notaDia(S, tras, realizadas, puntosDe, rd ? rd.no_responde : 0);
+    return II.notaDia(S, tras, realizadas, puntos, rd ? rd.no_responde : 0);
   };
 
   // ---------- puntaje acumulado de hoy (solo lo ve el propio estudiante) ----------
@@ -78,7 +82,6 @@
   // ---------- ingreso (v3: carnet + fecha de nacimiento, validados contra la lista del módulo) ----------
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const pintarIngreso = () => {
-    const o = II.OPCIONES_INGRESO;
     const anio = new Date().getFullYear();
     const sel = (name, ini, fin, rotulo, texto) => `<select class="entrada" name="${name}" required><option value="">${rotulo}</option>${Array.from({ length: Math.abs(fin - ini) + 1 }, (_, i) => {
       const v = ini <= fin ? ini + i : ini - i; return `<option value="${v}">${texto ? texto(v) : v}</option>`; }).join('')}</select>`;
@@ -95,8 +98,6 @@
                 ${sel('mes', 1, 12, 'Mes', (v) => MESES[v - 1])}${sel('dia', 1, 31, 'Día')}${sel('anio', anio - 16, 1950, 'Año')}
               </div></div>
             <label class="campo" id="c-pin" style="display:none"><span>PIN</span><input class="entrada" name="pin" type="password" inputmode="numeric" autocomplete="off"></label>
-            ${libre ? '' : `<label class="campo"><span>¿En qué área trabajas?</span><select class="entrada" name="area" required><option value="">Elige…</option>${o.area.map((a) => `<option>${a}</option>`).join('')}</select></label>
-            <label class="campo"><span>¿Has trabajado con PLCs?</span><select class="entrada" name="experiencia" required><option value="">Elige…</option>${o.experiencia.map((a) => `<option>${a}</option>`).join('')}</select></label>`}
             <div id="f-msg"></div>
             <button class="boton primario grande bloque" type="submit">${libre ? 'Entrar al repaso' : 'Entrar a la clase'}</button>
           </form>
@@ -121,7 +122,7 @@
         msg.innerHTML = `<div class="aviso ${r.motivo === 'pin' ? 'info' : 'mal'}">${II.esc(II.MOTIVOS_ENTRADA[r.motivo] || II.MOTIVOS_ENTRADA.red)}</div>`;
         return;
       }
-      alumno = { nombre: r.nombre, carnet: r.carnet, fantasma: !!r.fantasma, info: libre ? {} : { area: f.get('area'), experiencia: f.get('experiencia') } };
+      alumno = { nombre: r.nombre, carnet: r.carnet, fantasma: !!r.fantasma, fecha, pin, info: {} };
       II.guardar(II.claveAlumno(SES), alumno);
       II.guardarCred({ carnet: r.carnet, fecha, pin, nombre: r.nombre });
       arrancar();

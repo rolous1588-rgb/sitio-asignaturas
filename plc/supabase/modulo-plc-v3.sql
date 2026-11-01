@@ -186,4 +186,26 @@ end;
 $$;
 grant execute on function public.sortear_ruleta(text) to authenticated;
 
+-- 10. Mis puntos de una sesión (mejor puntaje por actividad; exige carnet + fecha, y PIN si es fantasma)
+create or replace function public.mis_puntos(p_sesion text, p_carnet text, p_fecha text, p_pin text default null)
+returns jsonb
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v record;
+  res jsonb;
+begin
+  select * into v from public.verificar_estudiante(p_carnet, p_fecha, p_pin);
+  if v.carnet is null then return null; end if;
+  select coalesce(jsonb_object_agg(t.actividad, t.mx), '{}'::jsonb) into res from (
+    select y.actividad, max(y.puntaje) as mx from public.respuestas y
+    where y.sesion = p_sesion and y.carnet = v.carnet and y.intento <= 2
+      and y.actividad not in ('ingreso', 'diagnostico')
+      and not coalesce((y.respuesta ->> 'vacio')::boolean, false)
+    group by y.actividad) t;
+  return res;
+end;
+$$;
+grant execute on function public.mis_puntos(text, text, text, text) to anon, authenticated;
+
 select 'Listo: módulo PLC v3 preparado' as resultado;
