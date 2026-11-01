@@ -400,7 +400,7 @@
   II.SESIONES['pl-s1'] = {
     id: 'pl-s1', numero: 1,
     titulo: 'Fundamentos, E/S y primera lógica',
-    fecha: 'Sábado 31/10 · 09:00–12:00',
+    fecha: 'Sábado 31/10; 09:00–12:00',
     siguiente: 'Sesión 2: el docente la indicará en clase',
     retos, diagnostico, pasos
   };

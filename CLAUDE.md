@@ -239,7 +239,7 @@ Carpeta `numericos/lu/` (sesión `mn-lu`, fila creada en `estado_sesion` el 21/1
 - Individual `lu`: A 3×3 (diagonal 5–9, fuera de la diagonal ±1–4), b y b′ por carnet (`generar`, sin empates en el 5.º decimal). Seis filas: l₂₁ y l₃₁; u₂₂, u₂₃, l₃₂ y u₃₃; d con b; x con b; d′ con b′; x′ con b′ (reutiliza L y U). Pesos: L y U = 5; b = 3; b′ = 2. Cada celda se espera con los números del propio estudiante (`corre(d, est)`).
 - Pruebas: Node (500 carnets, estudiante perfecto = 10 pts, vacío = 0) y Playwright con supabase-js falso (docente + estudiante: registro, rápida habilitada, voto, cierre; vista del estudiante en modo libre; ejercicio con «Comprobar fila»).
 
-## Módulo Programación de PLCs e Interfaces Industriales (diplomado, desde 31/10/2026)
+## Módulo Programación de Controladores e Interfaces Industriales (diplomado, desde 31/10/2026)
 
 Carpeta `plc/` (sesión `pl-s1` «Fundamentos, E/S y primera lógica», 3 h por Google Meet). Independiente: `base/` propia (`config.js`, `nucleo.js` copia de `instrumentacion/js/nucleo.js` con la cola corregida y funciones v2, `tex.js`), prefijo `pl-`. Mismas tres pantallas que Instrumentación (`presentar.html`, `docente.html`, `clase.html?s=pl-s1`, `&modo=libre` = repaso).
 
@@ -251,10 +251,14 @@ Carpeta `plc/` (sesión `pl-s1` «Fundamentos, E/S y primera lógica», 3 h por 
 | `js/sesion1.js` | 31 pasos, 9 rápidas, retos `a-reto` (10), `e1-reto` (10), `c-reto` (10), `d-reto` (15, variantes A–D) y diagnóstico |
 | `supabase/modulo-plc.sql` | Cambios aditivos v2 (columna `ingresos.visto`, tablas `ruleta` y `pendientes`, funciones `latido`, `conectados`, `sortear_ruleta`, `participacion_dia`, `actividad_abierta` reescrita conservando la rama asíncrona, fila `pl-s1`) |
 
-- Reglas v2: pausa con minutos a mando (`extra.pausa`); «Terminar clase» (doble toque; `extra.cierre_anticipado`) evalúa solo lo realizado; pendientes trasladables (`extra.trasladados`, tabla `pendientes`; cuentan solo en la sesión destino); ruleta solo entre conectados, responder no da puntos; ingreso independiente por sesión (`pl-alumno-<sesión>`); primera pestaña = rúbrica 25/10/25/40 + penalización.
+- Reglas v2: pausa con minutos a mando (`extra.pausa`); «Terminar clase» (doble toque; `extra.cierre_anticipado`) evalúa solo lo realizado; pendientes trasladables (`extra.trasladados`, tabla `pendientes`; cuentan solo en la sesión destino); ruleta entre **todos los que ingresaron a la sesión** (conectados o no; no repite hasta agotar; responder no da puntos; el estudiante fantasma nunca sale); ingreso independiente por sesión (`pl-alumno-<sesión>`); primera pestaña = rúbrica 25/10/25/40 + penalización.
 - Participación: cada día vale 100 % de lo realizado; «no responde» no anulado resta 30 puntos porcentuales, una vez por día, mínimo 0 (**interpretación pendiente de confirmar con el docente**).
 - Pruebas: Node (generadores, 0 fallos) y Playwright con supabase-js falso (docente + estudiantes: rúbrica, rápida, pausa, ruleta, terminar clase, rechazo de envíos tras el cierre, reporte con penalización).
-- Pendiente: el docente debe pegar `plc/supabase/modulo-plc.sql` en el SQL Editor; «Control de estudio 1» y las demás sesiones aún no se construyen.
+- **v3 (01/11/2026)**: acceso por lista. Tabla `estudiantes` (carnet, nombre, `fecha_hash` y `pin_hash` = sha256 de `carnet:AAAA-MM-DD` y `carnet:pin:PIN`, `fantasma`); RLS solo docente. Los datos de la lista (nombres, fechas) **no se publican en GitHub**: se cargaron directo en Supabase (26 estudiantes + el docente como fantasma). RPC `entrar(carnet, fecha, pin)` (anon; límite de 8 fallos en 10 min en `intentos_ingreso`), `resumen_dia`, `panel_estudiante` (exige carnet + fecha, y PIN si es fantasma), `candidatos_ruleta`, `sortear_ruleta` (todos los que ingresaron), `conectados` (sin fantasma). El carnet se normaliza sin espacios, guiones ni puntos. El formulario pide mes, día y año (la lista trae M/D/AAAA). Estudiante fantasma (el docente, carnet 7473236): pide PIN, no sale en la ruleta ni cuenta en reportes ni conectados.
+- Nota del día (cierre y aviso «Clase terminada»): puntos de lo realizado, equivalente sobre 100, penalización y nota final. `II.notaDia`, `II.tarjetaNotaDia`. `mi-panel.html` + `js/panel-estudiante.js`: sesiones dadas con repaso, nota de cada día, promedio de participación acumulado y rúbrica 25/10/25/40 (solo participación por ahora). El reporte docente incluye a toda la lista (quien no ingresó cuenta 0).
+- Nombre oficial de la asignatura: «Programación de Controladores e Interfaces Industriales».
+- Para agregar o corregir un estudiante: `insert/update` en `public.estudiantes` con los hashes (ver `supabase/modulo-plc-v3.sql`; el archivo no lleva datos).
+- Pendiente: «Control de estudio 1» y las demás sesiones aún no se construyen; confirmar con el docente la penalización (30 puntos porcentuales, una vez por día); carnet 4018904 entró el 31/10 y no está en la lista.
 
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".

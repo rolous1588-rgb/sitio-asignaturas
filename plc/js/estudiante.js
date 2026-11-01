@@ -20,11 +20,23 @@
     II.$('#b-sesion').textContent = `Sesión ${S.numero} · ${S.titulo}`;
     const u = II.$('#b-usuario');
     if (alumno) {
-      u.innerHTML = `<span>${II.esc(alumno.nombre)}</span><button class="boton chico" id="b-salir" title="Cambiar de usuario">Salir</button>`;
-      II.$('#b-salir').onclick = () => { if (confirmarSalida()) { localStorage.removeItem(II.claveAlumno(SES)); location.reload(); } };
+      u.innerHTML = `<span class="b-nombre">${II.esc(alumno.nombre)}</span><a class="boton chico" href="mi-panel.html" title="Tus puntajes y tu avance">Mi panel</a><button class="boton chico" id="b-salir" title="Cambiar de usuario">Salir</button>`;
+      II.$('#b-salir').onclick = () => { if (confirmarSalida()) { localStorage.removeItem(II.claveAlumno(SES)); II.borrarCred(); location.reload(); } };
     } else u.innerHTML = '';
     II.$('#b-modo').innerHTML = libre ? '<span class="chip duda">Modo repaso</span>' : '';
     actualizarPuntos();
+  };
+
+  // ---------- nota del día (v3): solo cuenta lo que realmente se hizo en la clase ----------
+  const notaDelDia = async () => {
+    const rd = II.configurado ? await II.resumenDia(SES, alumno.carnet) : null;
+    const tras = (filaEstado && filaEstado.extra && filaEstado.extra.trasladados) || [];
+    const puntosDe = (id) => {
+      const a = II.leer(clave('reto', id)); if (a) return a.mejor || 0;
+      const b = II.leer(clave('rap', id)); return b && b.revelada ? b.pts || 0 : 0;
+    };
+    const realizadas = rd && rd.realizadas ? rd.realizadas : II.actividadesDe(S, tras).map((a) => a.id);   // sin conexión: se asume todo
+    return II.notaDia(S, tras, realizadas, puntosDe, rd ? rd.no_responde : 0);
   };
 
   // ---------- puntaje acumulado de hoy (solo lo ve el propio estudiante) ----------
@@ -63,34 +75,55 @@
     p.title = ok ? 'Conectado con la clase' : 'Sin conexión: tus respuestas se guardarán y se enviarán al reconectar';
   });
 
-  // ---------- ingreso ----------
+  // ---------- ingreso (v3: carnet + fecha de nacimiento, validados contra la lista del módulo) ----------
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const pintarIngreso = () => {
     const o = II.OPCIONES_INGRESO;
+    const anio = new Date().getFullYear();
+    const sel = (name, ini, fin, rotulo, texto) => `<select class="entrada" name="${name}" required><option value="">${rotulo}</option>${Array.from({ length: Math.abs(fin - ini) + 1 }, (_, i) => {
+      const v = ini <= fin ? ini + i : ini - i; return `<option value="${v}">${texto ? texto(v) : v}</option>`; }).join('')}</select>`;
     main.innerHTML = `
       <div class="contenido angosto">
         <div class="tarjeta">
           <span class="etiqueta">Diplomado en Control Automático Industrial</span>
-          <h2>Programación de PLCs e Interfaces Industriales</h2>
-          <p class="sub">Sesión ${S.numero}: ${II.esc(S.titulo)}. Escribe tus datos para entrar a la clase.</p>
-          <form id="f-ingreso" autocomplete="on">
-            <label class="campo"><span>Nombre y apellido</span><input class="entrada" name="nombre" required minlength="3" maxlength="80" autocomplete="name"></label>
-            <label class="campo"><span>Carnet de identidad</span><input class="entrada" name="carnet" required minlength="4" maxlength="20" inputmode="numeric" autocomplete="off"></label>
-            <label class="campo"><span>¿En qué área trabajas?</span><select class="entrada" name="area" required><option value="">Elige…</option>${o.area.map((a) => `<option>${a}</option>`).join('')}</select></label>
-            <label class="campo"><span>¿Has trabajado con PLCs?</span><select class="entrada" name="experiencia" required><option value="">Elige…</option>${o.experiencia.map((a) => `<option>${a}</option>`).join('')}</select></label>
-            <button class="boton primario grande bloque" type="submit">Entrar a la clase</button>
+          <h2>${II.ASIGNATURA}</h2>
+          <p class="sub">Sesión ${S.numero}: ${II.esc(S.titulo)}. Entra con tu carnet y tu fecha de nacimiento.</p>
+          <form id="f-ingreso" autocomplete="off">
+            <label class="campo"><span>Carnet de identidad (solo el número)</span><input class="entrada" name="carnet" required minlength="4" maxlength="20" inputmode="text" autocomplete="off"></label>
+            <div class="campo"><span>Fecha de nacimiento: <b>mes, día y año</b></span>
+              <div style="display:grid;grid-template-columns:1.5fr 1fr 1.2fr;gap:8px">
+                ${sel('mes', 1, 12, 'Mes', (v) => MESES[v - 1])}${sel('dia', 1, 31, 'Día')}${sel('anio', anio - 16, 1950, 'Año')}
+              </div></div>
+            <label class="campo" id="c-pin" style="display:none"><span>PIN</span><input class="entrada" name="pin" type="password" inputmode="numeric" autocomplete="off"></label>
+            ${libre ? '' : `<label class="campo"><span>¿En qué área trabajas?</span><select class="entrada" name="area" required><option value="">Elige…</option>${o.area.map((a) => `<option>${a}</option>`).join('')}</select></label>
+            <label class="campo"><span>¿Has trabajado con PLCs?</span><select class="entrada" name="experiencia" required><option value="">Elige…</option>${o.experiencia.map((a) => `<option>${a}</option>`).join('')}</select></label>`}
+            <div id="f-msg"></div>
+            <button class="boton primario grande bloque" type="submit">${libre ? 'Entrar al repaso' : 'Entrar a la clase'}</button>
           </form>
-          <p class="nota" style="margin:14px 0 0">Tu carnet se usa para darte ejercicios con valores propios y registrar tu participación. Solo lo ve el docente. <b>En cada sesión hay que ingresar de nuevo.</b></p>
+          <p class="nota" style="margin:14px 0 0">Tus datos se comparan con la lista del módulo y solo los ve el docente. <b>En cada sesión hay que ingresar de nuevo.</b></p>
         </div>
       </div>`;
     II.$('#f-ingreso').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const f = new FormData(ev.target);
-      alumno = {
-        nombre: String(f.get('nombre')).trim().replace(/\s+/g, ' '),
-        carnet: String(f.get('carnet')).trim().replace(/\s+/g, '').toUpperCase(),
-        info: { area: f.get('area'), experiencia: f.get('experiencia') }
-      };
+      const msg = II.$('#f-msg'), btn = ev.target.querySelector('button[type=submit]');
+      const dos = (n) => String(n).padStart(2, '0');
+      const fecha = `${f.get('anio')}-${dos(f.get('mes'))}-${dos(f.get('dia'))}`;
+      const carnet = II.normCarnet(f.get('carnet'));
+      const pin = String(f.get('pin') || '');
+      btn.disabled = true; msg.innerHTML = '<div class="aviso info">Comprobando tus datos…</div>';
+      let r;
+      if (II.configurado) r = await II.entrar(carnet, fecha, pin);
+      else r = { ok: true, nombre: carnet, carnet, fantasma: false };   // vista previa sin base de datos
+      btn.disabled = false;
+      if (!r.ok) {
+        if (r.motivo === 'pin' || r.motivo === 'pin_mal') { II.$('#c-pin').style.display = ''; ev.target.pin.focus(); }
+        msg.innerHTML = `<div class="aviso ${r.motivo === 'pin' ? 'info' : 'mal'}">${II.esc(II.MOTIVOS_ENTRADA[r.motivo] || II.MOTIVOS_ENTRADA.red)}</div>`;
+        return;
+      }
+      alumno = { nombre: r.nombre, carnet: r.carnet, fantasma: !!r.fantasma, info: libre ? {} : { area: f.get('area'), experiencia: f.get('experiencia') } };
       II.guardar(II.claveAlumno(SES), alumno);
+      II.guardarCred({ carnet: r.carnet, fecha, pin, nombre: r.nombre });
       arrancar();
     });
   };
@@ -491,12 +524,13 @@
     },
 
     cierre(paso) {
-      const { total, max } = puntosHoy();
       main.innerHTML = `<div class="contenido angosto"><div class="tarjeta">${cabecera(paso)}
-        <div style="text-align:center;margin:10px 0 18px"><div class="nota">Tu puntaje de hoy</div><div class="grande-numero">${II.fmt(total, 1)} <span style="font-size:1.4rem;color:var(--texto-3)">/ ${max}</span></div></div>
+        <div style="margin:10px 0 18px"><div class="nota" style="text-align:center">Tu puntaje de hoy</div><div id="nota-dia"><p class="nota" style="text-align:center">Calculando tu nota…</p></div></div>
         <ul class="ideas">${paso.ideas.map((t, i) => `<li><b class="n">${i + 1}</b><span>${t}</span></li>`).join('')}</ul>
-        <div class="aviso info" style="margin-top:16px">Puedes repasar esta sesión cuando quieras en <a href="clase.html?s=${SES}&modo=libre">modo repaso</a>.</div>
+        <div class="aviso info" style="margin-top:16px">Puedes repasar esta sesión cuando quieras en <a href="clase.html?s=${SES}&modo=libre">modo repaso</a>. Tus puntajes de todos los días están en <a href="mi-panel.html">Mi panel</a>.</div>
       </div></div>`;
+      if (libre) { const e = II.$('#nota-dia'); if (e) e.innerHTML = '<p class="nota" style="text-align:center">En el modo repaso no se registran puntos.</p>'; return; }
+      notaDelDia().then((n) => { const e = II.$('#nota-dia'); if (e) e.innerHTML = II.tarjetaNotaDia(n); });
     }
   };
 
@@ -543,7 +577,7 @@
   };
 
   // ---------- v2: pausa a mando, ruleta, terminar clase y pendientes trasladados ----------
-  let pausaInt = null, ruletaVista = II.leer(clave('ruleta-vista'), null), trasladoActivo = null;
+  let finPendiente = false, pausaInt = null, ruletaVista = II.leer(clave('ruleta-vista'), null), trasladoActivo = null;
   const quitarOv = (id) => { const e = II.$('#' + id); if (e) e.remove(); };
   const superposiciones = () => {
     if (libre || !filaEstado) return;
@@ -574,23 +608,18 @@
     } else quitarOv('ov-ruleta');
 
     // 3) la clase terminó antes de lo previsto: se evalúa solo lo realizado
-    if (ex.cierre_anticipado && !II.$('#ov-fin') && !II.leer(clave('fin-visto'))) {
-      const hasta = II.indicePaso(SES, ex.cierre_anticipado.hasta || '');
-      let tot = 0, max = 0;
-      Object.entries(S.retos).forEach(([id, R]) => {
-        const j = S.pasos.findIndex((q) => q.reto === id && q.tipo === 'reto');
-        if (j >= 0 && (hasta < 0 || j <= hasta)) { max += R.puntos; const st = II.leer(clave('reto', id)); if (st) tot += st.mejor || 0; }
+    if (ex.cierre_anticipado && !II.$('#ov-fin') && !II.leer(clave('fin-visto')) && !finPendiente) {
+      finPendiente = true;
+      notaDelDia().then((n) => {
+        finPendiente = false;
+        if (II.$('#ov-fin')) return;
+        document.body.appendChild(II.html(`<div id="ov-fin" class="ruleta-aviso"><div class="ruleta-caja"><span class="chip ok">Clase terminada</span><h2 style="margin-top:10px">Gracias por la clase de hoy</h2>
+          <p>La clase terminó antes de completar todo el plan. Se evalúa <b>solo lo que alcanzamos a hacer</b>.</p>
+          ${II.tarjetaNotaDia(n)}
+          <p class="nota">Lo que quedó pendiente puede trasladarse a la siguiente sesión; sus puntos contarán solo allí.</p>
+          <button class="boton primario grande bloque" id="ov-fin-ok">Entendido</button></div></div>`));
+        II.$('#ov-fin-ok').onclick = () => { II.guardar(clave('fin-visto'), true); quitarOv('ov-fin'); };
       });
-      II.rapidasDe(S).forEach((q) => {
-        const j = S.pasos.findIndex((x) => x.id === q.id);
-        if (hasta < 0 || j <= hasta) { max += II.puntosRapida(q); const st = II.leer(clave('rap', q.id)); if (st && st.revelada) tot += st.pts || 0; }
-      });
-      document.body.appendChild(II.html(`<div id="ov-fin" class="ruleta-aviso"><div class="ruleta-caja"><span class="chip ok">Clase terminada</span><h2 style="margin-top:10px">Gracias por la clase de hoy</h2>
-        <p>La clase terminó antes de completar todo el plan. Se evalúa <b>solo lo que alcanzamos a hacer</b>.</p>
-        <div class="grande-numero">${II.fmt(Math.round(tot * 10) / 10, 1)} <span style="font-size:1.4rem;color:var(--texto-3)">/ ${II.fmt(max, 1)}</span></div><p class="nota">Tus puntos de lo realizado</p>
-        <p class="nota">Lo que quedó pendiente puede trasladarse a la siguiente sesión; sus puntos contarán solo allí.</p>
-        <button class="boton primario grande bloque" id="ov-fin-ok">Entendido</button></div></div>`));
-      II.$('#ov-fin-ok').onclick = () => { II.guardar(clave('fin-visto'), true); quitarOv('ov-fin'); };
     }
 
     // 4) pendientes trasladados desde otra sesión
@@ -625,6 +654,7 @@
 
   // ---------- arranque ----------
   const arrancar = async () => {
+    if (!alumno && libre) { const c = II.leerCred(); if (c) alumno = { nombre: c.nombre, carnet: c.carnet, info: {} }; }
     pintarBarra();
     if (!alumno) return pintarIngreso();
     if (libre) {

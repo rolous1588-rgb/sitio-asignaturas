@@ -372,7 +372,7 @@
     const { data, error } = await II.sb.rpc('sortear_ruleta', { p_sesion: sesion });
     if (error) return { ok: false, error: error.message };
     const f = data && data[0];
-    return f ? { ok: true, carnet: f.carnet, nombre: f.nombre } : { ok: false, error: 'No hay estudiantes conectados.' };
+    return f ? { ok: true, carnet: f.carnet, nombre: f.nombre } : { ok: false, error: 'Todavía no ingresó ningún estudiante a esta sesión.' };
   };
   // resultado: 'responde' | 'no_responde' | 'omitir'
   II.registrarRuleta = async (sesion, carnet, nombre, resultado, paso) => {
@@ -407,18 +407,109 @@
       <div class="rub-barra">${R.map((r, i) => `<div style="width:${r.peso}%;background:${col[i]}">${r.peso} %</div>`).join('')}</div>
       <div style="${f}">${R.map((r, i) => `<div class="rub-fila"><div class="pct" style="background:${col[i]}">${r.peso} %</div><div><b>${r.nombre}</b><br><span class="nota" style="${f}">${r.detalle}</span></div></div>`).join('')}</div></div><div>
       <div class="aviso info" style="${f}"><b>Participación diaria.</b> Cada día de clase vale <b>100 %</b> de lo que se hizo realmente ese día, sin importar cuántos puntos sean (15, 17, 38…). Si la clase termina antes, se evalúa solo lo que se llegó a hacer. Lo que quedó pendiente puede trasladarse a la siguiente sesión; esos puntos cuentan <b>solo en la nueva sesión</b>.</div>
-      <div class="aviso mal" style="${f}"><b>Penalización por no responder.</b> Durante la clase el docente puede llamar, con una ruleta, a un estudiante <b>conectado</b> para que responda una pregunta en voz alta. <b>Responder no suma ni resta puntos</b>: es una forma de comprobar que estás atento.<br>
+      <div class="aviso mal" style="${f}"><b>Penalización por no responder.</b> Durante la clase el docente puede llamar, con una ruleta, a cualquiera de los estudiantes que <b>ingresaron a la sesión</b> (estén conectados en ese momento o no) para que responda una pregunta en voz alta. <b>Responder no suma ni resta puntos</b>: es una forma de comprobar que estás atento.<br>
         Si te llaman y <b>no respondes</b> (porque abandonaste la clase o no estás atento), a tu participación <b>de ese día</b> se le restan <b>${pen} puntos porcentuales</b>, una sola vez por día.</div>
       <div class="rub-ejemplo" style="${f}">
         <div>Tu participación del día<b class="g" style="color:#1d5fb4">80 %</b></div>
         <div>Te llaman y no respondes<b class="g" style="color:#c0392b">− ${pen} %</b></div>
         <div>Participación final del día<b class="g" style="color:#c0392b">${80 - pen} %</b></div>
       </div>
-      <p class="nota" style="${f}">Cada sesión pide <b>ingresar de nuevo</b> con nombre y carnet. El modo repaso sirve para estudiar y <b>no registra</b> puntos.</p></div></div>`;
+      <p class="nota" style="${f}">Cada sesión pide <b>ingresar de nuevo</b> con tu carnet y tu fecha de nacimiento. En «Mi panel» ves tus puntajes y tu avance. El modo repaso sirve para estudiar y <b>no registra</b> puntos.</p></div></div>`;
   };
 
   // Clave local del ingreso: una por sesión (el ingreso es independiente en cada sesión)
   II.claveAlumno = (sesion) => 'pl-alumno-' + sesion;
+
+
+  // ============================================================
+  // v3 — acceso por lista, nota del día, panel del estudiante
+  // ============================================================
+  II.ASIGNATURA = 'Programación de Controladores e Interfaces Industriales';
+
+  // El carnet se compara sin espacios, guiones ni puntos y en mayúsculas
+  II.normCarnet = (s) => String(s || '').toUpperCase().replace(/[\s\-.]/g, '');
+
+  // Entrar con carnet + fecha de nacimiento (AAAA-MM-DD); el estudiante fantasma además pide PIN.
+  // → { ok, nombre, carnet, fantasma, motivo }  (motivo: no_lista | fecha | pin | pin_mal | bloqueado | red)
+  II.entrar = async (carnet, fecha, pin) => {
+    if (!II.sb) return { ok: false, motivo: 'red' };
+    try {
+      const { data, error } = await II.sb.rpc('entrar', { p_carnet: carnet, p_fecha: fecha, p_pin: pin || null });
+      if (error) throw error;
+      const f = data && data[0];
+      return f ? { ok: !!f.ok, nombre: f.nombre, carnet: f.carnet, fantasma: !!f.fantasma, motivo: f.motivo } : { ok: false, motivo: 'red' };
+    } catch (e) { return { ok: false, motivo: 'red' }; }
+  };
+  II.MOTIVOS_ENTRADA = {
+    no_lista: 'Tu carnet no está en la lista del módulo. Avisa al docente.',
+    fecha: 'El carnet y la fecha de nacimiento no coinciden. Revísalos.',
+    pin: 'Escribe tu PIN.',
+    pin_mal: 'PIN incorrecto.',
+    bloqueado: 'Demasiados intentos fallidos. Espera 10 minutos e inténtalo de nuevo.',
+    red: 'No se pudo comprobar tus datos. Revisa tu conexión e inténtalo otra vez.'
+  };
+  // credenciales de la pestaña (para abrir «Mi panel» sin escribir todo otra vez; se borran al cerrar la pestaña)
+  II.guardarCred = (c) => { try { sessionStorage.setItem('pl-cred', JSON.stringify(c)); } catch (e) { /* sin almacenamiento */ } };
+  II.leerCred = () => { try { return JSON.parse(sessionStorage.getItem('pl-cred') || 'null'); } catch (e) { return null; } };
+  II.borrarCred = () => { try { sessionStorage.removeItem('pl-cred'); } catch (e) { /* nada */ } };
+
+  // Actividades con puntos de una sesión: retos, preguntas rápidas y pendientes trasladados
+  II.actividadesDe = (S, trasladados) => {
+    const L = [];
+    Object.entries(S.retos || {}).forEach(([k, r]) => L.push({ id: k, nombre: r.titulo.split('·')[0].trim(), puntos: r.puntos }));
+    II.rapidasDe(S).forEach((p, j) => L.push({ id: p.id, nombre: 'Rápida ' + (j + 1), puntos: II.puntosRapida(p) }));
+    (trasladados || []).forEach((id) => {
+      const [, orig, pid] = String(id).split(':'); const O = II.SESIONES[orig]; const po = O && O.pasos.find((q) => q.id === pid);
+      if (!po) return;
+      L.push({ id, nombre: 'Pendiente de S' + O.numero + ': ' + po.titulo.split('·')[0].trim(), puntos: po.tipo === 'reto' ? O.retos[po.reto].puntos : II.puntosRapida(po) });
+    });
+    return L;
+  };
+  // Nota del día de un estudiante: solo cuenta lo realizado (al menos un estudiante respondió algo)
+  //   realizadas: ids de actividades realizadas; puntosDe(id) → puntos del estudiante (o null)
+  II.notaDia = (S, trasladados, realizadas, puntosDe, noResponde) => {
+    const hechas = II.actividadesDe(S, trasladados).filter((a) => (realizadas || []).indexOf(a.id) >= 0);
+    const posibles = hechas.reduce((t, a) => t + a.puntos, 0);
+    const obtenidos = hechas.reduce((t, a) => t + (puntosDe(a.id) || 0), 0);
+    return { hechas, posibles, obtenidos, noResponde: noResponde || 0, ...II.participacionDia(obtenidos, posibles, noResponde) };
+  };
+  // Qué se hizo realmente hoy en la sesión y cuántas veces no respondió a la ruleta
+  II.resumenDia = async (sesion, carnet) => {
+    if (!II.sb) return null;
+    try {
+      const { data, error } = await II.sb.rpc('resumen_dia', { p_sesion: sesion, p_carnet: carnet });
+      if (error) throw error;
+      return data;
+    } catch (e) { return null; }
+  };
+  // Candidatos de la ruleta: todos los que ingresaron a la sesión → [{ carnet, nombre, conectado, salio }]
+  II.candidatosRuleta = async (sesion) => {
+    if (!II.sb) return [];
+    try {
+      const { data, error } = await II.sb.rpc('candidatos_ruleta', { p_sesion: sesion });
+      if (error) throw error;
+      return data || [];
+    } catch (e) { return []; }
+  };
+  // Panel del estudiante: sus sesiones, respuestas y llamados
+  II.panelEstudiante = async (carnet, fecha, pin) => {
+    if (!II.sb) return { ok: false, motivo: 'red' };
+    try {
+      const { data, error } = await II.sb.rpc('panel_estudiante', { p_carnet: carnet, p_fecha: fecha, p_pin: pin || null });
+      if (error) throw error;
+      return data || { ok: false, motivo: 'red' };
+    } catch (e) { return { ok: false, motivo: 'red' }; }
+  };
+  // Tarjeta con la nota del día (la usan el cierre y el aviso de «Clase terminada»)
+  II.tarjetaNotaDia = (n) => {
+    const f = (x) => II.fmt(Math.round(x * 10) / 10, 1);
+    return `<div class="nota-dia">
+      <div class="nd-fila"><span>Puntos de lo realizado</span><b>${f(n.obtenidos)} / ${f(n.posibles)}</b></div>
+      <div class="nd-fila"><span>Equivale a (sobre 100)</span><b>${f(n.bruta)} %</b></div>
+      <div class="nd-fila ${n.penalizacion ? 'mal' : ''}"><span>${n.penalizacion ? 'Penalización: te llamó la ruleta y no respondiste' : 'Penalización por no responder a la ruleta'}</span><b>${n.penalizacion ? '− ' + n.penalizacion + ' %' : 'ninguna'}</b></div>
+      <div class="nd-final"><span>Tu nota de participación de hoy</span><b>${f(n.final)} <small>/ 100</small></b></div>
+    </div>`;
+  };
 
   II.urlClase = (sesion) => {
     const base = location.href.replace(/[^/]*$/, '');

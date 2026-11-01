@@ -6,7 +6,7 @@
   let SES = II.sesionActual();
   let S = II.SESIONES[SES];
   const main = II.$('#principal');
-  const D = { fila: null, respuestas: [], ingresos: [], ruleta: [], conectados: [], pestana: 'control', actividad: null, detalle: null, seguido: {}, sorteando: false, terminando: null };
+  const D = { fila: null, respuestas: [], ingresos: [], ruleta: [], conectados: [], lista: [], cand: [], pestana: 'control', actividad: null, detalle: null, seguido: {}, sorteando: false, terminando: null };
 
   II.alCambiarConexion((ok) => { const p = II.$('#b-conexion'); if (p) p.className = 'punto-conexion ' + (ok ? 'ok' : 'mal'); });
 
@@ -53,19 +53,24 @@
 
   // ---------- datos ----------
   const cargar = async () => {
-    const [r1, r2, r3, con] = await Promise.all([
+    const [r1, r2, r3, con, cand, r4] = await Promise.all([
       II.sb.from('respuestas').select('*').eq('sesion', SES).order('creado').range(0, 4999),
       II.sb.from('ingresos').select('*').eq('sesion', SES).order('creado').range(0, 1999),
       II.sb.from('ruleta').select('*').eq('sesion', SES).order('creado'),
-      II.conectados(SES)
+      II.conectados(SES),
+      II.candidatosRuleta(SES),
+      D.lista.length ? Promise.resolve({ data: D.lista }) : II.sb.from('estudiantes').select('carnet,nombre,fantasma')
     ]);
-    const antes = D.respuestas.length + '|' + D.ingresos.length + '|' + D.ruleta.length + '|' + D.conectados.length;
-    if (!r1.error) D.respuestas = r1.data;
-    if (!r2.error) D.ingresos = r2.data;
+    const antes = D.respuestas.length + '|' + D.ingresos.length + '|' + D.ruleta.length + '|' + D.conectados.length + '|' + D.cand.length;
+    if (r4 && !r4.error && r4.data) D.lista = r4.data;
+    const fantasmas = new Set(D.lista.filter((e) => e.fantasma).map((e) => e.carnet));   // el estudiante fantasma no cuenta en nada
+    if (!r1.error) D.respuestas = r1.data.filter((x) => !fantasmas.has(x.carnet));
+    if (!r2.error) D.ingresos = r2.data.filter((x) => !fantasmas.has(x.carnet));
     if (!r3.error) D.ruleta = r3.data;
     D.conectados = con;
+    D.cand = cand;
     II.marcarConexion(!r1.error && !r2.error);
-    if (antes !== D.respuestas.length + '|' + D.ingresos.length + '|' + D.ruleta.length + '|' + D.conectados.length || !II.$('#panel') || !II.$('#panel').innerHTML) pintar();
+    if (antes !== D.respuestas.length + '|' + D.ingresos.length + '|' + D.ruleta.length + '|' + D.conectados.length + '|' + D.cand.length || !II.$('#panel') || !II.$('#panel').innerHTML) pintar();
   };
   const suscribir = () => {
     if (D.seguido[SES]) return;
@@ -73,19 +78,31 @@
     II.sb.channel('panel-' + SES)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'respuestas', filter: 'sesion=eq.' + SES }, (p) => {
         if (p.new.sesion !== SES || D.respuestas.some((x) => x.id === p.new.id)) return;
+        if (esFantasma(p.new.carnet)) return;
         D.respuestas.push(p.new); pintar();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ingresos', filter: 'sesion=eq.' + SES }, (p) => {
         if (p.new.sesion !== SES || D.ingresos.some((x) => x.id === p.new.id)) return;
+        if (esFantasma(p.new.carnet)) return;
         D.ingresos.push(p.new); pintar();
       })
       .subscribe();
   };
 
+  const esFantasma = (carnet) => D.lista.some((e) => e.carnet === carnet && e.fantasma);
+  const nombreLista = (carnet, otro) => { const e = D.lista.find((x) => x.carnet === carnet); return e ? e.nombre : otro; };
+  // los que ingresaron a la sesión (sin el estudiante fantasma); el nombre sale de la lista del módulo
   const alumnos = () => {
     const m = new Map();
-    D.ingresos.forEach((i) => m.set(i.carnet, { carnet: i.carnet, nombre: i.nombre, info: i.info || {} }));
-    D.respuestas.forEach((r) => { if (!m.has(r.carnet)) m.set(r.carnet, { carnet: r.carnet, nombre: r.nombre, info: {} }); });
+    D.ingresos.forEach((i) => m.set(i.carnet, { carnet: i.carnet, nombre: nombreLista(i.carnet, i.nombre), info: i.info || {}, ingreso: true }));
+    D.respuestas.forEach((r) => { if (!m.has(r.carnet)) m.set(r.carnet, { carnet: r.carnet, nombre: nombreLista(r.carnet, r.nombre), info: {}, ingreso: true }); });
+    return Array.from(m.values()).filter((a) => !esFantasma(a.carnet)).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  };
+  // para el reporte: toda la lista del módulo (los que no ingresaron cuentan 0) más quien entró sin estar en la lista
+  const alumnosReporte = () => {
+    const m = new Map();
+    D.lista.filter((e) => !e.fantasma).forEach((e) => m.set(e.carnet, { carnet: e.carnet, nombre: e.nombre, info: {}, ingreso: false }));
+    alumnos().forEach((a) => m.set(a.carnet, { ...a, fueraLista: !D.lista.some((e) => e.carnet === a.carnet) }));
     return Array.from(m.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   };
   const deActividad = (act) => D.respuestas.filter((r) => r.actividad === act);
@@ -206,7 +223,11 @@
         <button class="boton peligro" data-acc="ru-no">✗ No responde (−${II.PENALIZACION} %)</button>
         <button class="boton" data-acc="ru-omitir">Omitir</button></div>`;
     } else {
-      cRuleta = `<div class="controles"><button class="boton primario" data-acc="ru-sortear" ${D.sorteando || !nConectados() ? 'disabled' : ''}>🎡 ${D.sorteando ? 'Sorteando…' : 'Sortear entre los conectados'}</button><span class="nota">Hay ${nConectados()} conectados. Responder no da puntos.</span></div>
+      const cand = D.cand || [];
+      const salieron = cand.filter((c) => c.salio).length;
+      cRuleta = `<div class="controles"><button class="boton primario" data-acc="ru-sortear" ${D.sorteando || !cand.length ? 'disabled' : ''}>🎡 ${D.sorteando ? 'Sorteando…' : 'Sortear entre todos los que ingresaron'}</button><span class="nota">Participan ${cand.length} que ingresaron a esta sesión (${nConectados()} conectados ahora; ya salieron ${salieron}). Responder no da puntos.</span></div>
+        <details style="margin-top:8px"><summary class="nota" style="cursor:pointer">Ver quiénes participan</summary>
+          <div style="margin-top:6px">${cand.map((c) => `<div class="rank-fila"><span>${II.esc(c.nombre)}${c.salio ? ' <span class="nota">(ya salió)</span>' : ''}</span><span class="nota" style="color:${c.conectado ? 'var(--ok)' : 'var(--texto-3)'}">${c.conectado ? '● conectado' : '○ desconectado'}</span></div>`).join('') || '<p class="nota">Todavía no ingresó nadie.</p>'}</div></details>
         ${ru && ru.estado ? `<div class="nota" style="margin-top:6px">Último: ${II.esc(ru.nombre)}: ${ru.estado === 'responde' ? 'respondió' : ru.estado === 'no_responde' ? 'no respondió' : ru.estado}</div>` : ''}`;
     }
     // --- terminar clase / traslado ---
@@ -252,7 +273,7 @@
       const r = await II.sortearRuleta(SES);
       D.sorteando = false;
       if (!r.ok) { aviso(r.error || 'No se pudo sortear.'); return pintar(); }
-      const cand = (await II.conectados(SES)).map((x) => x.nombre).slice(0, 40);
+      const cand = (await II.candidatosRuleta(SES)).map((x) => x.nombre).slice(0, 60);
       await guardar({ ruleta: { id: String(Date.now()), carnet: r.carnet, nombre: r.nombre, hora: new Date().toISOString(), estado: 'llamando', cand } });
     } else if (acc === 'ru-ok' || acc === 'ru-no' || acc === 'ru-omitir') {
       const ru = II.ruletaDe(D.fila); if (!ru) return;
@@ -442,7 +463,7 @@
     const acts = actividades();
     const hechas = acts.filter(realizada);
     const pos = hechas.reduce((s, a) => s + a.puntos, 0);
-    return alumnos().map((al) => {
+    return alumnosReporte().map((al) => {
       const diag = deActividad('diagnostico').filter((r) => r.carnet === al.carnet).pop();
       const pts = acts.map((a) => mejorDe(a, al.carnet));
       const obt = hechas.reduce((s, a) => s + (mejorDe(a, al.carnet) || 0), 0);
@@ -466,7 +487,7 @@
       <div class="aviso info" style="margin-top:0">Participación del día = puntos obtenidos ÷ puntos posibles de lo <b>realizado</b> (${hechas.length} de ${acts.length} actividades; ${II.fmt(pos, 1)} puntos posibles). Si no respondió a la ruleta, se restan ${II.PENALIZACION} puntos porcentuales, una vez por día.</div>
       <div class="tabla-envoltura"><table class="tabla">
         <tr><th>Nombre</th><th>Carnet</th><th>Diag. /5</th>${acts.map((a) => `<th>${II.esc(a.nombre)} /${a.puntos}${realizada(a) ? '' : ' (no se hizo)'}</th>`).join('')}<th>Obtenidos /${II.fmt(pos, 1)}</th><th>Bruta</th><th>Ruleta (no resp.)</th><th>Final del día</th></tr>
-        ${filas.map((f) => `<tr><td>${II.esc(f.a.nombre)}</td><td>${II.esc(f.a.carnet)}</td><td class="n">${f.diag ?? '—'}</td>${f.pts.map((p) => `<td class="n">${p == null ? '—' : II.fmt(p, 1)}</td>`).join('')}<td class="n"><b>${II.fmt(f.obt, 1)}</b></td><td class="n">${pct(f.bruta)}</td><td class="n">${f.nr ? '−' + f.penalizacion + ' pts %' : '—'}</td><td class="n"><b>${pct(f.final)}</b></td></tr>`).join('') || `<tr><td colspan="${7 + acts.length}" class="nota">Aún no hay datos.</td></tr>`}
+        ${filas.map((f) => `<tr><td>${II.esc(f.a.nombre)}${f.a.ingreso ? '' : ' <span class="nota">(no ingresó)</span>'}${f.a.fueraLista ? ' <span class="nota">(no está en la lista)</span>' : ''}</td><td>${II.esc(f.a.carnet)}</td><td class="n">${f.diag ?? '—'}</td>${f.pts.map((p) => `<td class="n">${p == null ? '—' : II.fmt(p, 1)}</td>`).join('')}<td class="n"><b>${II.fmt(f.obt, 1)}</b></td><td class="n">${pct(f.bruta)}</td><td class="n">${f.nr ? '−' + f.penalizacion + ' pts %' : '—'}</td><td class="n"><b>${pct(f.final)}</b></td></tr>`).join('') || `<tr><td colspan="${7 + acts.length}" class="nota">Aún no hay datos.</td></tr>`}
       </table></div>
       <div class="tarjeta" style="margin-top:18px;padding:14px"><h3>Llamados de la ruleta (${D.ruleta.length})</h3>
         ${D.ruleta.length ? D.ruleta.slice().reverse().map((r) => `<div class="rank-fila"><span>${II.esc(r.nombre)} <span class="nota">; ${new Date(r.creado).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/La_Paz' })}; ${ruTxt[r.resultado]}${r.anulado ? ' (anulado)' : ''}</span></span>
