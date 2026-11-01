@@ -65,17 +65,15 @@
 
     const tarjetaDia = (d) => {
       const S = d.S, n = d.n;
-      const filas = II.actividadesDe(S, d.x.trasladados || []).map((a) => {
-        const hecha = (d.x.realizadas || []).indexOf(a.id) >= 0;
-        return `<tr><td>${II.esc(a.nombre)}</td><td class="n">${hecha ? f1(d.mejor[a.id] || 0) + ' / ' + a.puntos : '<span class="nota">no se hizo</span>'}</td></tr>`;
-      }).join('');
+      // solo las actividades que se hicieron en la clase (lo que no se alcanzó pertenece a la siguiente sesión)
+      const filas = II.actividadesDe(S, d.x.trasladados || []).filter((a) => (d.x.realizadas || []).indexOf(a.id) >= 0)
+        .map((a) => `<tr><td>${II.esc(a.nombre)}</td><td class="n">${f1(d.mejor[a.id] || 0)} / ${a.puntos}</td></tr>`).join('');
       return `<div class="mp-dia">
         <h3>Sesión ${II.esc(String(S.numero))}: ${II.esc(S.titulo)}</h3>
         <div class="nota">${II.esc(S.fecha || '')}${d.asistio ? '' : '; <b style="color:#b3261e">no ingresaste a esta sesión</b>'}</div>
         ${II.tarjetaNotaDia(n)}
         <details><summary class="nota" style="cursor:pointer">Ver detalle por actividad</summary>
-          <table class="mp-tabla"><tr><th>Actividad</th><th class="n">Tus puntos</th></tr>${filas}</table>
-          <p class="nota">Solo cuentan las actividades que se realizaron en la clase. Lo que no se hizo no baja tu nota.</p></details>
+          <table class="mp-tabla"><tr><th>Actividad</th><th class="n">Tus puntos</th></tr>${filas}</table></details>
         <div class="controles" style="margin-top:10px"><a class="boton" href="clase.html?s=${II.esc(S.id)}&amp;modo=libre">Repasar esta sesión</a></div>
       </div>`;
     };
@@ -88,7 +86,7 @@
         <p class="nota" style="margin-top:10px">Se irán llenando el control de estudio, el foro y el examen final a medida que se realicen.</p></div>
       <h3 style="margin:18px 0 0">Mis días de clase</h3>
       ${dias.length ? dias.map(tarjetaDia).join('') : '<div class="tarjeta"><p class="nota">Todavía no hay sesiones con puntaje.</p></div>'}
-      <p class="nota" style="margin:16px 0">Cada día vale 100 % de lo que se hizo ese día. Si el docente te llama con la ruleta y no respondes, a ese día se le restan ${II.PENALIZACION} puntos porcentuales (una sola vez).</p>
+      <p class="nota" style="margin:16px 0">Cada día vale 100 % de lo que se hizo ese día. Si el docente te llama con la ruleta y no respondes, a ese día se le restan ${II.PENALIZACION} puntos porcentuales.</p>
     </div>`;
   };
 

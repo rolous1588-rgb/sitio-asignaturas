@@ -513,8 +513,8 @@
   II.tarjetaNotaDia = (n) => {
     const f = (x) => II.fmt(Math.round(x * 10) / 10, 1);
     return `<div class="nota-dia">
-      <div class="nd-fila"><span>Puntos de lo realizado</span><b>${f(n.obtenidos)} / ${f(n.posibles)}</b></div>
-      <div class="nd-fila"><span>Equivale a (sobre 100)</span><b>${f(n.bruta)} %</b></div>
+      <div class="nd-fila"><span>Puntos que obtuviste en la clase</span><b>${f(n.obtenidos)} de ${f(n.posibles)}</b></div>
+      <div class="nd-fila"><span>Tu resultado sobre 100</span><b>${f(n.bruta)} %</b></div>
       <div class="nd-fila ${n.penalizacion ? 'mal' : ''}"><span>${n.penalizacion ? 'Penalización: te llamó la ruleta y no respondiste' : 'Penalización por no responder a la ruleta'}</span><b>${n.penalizacion ? '− ' + n.penalizacion + ' %' : 'ninguna'}</b></div>
       <div class="nd-final"><span>Tu nota de participación de hoy</span><b>${f(n.final)} <small>/ 100</small></b></div>
     </div>`;
