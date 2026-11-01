@@ -358,6 +358,12 @@
       const kb = clave('borr', paso.reto); // borrador: lo escrito sin enviar (sobrevive a una recarga)
       let st = II.leer(k, { intentos: 0, mejor: 0, terminado: false, valores: {}, detalle: {}, confianza: null });
       const borr = II.leer(kb, null);
+      // si la clase vuelve a este paso después de que el reto se cerró vacío (por un avance sin respuesta), se reabre
+      if (!libre && st.terminado && st.cerradoPor && (st.vacio || !st.ts) && filaEstado && filaEstado.paso === paso.id
+          && new Date(filaEstado.actualizado).getTime() > (st.ts || 0)) {
+        st = { intentos: 0, mejor: 0, terminado: false, valores: {}, detalle: {}, confianza: null };
+        II.guardar(k, st);
+      }
       main.innerHTML = `<div class="contenido angosto"><div class="tarjeta">${cabecera(paso)}
         <div class="controles" style="margin:-4px 0 12px"><span class="chip">Vale ${R.puntos} puntos</span><span class="chip" id="r-intento"></span><span class="chip">Valores propios de tu carnet</span></div>
         <div class="enunciado">${gen.enunciado}</div>
@@ -445,7 +451,7 @@
         const pts = Math.round(((R.puntos * base) / ver.total) * 10) / 10;
         const vacio = !!motivo && st.intentos === 0 && gen.campos.every((c) => String(valores[c.id] || '').trim() === '');
         st = { ...st, intentos: intento, valores, detalle: ver.detalle, confianza, mejor: Math.max(st.mejor, pts), correcta: ver.todo,
-          terminado: !!motivo || ver.todo || intento >= 2, cerradoPor: motivo || null, vacio };
+          terminado: !!motivo || ver.todo || intento >= 2, cerradoPor: motivo || null, vacio, ts: Date.now() };
         II.guardar(k, st);
         II.guardar(kb, null);
         if (libre) return Promise.resolve({ ok: true });
