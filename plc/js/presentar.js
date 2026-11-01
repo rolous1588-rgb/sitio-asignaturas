@@ -8,7 +8,8 @@
   const S = II.SESIONES[SES];
   const cuerpo = II.$('#cuerpo');
   let paso = null, diagrama = null, sondeo = null, reloj = null, filaEstado = null, esDocente = false;
-  const local = !II.configurado || II.params.get('modo') === 'local';
+  const ensayoDoc = II.params.get('ensayo') === '1';   // dentro de ensayo.html: sin conexión y avisa a la página madre
+  const local = ensayoDoc || !II.configurado || II.params.get('modo') === 'local';
   let idxLocal = 0;
 
   II.$('#p-sesion').textContent = `Sesión ${S.numero} · ${S.titulo}`;
@@ -277,7 +278,12 @@
   // navegación: modo local o docente conectado
   const irA = async (i) => {
     i = Math.max(0, Math.min(S.pasos.length - 1, i));
-    if (local) { idxLocal = i; II.guardar('pl-pres-local-' + SES, i); return mostrar(S.pasos[i]); }
+    if (local) {
+      idxLocal = i;
+      if (ensayoDoc) { if (parent !== window) parent.postMessage({ ensayo: 'paso', de: 'presentar', id: S.pasos[i].id }, location.origin); }
+      else II.guardar('pl-pres-local-' + SES, i);
+      return mostrar(S.pasos[i]);
+    }
     if (esDocente) {
       mostrar(S.pasos[i]);
       const ex = (filaEstado && filaEstado.extra) || {};
@@ -294,10 +300,18 @@
   II.$('#p-ant').onclick = () => irA((paso ? II.indicePaso(SES, paso.id) : 0) - 1);
   II.$('#p-sig').onclick = () => irA((paso ? II.indicePaso(SES, paso.id) : 0) + 1);
 
+  if (ensayoDoc) {
+    window.addEventListener('message', (e) => {   // la página madre (ensayo.html) pide ir a otro paso
+      if (e.origin !== location.origin || !e.data || e.data.ensayo !== 'ir') return;
+      const k = II.indicePaso(SES, e.data.id);
+      if (k >= 0 && k !== idxLocal) { idxLocal = k; mostrar(S.pasos[k]); }
+    });
+  }
   if (local) {
     II.$('#p-modo').innerHTML = '<span class="chip duda">Modo ensayo (sin conexión)</span>';
     II.$('#p-nav').classList.remove('oculto');
-    idxLocal = II.leer('pl-pres-local-' + SES, 0) || 0;
+    const pp = II.indicePaso(SES, II.params.get('p') || '');
+    idxLocal = pp >= 0 ? pp : (ensayoDoc ? 0 : (II.leer('pl-pres-local-' + SES, 0) || 0));
     mostrar(S.pasos[idxLocal]);
   } else {
     II.sb.auth.getSession().then(async ({ data }) => {

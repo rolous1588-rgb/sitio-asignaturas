@@ -110,9 +110,10 @@
         <div class="sim-motor"><svg viewBox="0 0 90 90" width="76" height="76" id="motor"></svg><div id="sim-txt" class="sim-txt"></div></div>
       </div>
       <div id="vistas"></div>`;
+    let listo = false;   // las pestañas avisan al crearse, antes de que exista dibujar()
     const T = PL.pestanas(cont.querySelector('#vistas'), [
       { id: 'gr', t: '1 · GRAFCET' }, { id: 'lg', t: '2 · Logigrama' }, { id: 'ec', t: '3 · Ecuaciones' }, { id: 'es', t: '4 · Escalera' }, { id: 'ed', t: 'Practicar' }
-    ], opts.pestana && opts.pestana !== 'a' ? opts.pestana : 'gr', () => dibujar());
+    ], opts.pestana && opts.pestana !== 'a' ? opts.pestana : 'gr', () => { if (listo) dibujar(); });
 
     const P = () => (ms.paro ? 0 : 1), E = () => (ms.emerg ? 0 : 1), M = () => (ms.marcha ? 1 : 0);
     const siguiente = () => Boolean((M() || ms.Q) && P() && E());
@@ -267,6 +268,7 @@
     cont.querySelector('#b-marcha').onclick = () => { ms.marcha = true; pulsoM && clearTimeout(pulsoM); ciclo(); pulsoM = setTimeout(() => { ms.marcha = false; ciclo(); }, 700); };
     cont.querySelector('#b-paro').onclick = () => { ms.paro = true; pulsoP && clearTimeout(pulsoP); ciclo(); pulsoP = setTimeout(() => { ms.paro = false; ciclo(); }, 700); };
     cont.querySelector('#b-emerg').onclick = () => { ms.emerg = !ms.emerg; ciclo(); };
+    listo = true;
     ciclo();
     const t = setInterval(() => { const q = siguiente(); if (q !== ms.Q) { ms.Q = q; dibujar(); } }, 150);
 

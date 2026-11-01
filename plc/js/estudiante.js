@@ -5,8 +5,10 @@
   const II = window.II;
   const SES = II.sesionActual();
   const S = II.SESIONES[SES];
-  const libre = II.params.get('modo') === 'libre' || !II.configurado;
-  let alumno = II.leer(II.claveAlumno(SES));  // v2: el ingreso es independiente en cada sesión
+  // Modo ensayo del docente (ensayo.html): como el repaso, pero sin ingreso, sin límite de pasos y sin tocar la base
+  const ensayo = II.params.get('ensayo') === '1';
+  const libre = ensayo || II.params.get('modo') === 'libre' || !II.configurado;
+  let alumno = ensayo ? { nombre: 'Docente (ensayo)', carnet: 'ENSAYO', fantasma: true, info: {} } : II.leer(II.claveAlumno(SES));  // v2: el ingreso es independiente en cada sesión
   let pasoActual = null, filaEstado = null, diagrama = null, idxLibre = 0, relojInt = null;
   // actividad en pantalla que se puede cerrar (reto o pregunta rápida): { act, cerrar(motivo) }
   let cerrador = null, cuentaInt = null, cierreVisto = null;
@@ -19,11 +21,12 @@
   const pintarBarra = () => {
     II.$('#b-sesion').textContent = `Sesión ${S.numero} · ${S.titulo}`;
     const u = II.$('#b-usuario');
-    if (alumno) {
+    if (ensayo) u.innerHTML = '<span class="b-nombre">Ensayo del docente</span>';
+    else if (alumno) {
       u.innerHTML = `<span class="b-nombre">${II.esc(alumno.nombre)}</span><a class="boton chico" href="mi-panel.html" title="Tus puntajes y tu avance">Mi panel</a><button class="boton chico" id="b-salir" title="Cambiar de usuario">Salir</button>`;
       II.$('#b-salir').onclick = () => { if (confirmarSalida()) { localStorage.removeItem(II.claveAlumno(SES)); II.borrarCred(); location.reload(); } };
     } else u.innerHTML = '';
-    II.$('#b-modo').innerHTML = libre ? '<span class="chip duda">Modo repaso</span>' : '';
+    II.$('#b-modo').innerHTML = libre ? `<span class="chip duda">${ensayo ? 'Modo ensayo' : 'Modo repaso'}</span>` : '';
     actualizarPuntos();
   };
 
@@ -571,9 +574,10 @@
       main.insertAdjacentHTML('beforeend', `<div class="contenido angosto" style="padding-top:0"><div class="aviso info" style="margin:0"><b>Hasta aquí llegó la clase.</b> Los temas siguientes se abrirán en el repaso cuando los veamos en clase.</div></div>`);
     }
   };
-  const irLibre = (i) => {
+  const irLibre = (i, silencioso) => {
     idxLibre = Math.max(0, Math.min(limiteLibre, i));
-    II.guardar(clave('libre'), idxLibre);
+    if (ensayo) { if (parent !== window && !silencioso) parent.postMessage({ ensayo: 'paso', de: 'estudiante', id: S.pasos[idxLibre].id }, location.origin); }
+    else II.guardar(clave('libre'), idxLibre);
     mostrarPaso(S.pasos[idxLibre]);
   };
 
@@ -658,6 +662,16 @@
     if (!alumno && libre) { const c = II.leerCred(); if (c) alumno = { nombre: c.nombre, carnet: c.carnet, info: {} }; }
     pintarBarra();
     if (!alumno) return pintarIngreso();
+    if (ensayo) {
+      limiteLibre = S.pasos.length - 1;
+      window.addEventListener('message', (e) => {   // la página madre (ensayo.html) pide ir a otro paso
+        if (e.origin !== location.origin || !e.data || e.data.ensayo !== 'ir') return;
+        const k = II.indicePaso(SES, e.data.id);
+        if (k >= 0 && k !== idxLibre) irLibre(k, true);
+      });
+      const j = II.indicePaso(SES, II.params.get('p') || '');
+      return irLibre(j >= 0 ? j : 0, true);
+    }
     if (libre) {
       main.innerHTML = '<div class="contenido angosto"><div class="tarjeta"><p class="sub" style="margin:0">Cargando el repaso…</p></div></div>';
       const rep = await II.leerRepaso(SES);
