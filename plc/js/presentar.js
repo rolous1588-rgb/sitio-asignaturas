@@ -12,7 +12,7 @@
   const local = ensayoDoc || !II.configurado || II.params.get('modo') === 'local';
   let idxLocal = 0;
 
-  II.$('#p-sesion').textContent = `Sesión ${S.numero} · ${S.titulo}`;
+  II.$('#p-sesion').textContent = S.titulo;
   II.$('#p-url').textContent = II.urlClase(SES).replace(/^https?:\/\//, '');
   II.alCambiarConexion((ok) => { II.$('#p-conexion').className = 'punto-conexion ' + (ok ? 'ok' : 'mal'); });
 
@@ -32,7 +32,7 @@
           <div>
             <span class="etiqueta">Diplomado en Control Automático Industrial</span>
             <h1 class="pres-titulo" style="font-size:2.6rem">Programación de Controladores e Interfaces Industriales</h1>
-            <p style="font-size:1.35rem;color:var(--texto-2);margin:0 0 6px">Sesión ${S.numero}: ${II.esc(S.titulo)}</p>
+            <p style="font-size:1.35rem;color:var(--texto-2);margin:0 0 6px">${II.esc(S.titulo)}</p>
             <p class="nota" style="font-size:1rem">${II.esc(S.fecha)}</p>
             <div class="aviso info" style="font-size:1.05rem;max-width:560px;margin-top:22px">Entra desde tu celular o computadora con el código QR o el enlace del chat de Meet. Ten a mano tu <b>carnet</b>. <b>En cada sesión hay que ingresar de nuevo.</b></div>
           </div>

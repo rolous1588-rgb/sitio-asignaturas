@@ -69,7 +69,7 @@
       const filas = II.actividadesDe(S, d.x.trasladados || []).filter((a) => (d.x.realizadas || []).indexOf(a.id) >= 0)
         .map((a) => `<tr><td>${II.esc(a.nombre)}</td><td class="n">${f1(d.mejor[a.id] || 0)} / ${a.puntos}</td></tr>`).join('');
       return `<div class="mp-dia">
-        <h3>Sesión ${II.esc(String(S.numero))}: ${II.esc(S.titulo)}</h3>
+        <h3>Clase: ${II.esc(S.fecha || S.titulo)}</h3>
         <div class="nota">${II.esc(S.fecha || '')}${d.asistio ? '' : '; <b style="color:#b3261e">no ingresaste a esta sesión</b>'}</div>
         ${II.tarjetaNotaDia(n)}
         <details><summary class="nota" style="cursor:pointer">Ver detalle por actividad</summary>

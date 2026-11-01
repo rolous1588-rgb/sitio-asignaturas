@@ -19,7 +19,7 @@
 
   // ---------- barra superior ----------
   const pintarBarra = () => {
-    II.$('#b-sesion').textContent = `Sesión ${S.numero} · ${S.titulo}`;
+    II.$('#b-sesion').textContent = S.titulo;
     const u = II.$('#b-usuario');
     if (ensayo) u.innerHTML = '<span class="b-nombre">Ensayo del docente</span>';
     else if (alumno) {
@@ -93,7 +93,7 @@
         <div class="tarjeta">
           <span class="etiqueta">Diplomado en Control Automático Industrial</span>
           <h2>${II.ASIGNATURA}</h2>
-          <p class="sub">Sesión ${S.numero}: ${II.esc(S.titulo)}. Entra con tu carnet y tu fecha de nacimiento.</p>
+          <p class="sub">Entra con tu carnet y tu fecha de nacimiento.</p>
           <form id="f-ingreso" autocomplete="off">
             <label class="campo"><span>Carnet de identidad (solo el número)</span><input class="entrada" name="carnet" required minlength="4" maxlength="20" inputmode="text" autocomplete="off"></label>
             <div class="campo"><span>Fecha de nacimiento: <b>mes, día y año</b></span>

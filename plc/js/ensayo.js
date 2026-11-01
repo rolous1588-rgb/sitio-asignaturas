@@ -13,7 +13,7 @@
   const CLAVE_DADO = 'pl-ensayo-dado-' + SES;
   let idx = 0, dado = -1, ifP = null, ifE = null;
 
-  $('#en-sesion').textContent = `Sesión ${S.numero}: ${S.titulo}`;
+  $('#en-sesion').textContent = S.titulo;
 
   const TIPO = { espera: 'Bienvenida', rubrica: 'Rúbrica', cuestionario: 'Diagnóstico', explica: 'Explicación', explora: 'Explora', rapida: 'Pregunta rápida', reto: 'Reto', revisa: 'Revisión', pausa: 'Pausa', cierre: 'Cierre' };
   const titulo = (p) => p.titulo || p.id;
