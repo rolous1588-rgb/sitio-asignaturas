@@ -88,7 +88,7 @@
     });
     return o;
   };
-  const svgDe = (sc, act, inp, mid) => `<svg viewBox="0 0 680 ${sc.H}" style="width:100%;height:auto;max-height:${Math.min(sc.H + 40, 460)}px" role="img" aria-label="GRAFCET">${dibujar(sc, act, inp, mid)}</svg>`;
+  const svgDe = (sc, act, inp, mid) => `<svg viewBox="0 0 680 ${sc.H}" style="width:100%;height:auto;max-height:${Math.min(sc.H + 40, 640)}px" role="img" aria-label="GRAFCET">${dibujar(sc, act, inp, mid)}</svg>`;
   const svgEstatico = (sc, act) => svgDe(sc, act || inicial(sc), {}, 'gfe' + (++NID));
 
   // ============================================================
