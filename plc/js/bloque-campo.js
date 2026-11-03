@@ -61,7 +61,7 @@
         enunciado: `<p>Estás cableando una estación de bombeo. Responde con lo que lee y comanda el PLC.</p>
           <p><b>Caso a.</b> Conectas ${d1[0]} a una entrada digital. Nadie lo toca.</p>
           <p><b>Caso b.</b> ${esc[0]}.</p>
-          <p><b>Caso c.</b> Compras un sensor inductivo de 3 hilos tipo ${V(tipo)}.</p>
+          <p><b>Caso c.</b> Compras un sensor inductivo de 3 hilos tipo <span class="valor">${tipo}</span>.</p>
           <p><b>Caso d.</b> Quieres comandar ${car[0]}.</p>
           <p><b>Caso e.</b> Conectas ${d2[0]} al terminal ${V(String(nn))} del módulo de entradas, que está en la ranura 1.</p>`,
         campos: [
