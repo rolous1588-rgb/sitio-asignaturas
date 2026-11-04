@@ -360,7 +360,7 @@
       const borr = II.leer(kb, null);
       // si la clase vuelve a este paso después de que el reto se cerró vacío (por un avance sin respuesta), se reabre
       if (!libre && st.terminado && st.cerradoPor && (st.vacio || !st.ts) && filaEstado && filaEstado.paso === paso.id
-          && new Date(filaEstado.actualizado).getTime() > (st.ts || 0)) {
+          && (st.cerradoPor === 'avance' || new Date(filaEstado.actualizado).getTime() > (st.ts || 0))) {
         st = { intentos: 0, mejor: 0, terminado: false, valores: {}, detalle: {}, confianza: null };
         II.guardar(k, st);
       }
