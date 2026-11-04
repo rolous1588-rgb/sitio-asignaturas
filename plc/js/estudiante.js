@@ -528,8 +528,8 @@
         <div class="grande-numero" id="reloj" style="font-size:4rem;margin:10px 0">${paso.minutos}:00</div>
         <p class="nota">No cierres esta página: la clase continuará aquí.</p>
       </div></div>`;
-      const inicio = filaEstado && filaEstado.paso === paso.id ? new Date(filaEstado.actualizado).getTime() : Date.now();
-      const tick = () => { const e = II.$('#reloj'); if (e) e.textContent = II.formatoReloj(paso.minutos * 60 - (Date.now() - inicio) / 1000); };
+      const inicio = filaEstado && filaEstado.paso === paso.id ? new Date(filaEstado.actualizado).getTime() : II.ahora();
+      const tick = () => { const e = II.$('#reloj'); if (e) e.textContent = II.formatoReloj(Math.min(paso.minutos * 60, paso.minutos * 60 - (II.ahora() - inicio) / 1000)); };
       tick(); relojInt = setInterval(tick, 1000);
     },
 

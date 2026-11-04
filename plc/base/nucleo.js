@@ -363,7 +363,26 @@
     if (!p || !p.hasta) return null;
     return p;
   };
-  II.restaPausa = (p) => (p ? Math.max(0, (new Date(p.hasta).getTime() - Date.now()) / 1000) : 0);
+  // Hora del servidor: algunos celulares tienen el reloj mal puesto; se corrige con la cabecera Date de Supabase
+  II.desfase = 0;
+  II.ahora = () => Date.now() + II.desfase;
+  try {
+    const cfg0 = window.II_CONFIG || window.CONFIG || null;
+    const u = cfg0 && cfg0.SUPABASE_URL, k = cfg0 && cfg0.SUPABASE_KEY;
+    if (u && k) {
+      const t0 = Date.now();
+      fetch(u + '/rest/v1/', { method: 'HEAD', headers: { apikey: k } }).then((r) => {
+        const d = r.headers.get('date');
+        if (d) II.desfase = new Date(d).getTime() - (t0 + Date.now()) / 2;
+      }).catch(() => {});
+    }
+  } catch (e) { /* sin ajuste */ }
+  II.restaPausa = (p) => {
+    if (!p) return 0;
+    const r = (new Date(p.hasta).getTime() - II.ahora()) / 1000;
+    const tope = ((p.minutos || 0) + 5) * 60;   // una pausa nunca dura más que lo fijado (+5 min de margen)
+    return r > tope ? 0 : Math.max(0, r);
+  };
 
   // Ruleta: extra.ruleta = { carnet, nombre, hora, vistos }  (sin puntos; "No responde" resta II.PENALIZACION)
   II.ruletaDe = (fila) => (fila && fila.extra && fila.extra.ruleta) || null;
