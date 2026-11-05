@@ -100,14 +100,15 @@ Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televiso
 | `css/me.css` | Paleta clara del sitio. En `body.tv` todo se mide en `--u` = 1 % del alto (dvh) |
 | `js/planta-sesion.js`, `js/vatimetro-sesion.js` | Sesiones `me-planta` (laboratorio de la planta de lácteos, 15/10) y `me-vatimetro` (T1, 19/10) |
 | `js/tierra-diagramas.js` | `FP.diagramas.capas` (dónde está la resistencia de un electrodo) y `.telurometro` (caída de potencial: sliders de H y S, «Medir» guarda lecturas, curva, comprobación a ±1 m, áreas que se tocan en rojo; con `params.limite`, botones Cumple / No cumple). `FP.tierra`: modelo de Dwight (a = 8 mm, pica H de 0,4 m), `lectura(p, D, x)`, `verificacion(puntos, x, D)` |
-| `js/tierra-sesion.js` | `me-tierra` (T7, 21 pasos, 6 rápidas, ejercicio `t1`) y `me-lab4` (Lab 4a, 7 pasos, 2 rápidas, ejercicio `t2`: mide y decide 25 Ω). La nota exige la comprobación a ±1 m porque con suelo parejo la lectura al 62 % sale bien aunque H esté cerca. En el repaso libre los datos son otros |
+| `js/tierra-diagramas2.js` | Diagramas explicativos con ◀ ▶ (05/11): `campoTierra` (corriente animada con `animateMotion`, tensión en colores, curva de la superficie con zona plana ≥ 2 m, S y voltímetro, H cerca), `formasTierra` (jabalina; varias con resistencias mutuas; conductor horizontal, Sunde; malla, Sverak; barras frente a 1 jabalina), `prepararTierra` (botones de suelo y relleno dentro del SVG; R = parte cercana + lejana; época seca; años para la sal) e `instalarTierra` (8 pasos con qué y por qué, lista `.lista-dg`). Usa `FP.tierra._h` |
+| `js/tierra-sesion.js` | `me-tierra` (T7, 25 pasos desde el 05/11, 6 rápidas, ejercicio `t1`; pasos `campo`, `formas`, `preparar`, `instalar`) y `me-lab4` (Lab 4a, 8 pasos, 2 rápidas, ejercicio `t2`: mide y decide 25 Ω; paso `l-formas`). La nota exige la comprobación a ±1 m porque con suelo parejo la lectura al 62 % sale bien aunque H esté cerca. En el repaso libre los datos son otros |
 
 - Tamaños para 9 m (regla DISCAS: alto de letra ≥ distancia/200): números clave ≈ 6,5 % del alto, textos ≥ 4,5 %, trazos gruesos, una idea por pantalla.
 - Fases en `estado_sesion.extra`: `{ abierto: id }` → `{ abierto: id, fin, seg }` (cierre) → `{ cerrado: id }`. Cambiar de paso limpia `extra`; el estudiante envía solo lo que tenga si el paso cambia o se cierra.
 - Las respuestas se leen directamente desde la página del docente (RLS: solo docente). La TV muestra todo anónimo.
 - Regla de factura usada: ELFEC (FP ≥ 0,85; recargo = cargo × (0,85/FP − 1)). Pendiente confirmar la de CESSA (Sucre): no se encontró publicada.
 - Avance: el lunes 05/10 se llegó hasta e2 (11 estudiantes). El miércoles 07/10 se continúa desde `repaso2` (teoría de dos vatímetros en adelante).
-- Puesta a tierra (04/11): filas `me-tierra` y `me-lab4` creadas; material en la rama `medidas-tierra` hasta después del 2.º parcial (05/11). Clase el lun 16/11 y laboratorio 4a el jue 19/11.
+- Puesta a tierra: filas `me-tierra` y `me-lab4` creadas el 04/11. Publicado el 04/11 a pedido del docente (se usó en clase ese día). El 05/11 se agregaron los diagramas de `tierra-diagramas2.js`.
 
 ## Módulo Electrónica Digital 1 (clases presenciales, desde oct 2026)
 

@@ -291,3 +291,9 @@ body.est { min-height: 100vh; }
 .formulas-tv.texto div { font-family: 'Inter', sans-serif; font-weight: 600; color: var(--texto); font-size: calc(var(--u) * 4.4); line-height: 1.3; }
 .cierre-lista { gap: calc(var(--u) * 1.1); }
 .cierre-lista .opcion-tv { font-size: calc(var(--u) * 4.4); padding: calc(var(--u) * 1) calc(var(--u) * 2); }
+
+/* lista de pasos dentro de un diagrama (instalación de la puesta a tierra) */
+.lista-dg { margin: 0; padding-left: 1.6em; color: var(--texto-3); font-weight: 600; line-height: 1.35; }
+.lista-dg li.hecho { color: var(--ok); }
+.lista-dg li.actual { color: var(--acento-2); font-weight: 800; }
+.tv .lista-dg { font-size: calc(var(--u) * 4.4); }
