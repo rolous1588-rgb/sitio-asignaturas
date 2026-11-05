@@ -480,3 +480,22 @@ body.tv .e5-sol .sol-circ svg{max-height:60vh}
 body.est .c4-tiempos .btn,body.est .c4-paridad .btn,body.est .c4-bloque .btn,body.est .c4-motor .btn{font-size:14px;padding:8px 10px}
 body.est .c4-b,body.est .c4-p{font-size:15px}
 .boton.confirmar{background:var(--q);border-color:var(--q);color:#fff}
+
+/* ============================================================
+   Sesión d1-c5 (05/11): Práctica general
+   ============================================================ */
+.c5-items{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.c5-item{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.c5-item>p{margin:0 0 6px}
+.c5-num{font-size:1.2em;font-weight:800;color:var(--pri)}
+.c5-bits{display:flex;gap:3px;justify-content:center;flex-wrap:nowrap}
+.c5-bit{display:flex;flex-direction:column;align-items:center;gap:2px}
+.c5-bit small{font-size:11px;color:var(--muted);font-weight:700}
+.c5-bit .c4-b{width:32px;height:38px;font-size:16px}
+.c5-bit .c4-b.c5-vacio{color:#adb5bd}
+.c5-sep{width:8px}
+.c5-in{width:100%;font-size:18px;padding:8px 10px;border:2px solid var(--line);border-radius:8px;font-weight:700}
+.c5-in:focus{outline:none;border-color:var(--pri)}
+.c5-item .opciones-est{margin-top:4px}
+.tt td.c5-q{color:var(--bad);font-weight:800}
+.tt td.c5-mal{background:var(--bad2);color:var(--bad);font-weight:800}
