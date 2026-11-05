@@ -160,6 +160,9 @@
         formulas: [X`R_E = \dfrac{V_{ES}}{I_{EH}}`, 'Salida: 20 a 50 V; corriente de mA', 'Revisa antes: picas y tensión de interferencia'] },
       { id: 'r3', tipo: 'rapida', titulo: 'Predicción', t: '¿Por qué el telurómetro inyecta a 128 Hz y no a 50 Hz?', o: ['para separar su señal de las corrientes de la red', 'porque 50 Hz es más peligroso', 'para que la corriente sea mayor', 'para medir la inductancia del suelo'], c: 0 },
 
+      { id: 'campo', tipo: 'explica', titulo: 'Cómo mide: corriente y tensión en el suelo', diagrama: 'campoTierra', params: { rho: 100, L: 2.4, I: 0.02 }, inicial: { D: 25, x: 15.5, etapa: 1 },
+        idea: 'Avanza con ▶: la corriente; la tensión en el suelo; medir con S; ¿y si H está cerca?',
+        guia: ['Paso 2: señalar la zona crema del medio (tierra remota). Paso 3: mover S por la zona plana y ver que R casi no cambia; luego llevar S cerca de E o de H. Paso 4: H a 8 m, ya no hay zona plana.'] },
       { id: 't-caida', tipo: 'teoria', titulo: 'Caída de potencial: la regla del 62 %', idea: 'Con S al 61,8 % del camino entre E y H, la lectura es igual a la resistencia real.',
         puntos: ['Se desconecta el electrodo; las picas S y H van en línea recta.', X`El electrodo crea un potencial que baja con la distancia; la pica H, otro de signo contrario. La lectura es \(R(x) = (V_E - V(x))/I\).`, X`Esa lectura iguala a \(\rho/(2\pi r)\) en un solo punto: \(x = 0{,}618\,D\).`, 'Vale si el suelo es parejo y H está lejos (unas 10 veces el largo del electrodo).'],
         derecha: 'Deducción',

@@ -139,6 +139,8 @@
     return { ok: true, tres, var: med > 0 ? ((Math.max(...rs) - Math.min(...rs)) / med) * 100 : 100 };
   };
   const fR = (R) => (R >= 100 ? f(R, 0) : R >= 10 ? f(R, 1) : f(R, 2));
+  // utilidades para tierra-diagramas2.js (mismo aspecto en todos los diagramas de tierra)
+  M._h = { base, api, txt, lin, ini, par, marcar, fR, T, TG, TS, A_JAB, L_H };
 
   // ============================================================
   // Capas: ¿dónde está la resistencia?
