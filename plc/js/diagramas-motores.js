@@ -29,6 +29,8 @@
 .mtr-bar{height:8px;border-radius:4px;background:${S1};border:1px solid var(--borde);overflow:hidden;margin-top:3px}.mtr-bar i{display:block;height:100%;width:0;background:#378ADD}
 .mtr-row{display:grid;grid-template-columns:minmax(52px,70px) 1fr 1fr;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--borde);font-size:.9rem}
 .mtr-ovg{display:inline-block;border-top:1.5px solid currentColor;padding-top:7px;line-height:1.2;margin-top:4px}
+.mtr-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start}
+.mtr-nota{margin:8px 0 0;color:var(--texto-2);font-size:.85rem;line-height:1.55}
 .mtr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
 .mtr-card{background:${S2};border:1px solid var(--borde);border-radius:12px;padding:8px 12px}
 .mtr-eqln{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;line-height:2;background:${S1};border-radius:8px;padding:2px 10px;overflow-x:auto}
@@ -63,9 +65,9 @@
 
   // ---------- dibujos (GRAFCET y escalera) ----------
   const obar = (x, y, w) => `<rect x="${x}" y="${y}" width="${w}" height="2" fill="${INK}"/>`;
-  const grafcet = (M) => {
+  const grafcet = (M, hl) => {
     const S = M.S, ln = (d) => `<path d="${d}" fill="none" stroke="${SEC}" stroke-width="1.5"/>`;
-    const step = (x, y, n) => `<rect x="${x - 18}" y="${y}" width="36" height="36" rx="2" fill="${S[n] ? G : S1}" stroke="${INK}" stroke-width="1.2"/><text x="${x}" y="${y + 18}" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="${S[n] ? GD : INK}">${n.slice(1)}</text>`;
+    const step = (x, y, n) => `<rect x="${x - 18}" y="${y}" width="36" height="36" rx="2" fill="${S[n] ? G : S1}" stroke="${INK}" stroke-width="1.2"/><text x="${x}" y="${y + 18}" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="${S[n] ? GD : INK}">${n.slice(1)}</text>${hl === Number(n.slice(1)) ? `<rect x="${x - 23}" y="${y - 5}" width="46" height="46" rx="4" fill="none" stroke="#378ADD" stroke-width="3.5"/>` : ''}`;
     const act = (x, y, n, on) => `<line x1="${x + 18}" y1="${y + 18}" x2="${x + 36}" y2="${y + 18}" stroke="${SEC}" stroke-width="1.5"/><rect x="${x + 36}" y="${y + 6}" width="56" height="24" rx="2" fill="${on ? G : S2}" stroke="${INK}" stroke-width="1.2"/><text x="${x + 64}" y="${y + 18}" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="${on ? GD : INK}">${n}</text>`;
     const tr = (x, y, lbl, bar, dx = 26) => `<line x1="${x - 16}" y1="${y}" x2="${x + 16}" y2="${y}" stroke="${INK}" stroke-width="3"/><text x="${x + dx}" y="${y + 4}" font-size="14" font-weight="600" fill="${INK}">${lbl}</text>${bar ? obar(x + dx, y - 9, bar) : ''}`;
     const trh = (x, y, lbl, w, bajo) => `<line x1="${x}" y1="${y - 9}" x2="${x}" y2="${y + 9}" stroke="${INK}" stroke-width="3"/><text x="${x}" y="${bajo ? y + 26 : y - 18}" text-anchor="middle" font-size="14" font-weight="600" fill="${INK}">${lbl}</text>${obar(x - w / 2, bajo ? y + 13 : y - 31, w)}`;
@@ -77,6 +79,7 @@
       ${ln('M250 222 L60 222')}${ln('M250 314 L60 314')}${ln('M450 222 L640 222')}${ln('M350 424 L350 484')}${ln('M350 442 L60 442')}
       ${dbl(140)}${dbl(420)}
       <rect x="328" y="38" width="44" height="44" fill="${S.E0 ? G : S1}" stroke="${INK}" stroke-width="1.2"/><rect x="333" y="43" width="34" height="34" fill="none" stroke="${INK}" stroke-width="1.2"/><text x="350" y="60" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="${S.E0 ? GD : INK}">0</text>
+      ${hl === 0 ? '<rect x="323" y="33" width="54" height="54" rx="4" fill="none" stroke="#378ADD" stroke-width="3.5"/>' : ''}
       ${tr(350, 105, 'PA', 0)}
       ${step(250, 170, 'E1')}${act(250, 170, 'KA', S.KA)}${tr(250, 240, 'P1', 0)}${step(250, 262, 'E2')}${tr(250, 332, 't1 = 8 s', 0)}${step(250, 354, 'E3')}${act(250, 354, 'KA', S.KA)}
       ${step(450, 170, 'E4')}${tr(450, 240, 't2 = 5 s', 0)}${step(450, 262, 'E5')}${act(450, 262, 'KB', S.KB)}
@@ -134,47 +137,50 @@
     return `<svg viewBox="0 0 ${W} ${y + 16}" style="width:100%;max-width:560px;display:block;margin:auto" role="img" aria-label="Diagrama escalera de los dos motores"><line x1="${RL}" y1="20" x2="${RL}" y2="${y - 20}" stroke="${INK}" stroke-width="2.5"/><line x1="${RR}" y1="20" x2="${RR}" y2="${y - 20}" stroke="${INK}" stroke-width="2.5"/>${s}</svg>`;
   };
   const ovg = (t) => `<span class="mtr-ovg">${t}</span>`;
+  const NOM = ['Etapa 0', 'Etapa 1', 'Etapa 2', 'Etapa 3', 'Etapa 4', 'Etapa 5', 'Etapa 6', 'Salidas'];
   const ecuaciones = (M) => {
-    const S = M.S, I = M.I, c = (x) => `<span class="mtr-chip${x ? ' v' : ''}">${x ? 1 : 0}</span>`;
+    const S = M.S, I = M.I, sel = M.sel || 0, c = (x) => `<span class="mtr-chip${x ? ' v' : ''}">${x ? 1 : 0}</span>`;
     const pp = ov('PP');
-    // [n, SET, valorSET, siguiente, RESET, negado largo, De Morgan, valor]
-    const E = [
-      [1, 'E0 · PA', S.E0 && I.PA, 'E2', `E2 + ${pp}`, 'E2 + ' + ov('PP'), `${ov('E2')} · PP`, !S.E2 && I.PP],
-      [2, 'E1 · P1', S.E1 && I.P1, 'E3', `E3 + ${pp}`, 'E3 + ' + ov('PP'), `${ov('E3')} · PP`, !S.E3 && I.PP],
-      [3, 'E2 · T1', S.E2 && S.T1, 'E6', `E6 + ${pp}`, 'E6 + ' + ov('PP'), `${ov('E6')} · PP`, !S.E6 && I.PP],
-      [4, 'E0 · PA', S.E0 && I.PA, 'E5', `E5 + ${pp}`, 'E5 + ' + ov('PP'), `${ov('E5')} · PP`, !S.E5 && I.PP],
-      [5, 'E4 · T2', S.E4 && S.T2, 'E6', `E6 + ${pp}`, 'E6 + ' + ov('PP'), `${ov('E6')} · PP`, !S.E6 && I.PP]
-    ];
-    const lin = (tit, eq, v) => `<div style="margin:6px 0"><div style="font-size:.76rem;color:var(--texto-2)">${tit}</div><div class="mtr-eqln">${eq}${v === undefined ? '' : c(v)}</div></div>`;
-    const card = (n, cuerpo, on) => `<div class="mtr-card"><div style="font-weight:600;margin-bottom:2px">Etapa ${n}${c(on)}</div>${cuerpo}</div>`;
-    let h = '<div class="mtr-grid">';
-    E.forEach((e) => {
-      const n = e[0], ra = ov('RE' + n);
-      h += card(n,
-        lin('1. SET: etapa anterior por la transición', `SE${n} = ${e[1]}`, e[2]) +
-        lin('2. RESET: la apaga la etapa siguiente o el paro', `RE${n} = ${e[4]}`) +
-        lin('3. Se niega todo el RESET (barra larga)', `${ra} = ${ovg(e[5])}`) +
-        lin('4. De Morgan: la suma pasa a producto', `${ra} = ${e[6]}`, e[7]), S['E' + n]);
-    });
-    h += card(6,
-      lin('1. SET: espera a las dos ramas y la transición', `SE6 = E3 · E5 · P2`, S.E3 && S.E5 && I.P2) +
-      lin('2. RESET: solo lo apaga P3 pulsado (normalmente cerrado)', `RE6 = ${ov('P3')}`) +
-      lin('3. Se niega el RESET', `${ov('RE6')} = ${ovg(ov('P3'))}`) +
-      lin('4. La doble barra se cancela', `${ov('RE6')} = P3`, I.P3), S.E6);
-    h += card(0,
-      lin('Sin SET ni RESET: está activa cuando todas las demás están apagadas', `E0 = ${['E1', 'E2', 'E3', 'E4', 'E5', 'E6'].map(ov).join(' · ')}`, S.E0), S.E0);
-    h += card('de salida',
-      lin('Contactor A: etapa 1 o etapa 3', `KA = E1 + E3`, S.KA) + lin('Contactor B: etapa 5', `KB = E5`, S.KB) +
-      lin('Temporizadores', `T1 = TON de 8 s sobre E2; T2 = TON de 5 s sobre E4`), S.KA || S.KB);
-    h += '</div><p style="margin:10px 0 0;color:var(--texto-2);font-size:.85rem;line-height:1.55">En el escalón de cada etapa: el <b>SET</b> va en serie, el <b>contacto con el nombre de la bobina</b> en paralelo (enclavamiento) y el <b>RESET negado</b> en serie, antes de la bobina. El número a la derecha es el valor de cada ecuación en este instante.</p>';
-    return h;
+    const SIG = { 1: ['E0', 'PA', 'E2'], 2: ['E1', 'P1', 'E3'], 3: ['E2', 'T1', 'E6'], 4: ['E0', 'PA', 'E5'], 5: ['E4', 'T2', 'E6'] };
+    const lin = (tit, eq, v) => eq === '' ? `<p class="mtr-nota" style="margin:4px 0 8px">${tit}</p>` : `<div style="margin:8px 0"><div style="font-size:.8rem;color:var(--texto-2)">${tit}</div><div class="mtr-eqln">${eq}${v === undefined ? '' : c(v)}</div></div>`;
+    let cuerpo = '';
+    if (sel === 0) {
+      const todas = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6'];
+      cuerpo = lin('La etapa 0 no tiene SET ni RESET: es la etapa de reposo', '') +
+        lin('1. Está activa solo si ninguna otra etapa está activa', `E0 = ${ovg(todas.join(' + '))}`, S.E0) +
+        lin('2. De Morgan: la suma pasa a producto y cada etapa lleva su barra', `E0 = ${todas.map(ov).join(' · ')}`, S.E0) +
+        `<p class="mtr-nota">En la escalera son seis contactos normalmente cerrados en serie, uno por cada etapa. Mantén PA y mira cómo E0 se apaga.</p>`;
+    } else if (sel >= 1 && sel <= 5) {
+      const [ant, tra, sig] = SIG[sel], ra = ov('RE' + sel);
+      const v = { 1: S.E0 && I.PA, 2: S.E1 && I.P1, 3: S.E2 && S.T1, 4: S.E0 && I.PA, 5: S.E4 && S.T2 }[sel];
+      const vr = { 1: !S.E2, 2: !S.E3, 3: !S.E6, 4: !S.E5, 5: !S.E6 }[sel] && I.PP;
+      cuerpo = lin('1. SET: etapa anterior por la transición', `SE${sel} = ${ant} · ${tra}`, v) +
+        lin('2. RESET: la apaga la etapa siguiente o el paro', `RE${sel} = ${sig} + ${pp}`) +
+        lin('3. Se niega todo el RESET (barra larga)', `${ra} = ${ovg(sig + ' + ' + pp)}`) +
+        lin('4. De Morgan: la suma pasa a producto', `${ra} = ${ov(sig)} · PP`, vr ? 1 : 0) +
+        `<p class="mtr-nota">En el escalón: el SET va en serie, el contacto E${sel} en paralelo (enclavamiento) y ${ra} en serie, antes de la bobina.</p>`;
+    } else if (sel === 6) {
+      cuerpo = lin('1. SET: espera a las dos ramas y la transición', 'SE6 = E3 · E5 · P2', S.E3 && S.E5 && I.P2) +
+        lin('2. RESET: solo lo apaga P3 pulsado (normalmente cerrado)', `RE6 = ${ov('P3')}`) +
+        lin('3. Se niega el RESET', `${ov('RE6')} = ${ovg(ov('P3'))}`) +
+        lin('4. La doble barra se cancela', `${ov('RE6')} = P3`, I.P3) +
+        `<p class="mtr-nota">E6 devuelve el sistema a E0. El paro PP no aparece aquí: P3 es su única salida.</p>`;
+    } else {
+      cuerpo = lin('Contactor A: etapa 1 o etapa 3', 'KA = E1 + E3', S.KA) + lin('Contactor B: etapa 5', 'KB = E5', S.KB) +
+        lin('Temporizadores', 'T1 = TON de 8 s sobre E2') + lin('', 'T2 = TON de 5 s sobre E4');
+    }
+    const nav = NOM.map((n, i) => `<button type="button" class="boton chico eqz-btn${sel === i ? ' sel' : ''}" data-st="${i}" style="min-width:0;padding:4px 10px">${i === 7 ? 'Salidas' : 'E' + i}</button>`).join('');
+    return `<div class="mtr-split"><div>${grafcet(M, sel === 7 ? -1 : sel)}</div>
+      <div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${nav}</div>
+      <div class="mtr-card"><div style="font-weight:600;font-size:1.05rem">${NOM[sel]}${sel < 7 ? c(S['E' + sel]) : ''}</div>${cuerpo}</div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="boton chico" data-st="${Math.max(0, sel - 1)}">◀ Anterior</button><button type="button" class="boton chico" data-st="${Math.min(7, sel + 1)}">Siguiente ▶</button></div></div></div>`;
   };
 
   // ---------- panel + vistas ----------
   const motorSvg = (id, col, bg) => `<svg viewBox="0 0 120 100" width="100%" style="max-width:150px"><rect x="12" y="26" width="64" height="48" rx="6" fill="${S2}" stroke="${BRD}" stroke-width="1.5"/><rect x="18" y="34" width="52" height="4" fill="var(--borde)"/><rect x="18" y="62" width="52" height="4" fill="var(--borde)"/><rect x="76" y="46" width="14" height="8" fill="${BRD}"/><g id="${id}" transform="translate(98 50)"><circle r="16" fill="${bg}" stroke="${col}" stroke-width="1.5"/><line x1="-14" y1="0" x2="14" y2="0" stroke="${col}" stroke-width="3"/><line x1="0" y1="-14" x2="0" y2="14" stroke="${col}" stroke-width="3"/><circle r="3" fill="${col}"/></g></svg>`;
   II.diagramas.motores = (cont, opts = {}) => {
     cont.classList.add('diagrama');
-    const M = crear();
+    const M = crear(); M.sel = 0;
     cont.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
       <div style="flex:1 1 300px;min-width:0"><div class="mtr-btns" data-r="btns"></div>
         <div class="mtr-et" data-r="et" style="margin-top:12px"></div>
@@ -198,7 +204,7 @@
     const T = PL.pestanas(q('[data-r=tabs]'), defs, ini);
     const vistas = { grafcet: grafcet, ecuaciones: ecuaciones, escalera: escalera };
     let firma = '', ang = { a: 0, b: 0 }, last = performance.now(), raf = 0, vivo = true;
-    const sig = () => JSON.stringify([M.S.E0, M.S.E1, M.S.E2, M.S.E3, M.S.E4, M.S.E5, M.S.E6, M.S.T1, M.S.T2, M.I]);
+    const sig = () => JSON.stringify([M.sel, M.S.E0, M.S.E1, M.S.E2, M.S.E3, M.S.E4, M.S.E5, M.S.E6, M.S.T1, M.S.T2, M.I]);
     const pinta = () => {
       const f = sig();
       if (f !== firma) { firma = f; defs.forEach((d) => { T.raiz(d.id).innerHTML = vistas[d.id](M); }); }
@@ -214,6 +220,7 @@
       q('#mt-a').setAttribute('transform', `translate(98 50) rotate(${ang.a})`); q('#mt-b').setAttribute('transform', `translate(98 50) rotate(${ang.b})`);
       pinta(); raf = requestAnimationFrame(lazo);
     };
+    T.raiz('ecuaciones').addEventListener('click', (e) => { const b = e.target.closest('[data-st]'); if (b) { M.sel = Number(b.dataset.st); firma = ''; pinta(); } });
     q('[data-r=rst]').onclick = () => { M.reinicia(); };
     M.scan(0); pinta(); raf = requestAnimationFrame(lazo);
     return { destruir() { vivo = false; cancelAnimationFrame(raf); }, pestana: T.pestana };

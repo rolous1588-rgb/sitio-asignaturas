@@ -140,7 +140,7 @@
     rm3: { min: 2, puntos: ['Cierra la pregunta. Refuerza: la convergencia espera a todas las ramas.'] },
     rm4: { min: 2, puntos: ['Cierra la pregunta. Refuerza: PP y P3 son NC, valen 1 en reposo.'] },
     'm-eq': { min: 10, objetivo: 'Que reconozcan el SET, el RESET negado y la ecuación especial de E0 en este ejemplo.',
-      pasos: ['<b>Haz:</b> abre <b>2 · Ecuaciones</b> y señala la columna SET y la columna RESET negado.', '<b>Di:</b> "Cada etapa: SET es etapa anterior por condición. El RESET es etapa siguiente más paro; se niega y se aplica De Morgan."', '<b>Haz:</b> mantén PA y muestra cómo cambian los valores de SE1 y SE4.', '<b>Di:</b> "La etapa 6 tiene tres elementos en el SET porque espera a las dos ramas."'],
+      pasos: ['<b>Haz:</b> abre <b>2 · Ecuaciones</b>: a la izquierda el GRAFCET, a la derecha una etapa. Empieza en la <b>etapa 0</b> y avanza con <b>Siguiente</b> o con los botones E0 a E6; la etapa revisada se marca en azul en el GRAFCET.', '<b>Di:</b> "Cada etapa: SET es etapa anterior por condición. El RESET es etapa siguiente más paro; se niega y se aplica De Morgan."', '<b>Haz:</b> en la etapa 1 mantén PA y muestra cómo cambia el valor de SE1.', '<b>Di:</b> "La etapa 6 tiene tres elementos en el SET porque espera a las dos ramas."'],
       preguntas: ['<b>"¿Por qué E0 no tiene SET ni RESET?"</b> → Está activa cuando todas las demás están apagadas.', '<b>"¿Por qué P3 aparece sin barra en el RESET negado?"</b> → El RESET es ' + ob('P3') + ' (P3 pulsado vale 0); al negarlo la doble barra se cancela y queda P3.'],
       dudas: ['"¿Por qué las etapas 3 y 5 no se reinician por la otra rama?" → Solo las apaga E6 o el paro; así se acordó.'],
       transicion: 'Toca <b>Siguiente</b> para las preguntas rápidas.' },
