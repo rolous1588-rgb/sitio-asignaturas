@@ -47,6 +47,8 @@
     II.$('#b-usuario').innerHTML = `<span class="b-nombre">${II.esc(r.nombre)}</span><button class="boton chico" id="b-salir">Salir</button>`;
     II.$('#b-salir').onclick = () => { II.borrarCred(); Object.keys(localStorage).filter((k) => k.indexOf('pl-alumno-') === 0).forEach((k) => localStorage.removeItem(k)); location.reload(); };
 
+    const MESD = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'], DSEM = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const rotuloDia = (d) => { const [a, m, dd] = d.split('-').map(Number); const f = new Date(a, m - 1, dd); return DSEM[f.getDay()] + ' ' + dd + ' de ' + MESD[m - 1]; };
     const dias = (r.sesiones || []).filter((x) => II.SESIONES[x.sesion] && (x.realizadas || []).length > 0).map((x) => {
       const S = II.SESIONES[x.sesion];
       const mejor = {};
@@ -69,8 +71,8 @@
       const filas = II.actividadesDe(S, d.x.trasladados || []).filter((a) => (d.x.realizadas || []).indexOf(a.id) >= 0)
         .map((a) => `<tr><td>${II.esc(a.nombre)}</td><td class="n">${f1(d.mejor[a.id] || 0)} / ${a.puntos}</td></tr>`).join('');
       return `<div class="mp-dia">
-        <h3>Clase: ${II.esc(S.fecha || S.titulo)}</h3>
-        <div class="nota">${II.esc(S.fecha || '')}${d.asistio ? '' : '; <b style="color:#b3261e">no ingresaste a esta sesión</b>'}</div>
+        <h3>Clase del ${rotuloDia(d.x.dia)}</h3>
+        <div class="nota">${II.esc(S.titulo)}${d.asistio ? '' : '; <b style="color:#b3261e">no ingresaste a esta sesión</b>'}</div>
         ${II.tarjetaNotaDia(n)}
         <details><summary class="nota" style="cursor:pointer">Ver detalle por actividad</summary>
           <table class="mp-tabla"><tr><th>Actividad</th><th class="n">Tus puntos</th></tr>${filas}</table></details>
