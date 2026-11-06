@@ -28,6 +28,10 @@
 .mtr-e.on{background:${G};border-color:${G};color:${GD};font-weight:600}
 .mtr-bar{height:8px;border-radius:4px;background:${S1};border:1px solid var(--borde);overflow:hidden;margin-top:3px}.mtr-bar i{display:block;height:100%;width:0;background:#378ADD}
 .mtr-row{display:grid;grid-template-columns:minmax(52px,70px) 1fr 1fr;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--borde);font-size:.9rem}
+.mtr-ovg{display:inline-block;border-top:1.5px solid currentColor;padding-top:7px;line-height:1.2;margin-top:4px}
+.mtr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
+.mtr-card{background:${S2};border:1px solid var(--borde);border-radius:12px;padding:8px 12px}
+.mtr-eqln{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;line-height:2;background:${S1};border-radius:8px;padding:2px 10px;overflow-x:auto}
 .mtr-eq{font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.9}
 .mtr-chip{display:inline-block;min-width:22px;text-align:center;font-size:.78rem;padding:1px 6px;border-radius:6px;margin-left:6px;border:1px solid var(--borde);background:${S1};color:${SEC}}.mtr-chip.v{background:${G};border-color:${G};color:${GD}}
 @media (prefers-reduced-motion:no-preference){.mtr-spin{transform-origin:0 0}}`;
@@ -62,7 +66,7 @@
   const grafcet = (M) => {
     const S = M.S, ln = (d) => `<path d="${d}" fill="none" stroke="${SEC}" stroke-width="1.5"/>`;
     const step = (x, y, n) => `<rect x="${x - 18}" y="${y}" width="36" height="36" rx="2" fill="${S[n] ? G : S1}" stroke="${INK}" stroke-width="1.2"/><text x="${x}" y="${y + 18}" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="${S[n] ? GD : INK}">${n.slice(1)}</text>`;
-    const act = (x, y, n, on) => `<line x1="${x - 18}" y1="${y + 18}" x2="${x + 12}" y2="${y + 18}" stroke="${SEC}" stroke-width="1.5"/><rect x="${x + 12}" y="${y + 6}" width="56" height="24" rx="2" fill="${on ? G : S2}" stroke="${INK}" stroke-width="1.2"/><text x="${x + 40}" y="${y + 18}" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="${on ? GD : INK}">${n}</text>`;
+    const act = (x, y, n, on) => `<line x1="${x + 18}" y1="${y + 18}" x2="${x + 36}" y2="${y + 18}" stroke="${SEC}" stroke-width="1.5"/><rect x="${x + 36}" y="${y + 6}" width="56" height="24" rx="2" fill="${on ? G : S2}" stroke="${INK}" stroke-width="1.2"/><text x="${x + 64}" y="${y + 18}" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="600" fill="${on ? GD : INK}">${n}</text>`;
     const tr = (x, y, lbl, bar, dx = 26) => `<line x1="${x - 16}" y1="${y}" x2="${x + 16}" y2="${y}" stroke="${INK}" stroke-width="3"/><text x="${x + dx}" y="${y + 4}" font-size="14" font-weight="600" fill="${INK}">${lbl}</text>${bar ? obar(x + dx, y - 9, bar) : ''}`;
     const trh = (x, y, lbl, w, bajo) => `<line x1="${x}" y1="${y - 9}" x2="${x}" y2="${y + 9}" stroke="${INK}" stroke-width="3"/><text x="${x}" y="${bajo ? y + 26 : y - 18}" text-anchor="middle" font-size="14" font-weight="600" fill="${INK}">${lbl}</text>${obar(x - w / 2, bajo ? y + 13 : y - 31, w)}`;
     const dbl = (y) => `<line x1="220" y1="${y}" x2="480" y2="${y}" stroke="${INK}" stroke-width="2"/><line x1="220" y1="${y + 4}" x2="480" y2="${y + 4}" stroke="${INK}" stroke-width="2"/>`;
@@ -129,22 +133,41 @@
     add(70, (y) => rung(y, 'Escalón 11: contactor B', [a('E5')], null, [], 'KB'));
     return `<svg viewBox="0 0 ${W} ${y + 16}" style="width:100%;max-width:560px;display:block;margin:auto" role="img" aria-label="Diagrama escalera de los dos motores"><line x1="${RL}" y1="20" x2="${RL}" y2="${y - 20}" stroke="${INK}" stroke-width="2.5"/><line x1="${RR}" y1="20" x2="${RR}" y2="${y - 20}" stroke="${INK}" stroke-width="2.5"/>${s}</svg>`;
   };
+  const ovg = (t) => `<span class="mtr-ovg">${t}</span>`;
   const ecuaciones = (M) => {
     const S = M.S, I = M.I, c = (x) => `<span class="mtr-chip${x ? ' v' : ''}">${x ? 1 : 0}</span>`;
-    const filas = [
-      ['Etapa 1', `S<sub>E1</sub> = E0 · PA`, S.E0 && I.PA, `${ov('R<sub>E1</sub>')} = ${ov('E2')} · PP`, !S.E2 && I.PP],
-      ['Etapa 2', `S<sub>E2</sub> = E1 · P1`, S.E1 && I.P1, `${ov('R<sub>E2</sub>')} = ${ov('E3')} · PP`, !S.E3 && I.PP],
-      ['Etapa 3', `S<sub>E3</sub> = E2 · T1`, S.E2 && S.T1, `${ov('R<sub>E3</sub>')} = ${ov('E6')} · PP`, !S.E6 && I.PP],
-      ['Etapa 4', `S<sub>E4</sub> = E0 · PA`, S.E0 && I.PA, `${ov('R<sub>E4</sub>')} = ${ov('E5')} · PP`, !S.E5 && I.PP],
-      ['Etapa 5', `S<sub>E5</sub> = E4 · T2`, S.E4 && S.T2, `${ov('R<sub>E5</sub>')} = ${ov('E6')} · PP`, !S.E6 && I.PP],
-      ['Etapa 6', `S<sub>E6</sub> = E3 · E5 · P2`, S.E3 && S.E5 && I.P2, `${ov('R<sub>E6</sub>')} = P3`, I.P3]
+    const pp = ov('PP');
+    // [n, SET, valorSET, siguiente, RESET, negado largo, De Morgan, valor]
+    const E = [
+      [1, 'E0 · PA', S.E0 && I.PA, 'E2', `E2 + ${pp}`, 'E2 + ' + ov('PP'), `${ov('E2')} · PP`, !S.E2 && I.PP],
+      [2, 'E1 · P1', S.E1 && I.P1, 'E3', `E3 + ${pp}`, 'E3 + ' + ov('PP'), `${ov('E3')} · PP`, !S.E3 && I.PP],
+      [3, 'E2 · T1', S.E2 && S.T1, 'E6', `E6 + ${pp}`, 'E6 + ' + ov('PP'), `${ov('E6')} · PP`, !S.E6 && I.PP],
+      [4, 'E0 · PA', S.E0 && I.PA, 'E5', `E5 + ${pp}`, 'E5 + ' + ov('PP'), `${ov('E5')} · PP`, !S.E5 && I.PP],
+      [5, 'E4 · T2', S.E4 && S.T2, 'E6', `E6 + ${pp}`, 'E6 + ' + ov('PP'), `${ov('E6')} · PP`, !S.E6 && I.PP]
     ];
-    const e0 = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6'].map(ov).join(' · ');
-    return `<div class="mtr-eq"><div class="mtr-row" style="font-size:.78rem;color:var(--texto-2)"><span>Etapa</span><span>SET (enciende)</span><span>RESET negado (mantiene)</span></div>` +
-      filas.map((f) => `<div class="mtr-row"><b>${f[0]}${c(S['E' + f[0].slice(-1)])}</b><span>${f[1]}${c(f[2])}</span><span>${f[3]}${c(f[4])}</span></div>`).join('') +
-      `<div class="mtr-row" style="grid-template-columns:70px 1fr"><b>Etapa 0${c(S.E0)}</b><span>E0 = ${e0}</span></div>` +
-      `<div class="mtr-row" style="grid-template-columns:70px 1fr"><b>Salidas</b><span>KA = E1 + E3${c(S.KA)} &nbsp; KB = E5${c(S.KB)}</span></div></div>` +
-      `<p style="margin:10px 0 0;color:var(--texto-2);font-size:.85rem;line-height:1.55">Cada etapa se mantiene con (SET + la propia etapa) · RESET negado. Los números a la derecha de cada ecuación son su valor en este instante.</p>`;
+    const lin = (tit, eq, v) => `<div style="margin:6px 0"><div style="font-size:.76rem;color:var(--texto-2)">${tit}</div><div class="mtr-eqln">${eq}${v === undefined ? '' : c(v)}</div></div>`;
+    const card = (n, cuerpo, on) => `<div class="mtr-card"><div style="font-weight:600;margin-bottom:2px">Etapa ${n}${c(on)}</div>${cuerpo}</div>`;
+    let h = '<div class="mtr-grid">';
+    E.forEach((e) => {
+      const n = e[0], ra = ov('RE' + n);
+      h += card(n,
+        lin('1. SET: etapa anterior por la transición', `SE${n} = ${e[1]}`, e[2]) +
+        lin('2. RESET: la apaga la etapa siguiente o el paro', `RE${n} = ${e[4]}`) +
+        lin('3. Se niega todo el RESET (barra larga)', `${ra} = ${ovg(e[5])}`) +
+        lin('4. De Morgan: la suma pasa a producto', `${ra} = ${e[6]}`, e[7]), S['E' + n]);
+    });
+    h += card(6,
+      lin('1. SET: espera a las dos ramas y la transición', `SE6 = E3 · E5 · P2`, S.E3 && S.E5 && I.P2) +
+      lin('2. RESET: solo lo apaga P3 pulsado (normalmente cerrado)', `RE6 = ${ov('P3')}`) +
+      lin('3. Se niega el RESET', `${ov('RE6')} = ${ovg(ov('P3'))}`) +
+      lin('4. La doble barra se cancela', `${ov('RE6')} = P3`, I.P3), S.E6);
+    h += card(0,
+      lin('Sin SET ni RESET: está activa cuando todas las demás están apagadas', `E0 = ${['E1', 'E2', 'E3', 'E4', 'E5', 'E6'].map(ov).join(' · ')}`, S.E0), S.E0);
+    h += card('de salida',
+      lin('Contactor A: etapa 1 o etapa 3', `KA = E1 + E3`, S.KA) + lin('Contactor B: etapa 5', `KB = E5`, S.KB) +
+      lin('Temporizadores', `T1 = TON de 8 s sobre E2; T2 = TON de 5 s sobre E4`), S.KA || S.KB);
+    h += '</div><p style="margin:10px 0 0;color:var(--texto-2);font-size:.85rem;line-height:1.55">En el escalón de cada etapa: el <b>SET</b> va en serie, el <b>contacto con el nombre de la bobina</b> en paralelo (enclavamiento) y el <b>RESET negado</b> en serie, antes de la bobina. El número a la derecha es el valor de cada ecuación en este instante.</p>';
+    return h;
   };
 
   // ---------- panel + vistas ----------

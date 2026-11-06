@@ -8,6 +8,9 @@
   const II = window.II;
   const S = II.SESIONES['pl-s1'];
   if (!S || !II.diagramas.motores || S.pasos.some((p) => p.id === 'm-panel')) return;
+  const ob = (t) => Array.from(String(t)).map((c) => c + '\u0305').join(''); // barra encima (texto plano)
+  const oh = (t) => '<span style="text-decoration:overline;text-decoration-thickness:1.5px">' + t + '</span>';
+  const og = (t) => '<span style="display:inline-block;border-top:1.5px solid currentColor;padding-top:6px;line-height:1.2;margin-top:3px">' + t + '</span>';
   const rap = (id, ciclo, t, o, c, por) => ({ id, tipo: 'rapida', ciclo, titulo: 'Pregunta rápida', t, o, c, por });
 
   const nuevos = [
@@ -34,25 +37,25 @@
     { id: 'm-eq', tipo: 'explica', ciclo: 9, titulo: 'Bloque I · Las ecuaciones de los dos motores', diagrama: 'motores', pestana: 'ecuaciones',
       ideas: [
         'El método es el mismo: <b>SET = etapa anterior · condición</b>; <b>RESET = etapa siguiente + paro</b>; se niega el RESET y se aplica De Morgan.',
-        'Ejemplo de la etapa 3: <b>SE3 = E2 · T1</b> (T1 es el temporizador de 8 s). Su RESET es <b>E6 + ¬PP</b>; negado: <b>¬E6 · PP</b>.',
-        'La etapa 6 espera a las dos ramas: <b>SE6 = E3 · E5 · P2</b>. Como P3 es normalmente cerrado, se mantiene con <b>P3</b>.',
+        'Ejemplo de la etapa 3, paso a paso: <b>SE3 = E2 · T1</b> (T1 es el temporizador de 8 s); <b>RE3 = E6 + ' + oh('PP') + '</b> (solo la apagan E6 o el paro); se niega todo el RESET: <b>' + oh('RE3') + ' = ' + og('E6 + ' + oh('PP')) + '</b>; con De Morgan: <b>' + oh('RE3') + ' = ' + oh('E6') + ' · PP</b>.',
+        'La etapa 6 espera a las dos ramas: <b>SE6 = E3 · E5 · P2</b>. Su RESET es <b>RE6 = ' + oh('P3') + '</b> y, negado, la doble barra se cancela: <b>' + oh('RE6') + ' = P3</b>.',
         'La <b>etapa 0</b> es especial: está activa cuando <b>ninguna otra etapa</b> lo está.',
         'Mantén presionados los botones y mira los valores de cada ecuación cambiar junto a las etapas.'
       ] },
     rap('rm5', 9, '¿Cuál es el SET de la etapa 3?',
       ['SE3 = E2 · T1', 'SE3 = E3 · E5', 'SE3 = E1 · P1', 'SE3 = E2 · P2'], 0,
       'E3 viene de E2 y la transición es el temporizador T1 (8 s): SE3 = E2 · T1.'),
-    rap('rm6', 9, 'El RESET de la etapa 1 es RE1 = E2 + ¬PP. Aplicando De Morgan, ¿cuánto vale su negación?',
-      ['¬E2 · PP', '¬E2 + PP', 'E2 · ¬PP', '¬E2 · ¬PP'], 0,
-      'La barra larga se reparte y la suma pasa a producto: ¬E2 y la negación de ¬PP, que se cancela y deja PP. Resultado: ¬E2 · PP.'),
+    rap('rm6', 9, 'El RESET de la etapa 1 es RE1 = E2 + ' + ob('PP') + '. Se niega todo (barra larga sobre la suma) y se aplica De Morgan: ¿cuánto vale ' + ob('RE1') + '?',
+      [ob('E2') + ' · PP', ob('E2') + ' + PP', 'E2 · ' + ob('PP'), ob('E2') + ' · ' + ob('PP')], 0,
+      'La barra larga se reparte y la suma pasa a producto: queda ' + ob('E2') + ' y la negación de ' + ob('PP') + ', que se cancela y deja PP. Resultado: ' + ob('E2') + ' · PP.'),
     rap('rm7', 9, 'A la etapa 3 solo la apagan E6 o el paro. ¿Cuál es su RESET negado?',
-      ['¬E6 · PP', '¬E6 + PP', 'E6 · ¬PP', '¬E5 · PP'], 0,
-      'RE3 = E6 + ¬PP. Negado y con De Morgan: ¬E6 · PP.'),
+      [ob('E6') + ' · PP', ob('E6') + ' + PP', 'E6 · ' + ob('PP'), ob('E5') + ' · PP'], 0,
+      'RE3 = E6 + ' + ob('PP') + '. Negado y con De Morgan: ' + ob('E6') + ' · PP.'),
     rap('rm8', 9, '¿Cuál es el SET de la etapa 6?',
       ['SE6 = E3 · E5 · P2', 'SE6 = E3 + E5 + P2', 'SE6 = E3 · P2', 'SE6 = E5 · P3'], 0,
       'La convergencia exige que las dos ramas estén listas (E3 y E5) y que se cumpla la transición P2: se multiplican las tres.'),
     rap('rm9', 9, '¿Cómo se escribe la ecuación de la etapa inicial E0?',
-      ['E0 = ¬E1 · ¬E2 · ¬E3 · ¬E4 · ¬E5 · ¬E6', 'E0 = E1 + E2 + E3 + E4 + E5 + E6', 'E0 = ¬E1 + ¬E2', 'E0 = PA'], 0,
+      ['E0 = ' + ['E1', 'E2', 'E3', 'E4', 'E5', 'E6'].map(ob).join(' · '), 'E0 = E1 + E2 + E3 + E4 + E5 + E6', 'E0 = ' + ob('E1') + ' + ' + ob('E2'), 'E0 = PA'], 0,
       'E0 no tiene SET ni RESET: está activa cuando todas las demás etapas están apagadas, por eso son seis contactos normalmente cerrados en serie.'),
     { id: 'm-esc', tipo: 'explica', ciclo: 9, titulo: 'Bloque I · El diagrama escalera de los dos motores', diagrama: 'motores', pestana: 'escalera',
       ideas: [
@@ -138,7 +141,7 @@
     rm4: { min: 2, puntos: ['Cierra la pregunta. Refuerza: PP y P3 son NC, valen 1 en reposo.'] },
     'm-eq': { min: 10, objetivo: 'Que reconozcan el SET, el RESET negado y la ecuación especial de E0 en este ejemplo.',
       pasos: ['<b>Haz:</b> abre <b>2 · Ecuaciones</b> y señala la columna SET y la columna RESET negado.', '<b>Di:</b> "Cada etapa: SET es etapa anterior por condición. El RESET es etapa siguiente más paro; se niega y se aplica De Morgan."', '<b>Haz:</b> mantén PA y muestra cómo cambian los valores de SE1 y SE4.', '<b>Di:</b> "La etapa 6 tiene tres elementos en el SET porque espera a las dos ramas."'],
-      preguntas: ['<b>"¿Por qué E0 no tiene SET ni RESET?"</b> → Está activa cuando todas las demás están apagadas.', '<b>"¿Por qué P3 aparece sin negar en el RESET negado?"</b> → La transición era ¬P3; al negarla queda P3.'],
+      preguntas: ['<b>"¿Por qué E0 no tiene SET ni RESET?"</b> → Está activa cuando todas las demás están apagadas.', '<b>"¿Por qué P3 aparece sin barra en el RESET negado?"</b> → El RESET es ' + ob('P3') + ' (P3 pulsado vale 0); al negarlo la doble barra se cancela y queda P3.'],
       dudas: ['"¿Por qué las etapas 3 y 5 no se reinician por la otra rama?" → Solo las apaga E6 o el paro; así se acordó.'],
       transicion: 'Toca <b>Siguiente</b> para las preguntas rápidas.' },
     rm5: { min: 2, puntos: ['Cierra la pregunta. Refuerza: SE3 = E2 · T1.'] },
