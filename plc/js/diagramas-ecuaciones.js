@@ -123,7 +123,7 @@
       s += `<line x1="${cx - 7}" y1="${y - 10}" x2="${cx - 7}" y2="${y + 10}" style="stroke:${col};stroke-width:3"/><line x1="${cx + 7}" y1="${y - 10}" x2="${cx + 7}" y2="${y + 10}" style="stroke:${col};stroke-width:3"/>`;
       if (c.neg) s += `<line x1="${cx - 11}" y1="${y + 11}" x2="${cx + 11}" y2="${y - 11}" style="stroke:${col};stroke-width:1.5"/>`;
       const nm = L[c.n] || c.n;
-      return s + `<text x="${cx}" y="${y - 16}" font-size="13" text-anchor="middle" style="fill:${INK}">${SV(c.neg ? '~' + nm + '~' : nm)}</text>`;
+      return s + `<text x="${cx}" y="${y - 16}" font-size="13" text-anchor="middle" style="fill:${INK}">${SV(nm)}</text>`;
     };
     const top = rungs[0].y - 25, bot = rungs[rungs.length - 1].y + 25 + (rungs[rungs.length - 1].parts.some((p) => p.par) ? 40 : 0);
     let s = rail(20, top, 20, bot) + rail(400, top, 400, bot);
@@ -253,7 +253,7 @@
       <div class="eqz-grid"><div class="eqz-card" data-r="ld"></div>
       <div><div data-r="re"></div><p data-r="rd" style="color:var(--texto-2);line-height:1.6;margin:8px 0 12px"></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:.85rem"><span class="eqz-cs">SET</span><span class="eqz-ck">Enclavamiento (mismo nombre)</span><span class="eqz-cr">RESET negado</span></div>
-        <p style="font-size:.85rem;color:var(--texto-2);margin:12px 0 0">El contacto con la raya inclinada es normalmente cerrado: es el que lleva barra en la ecuación.</p></div></div>`;
+        <p style="font-size:.85rem;color:var(--texto-2);margin:12px 0 0">El contacto con la raya inclinada es normalmente cerrado: en la escalera la raya ya lo indica, y solo en la ecuación se escribe con barra.</p></div></div>`;
     const q = (s) => r.querySelector(s), S = nuevoEstado();
     const pinta = () => {
       q('[data-r=rc]').innerHTML = RUNGTXT.map((x, i) => `<button type="button" class="boton chico eqz-btn${rsel === i ? ' sel' : ''}" data-i="${i}">${x.n}</button>`).join('');

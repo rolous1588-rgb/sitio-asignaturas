@@ -42,10 +42,28 @@
     { n: 'un dosificador', nom: ['Dosificando', 'Mezclando', 'Descargando'], acc: ['Abrir la válvula de ingreso', 'Girar el agitador', 'Abrir la compuerta'], cond: ['Pulsador de inicio (NA)', 'Pasaron 8 s', 'Pasaron 10 s', 'Pasaron 4 s'] },
     { n: 'una barrera de estacionamiento', nom: ['Subiendo', 'Arriba', 'Bajando'], acc: ['Motor sube la barrera', 'Encender la luz verde', 'Motor baja la barrera'], cond: ['Sensor de vehículo activado', 'Final de carrera superior', 'Pasaron 6 s', 'Final de carrera inferior'] }
   ];
+  const esT = (x) => /^Pasaron/.test(x);
+  // cuatro opciones: la correcta y tres distintas; nunca dos condiciones de tiempo (si la correcta es de tiempo, ninguna otra)
   const opciones4 = (r, ok, mias, otras) => {
-    const m = II.mezclar(r, mias.filter((x) => x !== ok)).slice(0, 2);
-    const o = II.elegir(r, otras.filter((x) => x !== ok && m.indexOf(x) < 0));
-    return II.mezclar(r, unicas([ok, ...m, o]));
+    const pool = [...II.mezclar(r, mias.filter((x) => x !== ok)), ...II.mezclar(r, otras.filter((x) => x !== ok))];
+    const sel = []; let tiempo = esT(ok);
+    pool.forEach((x) => {
+      if (sel.length >= 3 || sel.indexOf(x) >= 0) return;
+      if (esT(x)) { if (tiempo) return; tiempo = true; }
+      sel.push(x);
+    });
+    return II.mezclar(r, [ok, ...sel]);
+  };
+  // el enunciado en palabras: lo que el dibujo no dice y permite decidir sin adivinar
+  const relato = (e) => {
+    const n = e.nom.length;
+    const filas = [`<li>En reposo todo está apagado.</li>`];
+    for (let i = 0; i < n; i++) {
+      const de = i === 0 ? 'En reposo' : `En la etapa ${i} («${e.nom[i - 1]}»)`;
+      filas.push(`<li>${de}, cuando se cumple la condición «${e.cond[i]}», pasa a la etapa ${i + 1} («${e.nom[i]}») y ejecuta la acción «${e.acc[i]}».</li>`);
+    }
+    filas.push(`<li>En la etapa ${n} («${e.nom[n - 1]}»), cuando se cumple la condición «${e.cond[n]}», vuelve al reposo.</li>`);
+    return `<p><b>Enunciado.</b> Se automatiza <b>${e.n}</b> así:</p><ul>${filas.join('')}</ul>`;
   };
 
   // ============================================================
@@ -63,7 +81,7 @@
       const kk = II.elegir(r, [1, 2]), j = II.elegir(r, [0, 1]);
       const accOk = e.acc[kk - 1], condOk = e.cond[j];
       const optsAcc = II.mezclar(r, unicas([...e.acc, 'Ninguna: todo apagado', II.elegir(r, otros).acc[0]]));
-      const optsCond = II.mezclar(r, unicas([...e.cond, II.elegir(r, otros).cond[0]]));
+      const optsCond = opciones4(r, condOk, e.cond, otros.flatMap((x) => x.cond));
       const nada = 'No ocurre nada: la transición no está validada';
       return {
         enunciado: `<p>Este GRAFCET describe el funcionamiento de <b>${e.n}</b>.</p>${dib(sc)}`,
@@ -171,7 +189,7 @@
       const optsC = opciones4(r, condOk, e.cond, otros.flatMap((x) => x.cond));
       const sigE = ee === 3 ? '0' : String(ee + 1);
       return {
-        enunciado: `<p>Este GRAFCET describe <b>${e.n}</b>, pero le faltan dos datos (marcados con «?»).</p>${dib(sc)}`,
+        enunciado: `${relato(e)}<p>El GRAFCET de este sistema está dibujado abajo, pero le faltan dos datos (marcados con «?»). Complétalos con lo que dice el enunciado.</p>${dib(sc)}`,
         campos: [
           { id: 'a', tipo: 'select', pregunta: `a) ¿Qué acción va en la etapa ${ia} (${e.nom[ia - 1]})?`, opciones: optsA },
           { id: 'b', tipo: 'select', pregunta: `b) ¿Qué condición va en la transición que sale de la etapa ${ic}?`, opciones: optsC },
