@@ -110,7 +110,7 @@
       if (!opciones.includes(eq)) opciones[0] = eq;
       const bit = (b) => (b ? 1 : 0);
       return {
-        enunciado: `<p>Este renglón gobierna la salida Q. Los contactos con una barra «/» son <b>NC</b>. Las entradas son A = ED1.00, B = ED1.01 y C = ED1.02.</p>
+        enunciado: `<p>Este renglón gobierna la salida Q. Las entradas son A = ED1.00, B = ED1.01 y C = ED1.02.</p>
           <div class="lienzo" style="margin:8px 0">${PL.renglonSVG(estr, nc)}</div>
           <p class="nota">Estructura: ${ESTR[estr]}.</p>`,
         campos: [

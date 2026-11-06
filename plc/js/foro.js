@@ -99,7 +99,8 @@
         <label class="campo" id="c-pin" style="display:none"><span>PIN</span><input class="entrada" name="pin" type="password" inputmode="numeric" autocomplete="off"></label>
         <div id="f-msg"></div>
         <button class="boton primario grande bloque" type="submit">Entrar</button>
-      </form></div></div>`;
+      </form>
+      <a class="boton bloque" href="index.html" style="margin-top:10px;text-align:center">◀ Ir a la pantalla principal</a></div></div>`;
     II.$('#f-ingreso').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const f = new FormData(ev.target), msg = II.$('#f-msg'), btn = ev.target.querySelector('button[type=submit]');

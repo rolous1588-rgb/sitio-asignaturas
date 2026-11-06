@@ -36,7 +36,7 @@
     c: { eq: (n) => `${n.A} · ${n.B} + ${n.C}`, f: (v) => (v.A && v.B) || v.C }
   };
   PL.renglonSVG = (estr, nc) => {
-    const c = (x, y, k, d) => contacto(x, y, { etq: nc[k] ? '/' + k : k, nc: !!nc[k], dir: d });
+    const c = (x, y, k, d) => contacto(x, y, { etq: k, nc: !!nc[k], dir: d });
     const dir = { A: 'ED1.00', B: 'ED1.01', C: 'ED1.02' };
     let g = `${L(40, 20, 40, 200)}${L(600, 20, 600, 200)}`;
     const salida = (x) => `${L(x, 100, 440, 100)}${bobina(460, 100, { etq: 'Q', simbolo: 'Q', dir: 'SD2.00' })}${L(480, 100, 600, 100)}`;
