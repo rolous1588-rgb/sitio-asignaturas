@@ -30,7 +30,7 @@
     general: 'Cada estudiante recibe el GRAFCET del tanque con otros nombres de señales y escribe, a partir del dibujo, las ecuaciones de SET y de RESET de cada etapa, la regla de la etapa inicial y la salida.',
     pista: 'SET = etapa anterior · condición de la transición que entra. RESET = lo que apaga la etapa: la etapa siguiente o la otra salida (el paro), unidas con una suma.',
     errorComun: 'Escribir el SET con la etapa equivocada o unir con producto condiciones que son alternativas (el RESET se arma con suma).',
-    metodo: 'SET = etapa anterior · condición | RESET = etapa siguiente + otra salida | E0 = ¬E1 · ¬E2 | salida = la etapa que la ordena',
+    metodo: 'SET = etapa anterior · condición | RESET = etapa siguiente + otra salida | E0 = ~E1~ · ~E2~ | salida = la etapa que la ordena',
     generar(r) {
       const L = II.elegir(r, NOMBRES), n = (x) => ov(L[x]);
       const dib = EQ.svgGr(Object.assign({}, L, { accion: L.KB + ' = 1' }));
@@ -63,7 +63,7 @@
     general: 'Cada estudiante recibe tres RESET negados con otros nombres de señales y los simplifica con la ley de De Morgan; después evalúa los resultados con valores dados.',
     pista: 'De Morgan: la barra larga se reparte entre los términos; la suma pasa a producto y el producto pasa a suma. Una doble barra se cancela.',
     errorComun: 'Repartir la barra sin cambiar la suma por producto, o dejar una doble negación sin cancelar.',
-    metodo: '¬(A + B) = ¬A · ¬B | ¬(A · B) = ¬A + ¬B | ¬¬A = A',
+    metodo: '~(A + B)~ = ~A~ · ~B~ | ~(A · B)~ = ~A~ + ~B~ | la doble barra se cancela: A queda igual',
     generar(r) {
       const L = II.elegir(r, NOMBRES), n = (x) => ov(L[x]);
       const e2 = dos(r), pp = dos(r), hl = dos(r);
@@ -177,18 +177,18 @@
       ideas: [
         'Una barra larga sobre una suma es difícil de dibujar en escalera. La <b>ley de De Morgan</b> la reparte: la barra queda sobre cada término y la <b>suma pasa a producto</b>.',
         'Si el término ya tenía barra, la <b>doble barra se cancela</b>: el paro negado, negado otra vez, queda PP.',
-        'Así, el RESET negado de la etapa 1 queda <b>¬E2 · PP</b>, y el de la etapa 2, <b>PP · ¬HL</b>.',
+        'Así, el RESET negado de la etapa 1 queda <b><span style="text-decoration:overline;text-decoration-thickness:1.5px">E2</span> · PP</b>, y el de la etapa 2, <b>PP · <span style="text-decoration:overline;text-decoration-thickness:1.5px">HL</span></b>.',
         'En la pestaña 2, llega hasta el paso 4 (<b>Aplica De Morgan</b>) en las etapas 1 y 2 y lee cómo cambia la ecuación.'
       ] },
-    rap('rq3', 'Aplicando De Morgan, ¿a qué equivale la negación de (E2 + ¬PP)?',
-      ['¬E2 · PP', '¬E2 + PP', 'E2 · ¬PP', '¬E2 · ¬PP'], 0,
-      'La barra larga se reparte y la suma pasa a producto: ¬E2 y ¬(¬PP). La doble negación se cancela y queda PP. Resultado: ¬E2 · PP.'),
+    rap('rq3', 'Aplicando De Morgan, ¿a qué equivale la negación de (E2 + <span style="text-decoration:overline;text-decoration-thickness:1.5px">PP</span>)?',
+      ['<span style="text-decoration:overline;text-decoration-thickness:1.5px">E2</span> · PP', '<span style="text-decoration:overline;text-decoration-thickness:1.5px">E2</span> + PP', 'E2 · <span style="text-decoration:overline;text-decoration-thickness:1.5px">PP</span>', '<span style="text-decoration:overline;text-decoration-thickness:1.5px">E2</span> · <span style="text-decoration:overline;text-decoration-thickness:1.5px">PP</span>'], 0,
+      'La barra larga se reparte y la suma pasa a producto: <span style="text-decoration:overline;text-decoration-thickness:1.5px">E2</span> y la negación de <span style="text-decoration:overline;text-decoration-thickness:1.5px">PP</span>. La doble negación se cancela y queda PP. Resultado: <span style="text-decoration:overline;text-decoration-thickness:1.5px">E2</span> · PP.'),
     { id: 'q-esc', tipo: 'explica', ciclo: C, titulo: 'Bloque H · De las ecuaciones al diagrama escalera', diagrama: 'ecuaciones', pestana: 'escalera',
       ideas: [
         'Cada ecuación ya es un circuito: el <b>producto</b> es serie, la <b>suma</b> es paralelo y la <b>barra</b> es un contacto normalmente cerrado.',
         'El <b>SET</b> va arriba, en serie. En paralelo con él va un contacto con el <b>mismo nombre que la bobina</b>: es el enclavamiento que la mantiene.',
         'Después, en serie con todo, va el <b>RESET negado</b>. Si el paro se pulsa, ese tramo se abre y la bobina se apaga.',
-        'La etapa 0 (<b>¬E1 · ¬E2</b>) y la salida (<b>KB = E2</b>) son escalones sencillos de contactos en serie.'
+        'La etapa 0 (<b><span style="text-decoration:overline;text-decoration-thickness:1.5px">E1</span> · <span style="text-decoration:overline;text-decoration-thickness:1.5px">E2</span></b>) y la salida (<b>KB = E2</b>) son escalones sencillos de contactos en serie.'
       ] },
     rap('rq4', 'En el escalón de una etapa, ¿qué hace el contacto con el mismo nombre que la bobina, puesto en paralelo con el SET?',
       ['Mantiene la bobina encendida aunque el SET deje de conducir', 'Apaga la bobina', 'Cuenta el tiempo de la etapa', 'No cumple ninguna función'], 0,
@@ -226,7 +226,7 @@
       transicion: 'Toca <b>Siguiente</b> para la pregunta rápida.' },
     rq2: { min: 2, puntos: ['Cierra la pregunta. Refuerza: SET = etapa anterior · condición.'] },
     'q-morgan': { min: 10, objetivo: 'Que apliquen De Morgan para simplificar el RESET negado y cancelen la doble barra.',
-      pasos: ['<b>Haz:</b> en <b>2 · Ecuaciones</b> llega al paso 4 de la Etapa 1.', '<b>Di:</b> "La barra larga se reparte: cada término lleva su barra y la suma pasa a producto."', '<b>Di:</b> "Dos barras sobre PP se cancelan: queda PP."', '<b>Haz:</b> en la <b>Etapa 2</b>, el resultado es PP · ¬HL. Pide a los estudiantes que lo anticipen antes de mostrarlo.'],
+      pasos: ['<b>Haz:</b> en <b>2 · Ecuaciones</b> llega al paso 4 de la Etapa 1.', '<b>Di:</b> "La barra larga se reparte: cada término lleva su barra y la suma pasa a producto."', '<b>Di:</b> "Dos barras sobre PP se cancelan: queda PP."', '<b>Haz:</b> en la <b>Etapa 2</b>, el resultado es PP · <span style="text-decoration:overline;text-decoration-thickness:1.5px">HL</span>. Pide a los estudiantes que lo anticipen antes de mostrarlo.'],
       preguntas: ['<b>"¿Qué pasa con la doble barra?"</b> → Se cancela.', '<b>"¿Y si fuera un producto?"</b> → Pasa a suma.'],
       dudas: ['"¿Por qué no dejarlo con la barra larga?" → En escalera no existe un contacto para una suma negada; con De Morgan queda en contactos sencillos.'],
       transicion: 'Toca <b>Siguiente</b> para la pregunta rápida.' },

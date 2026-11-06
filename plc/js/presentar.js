@@ -172,7 +172,7 @@
         <h1 class="pres-titulo" style="margin-top:12px">${II.esc(r.titulo)}</h1>
         ${local ? '' : `<div class="tarjeta" style="margin:18px 0"><div class="barras-res" id="barras"><p class="nota">Cargando resultados…</p></div></div>`}
         <div class="pres-grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
-          <div class="tarjeta"><h3>Cómo se resuelve</h3><p style="font-family:var(--mono);font-size:1rem;line-height:1.7;margin:0">${II.esc(r.metodo).replace(/ · /g, '<br>')}</p></div>
+          <div class="tarjeta"><h3>Cómo se resuelve</h3><p style="font-family:var(--mono);font-size:1rem;line-height:1.7;margin:0">${II.esc(r.metodo).replace(/ · /g, '<br>').replace(/~([^~]+)~/g, '<span style="text-decoration:overline;text-decoration-thickness:1.5px">$1</span>')}</p></div>
           <div class="tarjeta" style="border-color:#f0d9a8;background:var(--duda-claro)"><h3>Error frecuente</h3><p style="font-size:1.05rem;margin:0">${II.esc(r.errorComun)}</p></div>
         </div>
         <p class="nota" style="margin-top:12px">Cada estudiante ve en su dispositivo la solución con sus propios valores.</p>

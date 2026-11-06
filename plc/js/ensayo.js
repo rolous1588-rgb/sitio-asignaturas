@@ -61,7 +61,7 @@
       const r = S.retos[p.reto];
       const fila = (t, v) => (v ? `<p style="margin:6px 0 0;font-size:.93rem"><b>${t}:</b> ${v}</p>` : '');
       h += `<div class="tarjeta" style="padding:14px 16px;margin-bottom:14px"><div class="etiqueta" style="margin-bottom:6px">${esc(r.titulo || p.reto)} · ${r.puntos || '?'} puntos</div>
-        ${fila('Qué se pide', r.general)}${fila('Pista', r.pista)}${fila('Error común', r.errorComun)}${fila('Método', r.metodo)}
+        ${fila('Qué se pide', r.general)}${fila('Pista', r.pista)}${fila('Error común', r.errorComun)}${fila('Método', r.metodo && String(r.metodo).replace(/~([^~]+)~/g, '<span style="text-decoration:overline;text-decoration-thickness:1.5px">$1</span>'))}
         <p class="nota" style="margin:8px 0 0">Los valores cambian según el carnet de cada estudiante; a la derecha ves un ejemplo con su solución.</p></div>`;
     }
     return h;

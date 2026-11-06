@@ -8,8 +8,8 @@
   const II = window.II;
   const S = II.SESIONES['pl-s1'];
   if (!S || !II.diagramas.motores || S.pasos.some((p) => p.id === 'm-panel')) return;
-  const ob = (t) => Array.from(String(t)).map((c) => c + '\u0305').join(''); // barra encima (texto plano)
   const oh = (t) => '<span style="text-decoration:overline;text-decoration-thickness:1.5px">' + t + '</span>';
+  const ob = (t) => oh(String(t));
   const og = (t) => '<span style="display:inline-block;border-top:1.5px solid currentColor;padding-top:6px;line-height:1.2;margin-top:3px">' + t + '</span>';
   const rap = (id, ciclo, t, o, c, por) => ({ id, tipo: 'rapida', ciclo, titulo: 'Pregunta rápida', t, o, c, por });
 
