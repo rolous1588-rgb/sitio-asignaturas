@@ -143,9 +143,21 @@
         <h4 style="margin:12px 0 6px">Fase 1; tu aporte</h4>
         <ol style="margin:0;padding-left:20px;display:grid;gap:6px">
           <li>La plataforma te asignó <b>una máquina con tus propios datos</b> (aparece abajo, en el formulario). Cada compañero tiene una máquina o datos distintos: no se puede copiar.</li>
-          <li>Crea un <b>documento en Google Drive</b> (Documentos de Google) con tu trabajo: <b>tabla de direcciones del rack, GRAFCET de nivel 1 y 2, ecuaciones SET y RESET y la escalera</b>. Compártelo con «Cualquier persona con el enlace: Lector».</li>
+          <li><b>Arma el documento completo en Google Drive.</b> Este documento es tu trabajo real: tus compañeros lo leerán para evaluarte. Debe tener el <b>desarrollo de punta a punta</b> de tu máquina, tal como lo hicimos en clase, con los <b>diagramas</b> necesarios para que se entienda todo el proceso:
+            <ul style="margin:4px 0 0;padding-left:18px">
+              <li>Descripción de la máquina y de tus datos; los <b>motores, pulsadores, sensores</b> y todo lo que uses, con su función, <b>antes del GRAFCET</b>.</li>
+              <li><b>Tabla de direcciones del rack</b> (entradas y salidas, con NA o NC; PNP o NPN; relé o transistor; mando y potencia).</li>
+              <li><b>GRAFCET de nivel 1 y de nivel 2</b>, dibujados.</li>
+              <li><b>Ecuaciones SET y RESET</b> de cada etapa, con el enclavamiento y De Morgan.</li>
+              <li>La <b>escalera</b>.</li>
+              <li>Cómo se comporta en el escaneo, el paro de emergencia y tres pruebas.</li>
+              <li>Las fuentes, si usaste algo de internet.</li>
+            </ul>
+            Si algo no está en el documento, tus compañeros no lo pueden evaluar.</li>
+          <li><b>Configura el permiso; es obligatorio.</b> En Google Drive toca <b>Compartir</b>; en «Acceso general» elige <b>«Cualquier persona con el enlace»</b> y deja el rol en <b>«Lector»</b>. Antes de publicar, copia el enlace y ábrelo en una <b>pestaña de incógnito</b> para comprobar que se ve sin iniciar sesión.
+            <div class="aviso" style="margin:6px 0 0;border-color:#e6b4b4;background:#fdf0f0">⚠️ <b>Si el documento no se puede abrir y leer, tus compañeros no podrán evaluarlo y tu nota del foro será 0.</b></div></li>
           <li>Responde las 4 preguntas en sus cuadros, con <b>entre ${F.minPal} y ${F.maxPal} palabras en total</b> (la plataforma las cuenta): resumen de lo que está en tu documento.</li>
-          <li>Pega el <b>enlace de Google Drive o Docs</b> (obligatorio): tus compañeros lo abrirán para revisar tu trabajo. Si usaste algo de internet, cita la fuente en el documento.</li>
+          <li>Pega el <b>enlace de Google Drive o Docs</b> (obligatorio): tus compañeros lo abrirán para revisar tu trabajo.</li>
           <li>Revisa y publica. <b>Una vez publicado no se puede editar.</b> Tu borrador se guarda solo en este dispositivo.</li>
         </ol>
         <h4 style="margin:12px 0 6px">Fase 2; evalúa a tres compañeros</h4>
@@ -153,6 +165,7 @@
           <li>La plataforma te asigna <b>3 aportes</b>, sin el nombre del autor. Abre el enlace de cada uno para revisar su documento.</li>
           <li>En cada uno, califica 4 criterios con <b>0, 1 o 2</b> puntos:
             <ul style="margin:4px 0 0;padding-left:18px">${F.rubrica.map((c) => `<li><b>${c.t}:</b> ${c.d}</li>`).join('')}</ul></li>
+          <li>Si el <b>enlace no abre</b> o el documento <b>no tiene el desarrollo completo</b>, califica con <b>0</b> y explícalo en tu comentario.</li>
           <li>Escribe un <b>comentario de al menos ${F.minComentario} palabras</b>: una pregunta técnica, una mejora o una comparación con tu máquina.</li>
           <li>Verás los comentarios que recibió tu aporte (sin el nombre de quien los escribió) y podrás marcar si te sirvieron 👍 o no 👎.</li>
         </ol>
@@ -214,7 +227,7 @@
       ${F.preguntas.map((p, i) => `<label class="campo"><span>${i + 1}. ${p}</span>
         <textarea class="entrada" data-c="c${i + 1}" rows="5" style="resize:vertical">${II.esc(b['c' + (i + 1)] || '')}</textarea>
         <small class="nota" data-n="c${i + 1}"></small></label>`).join('')}
-      <label class="campo"><span><b>Enlace de tu documento en Google Drive o Docs (obligatorio)</b>. Debe empezar con https://docs.google.com o https://drive.google.com y estar compartido con «Cualquier persona con el enlace»</span><input class="entrada" data-c="enlace" inputmode="url" placeholder="https://docs.google.com/document/d/…" value="${II.esc(b.enlace || '')}"></label>
+      <label class="campo"><span><b>Enlace de tu documento en Google Drive o Docs (obligatorio)</b>. Debe empezar con https://docs.google.com o https://drive.google.com y estar compartido con «Cualquier persona con el enlace» como Lector. <b>Ábrelo en una pestaña de incógnito antes de publicar: si no se puede leer, tu nota del foro será 0.</b></span><input class="entrada" data-c="enlace" inputmode="url" placeholder="https://docs.google.com/document/d/…" value="${II.esc(b.enlace || '')}"></label>
       <div class="nota" data-rol="enlace" style="margin:-4px 0 10px"></div>
       <div class="aviso" data-rol="total" style="margin:0 0 10px"></div>
       <button class="boton primario grande bloque" id="b-publicar">Publicar mi aporte</button>
@@ -291,6 +304,7 @@
     cont.innerHTML = `<div class="tarjeta" style="border-color:#c9dbf3">${vistaAporte(a.texto || {}, `Aporte ${i + 1}; autor anónimo`)}</div>
       ${hecha ? '<div class="aviso ok">✓ Ya evaluaste este aporte.</div>' : `
       <div class="tarjeta"><span class="etiqueta">Tu evaluación del aporte ${i + 1}</span>
+        <div class="nota" style="margin:0 0 8px">Si el enlace no abre o el documento no tiene el desarrollo completo, califica con 0 y explícalo en tu comentario.</div>
         ${F.rubrica.map((c, j) => `<div class="grupo-campo"><div class="pregunta" style="margin-bottom:6px"><b>${c.t}</b> <span class="nota">${c.d}</span></div>
           <div class="opciones">${c.n.map((txt, v) => `<label class="opcion ${b.rub[j] === v ? 'elegida' : ''}"><input type="radio" name="r${j}" value="${v}" ${b.rub[j] === v ? 'checked' : ''}><b style="font-family:var(--mono);margin-right:6px">${v}</b> ${txt}</label>`).join('')}</div></div>`).join('')}
         <label class="campo"><span>Tu comentario (al menos ${F.minComentario} palabras): una pregunta técnica, una mejora o una comparación con tu máquina. El autor lo verá sin tu nombre.</span>
