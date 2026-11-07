@@ -30,6 +30,8 @@
 .mtr-row{display:grid;grid-template-columns:minmax(52px,70px) 1fr 1fr;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--borde);font-size:.9rem}
 .mtr-ovg{display:inline-block;border-top:1.5px solid currentColor;padding-top:7px;line-height:1.2;margin-top:4px}
 .mtr-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start}
+.mtr-split2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}@media(min-width:780px){.mtr-split2{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}}
+.mtr-big{font-size:1.2rem;padding:6px 12px}
 .mtr-nota{margin:8px 0 0;color:var(--texto-2);font-size:.85rem;line-height:1.55}
 .mtr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
 .mtr-card{background:${S2};border:1px solid var(--borde);border-radius:12px;padding:8px 12px}
@@ -87,7 +89,7 @@
       ${trh(150, 222, 'PP', 22)}${trh(150, 314, 'PP', 22)}${trh(560, 222, 'PP', 22)}${trh(250, 442, 'PP', 22, true)}
     </svg>`;
   };
-  const escalera = (M) => {
+  const escaleraSvg = (M, solo) => {
     const v = (n) => !!valor(M, n);
     const W = 460, RL = 16, RR = 444, P = 52;
     const w = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${SEC}" stroke-width="1.5"/>`;
@@ -122,7 +124,8 @@
     const NCs = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6'].map((n) => [n, true]);
     const a = (n) => [n, false], b = (n) => [n, true];
     let y = 24, s = '';
-    const add = (h, f) => { s += f(y); y += h; };
+    let kk = 0;
+    const add = (h, f) => { kk += 1; if (solo && solo !== kk) return; s += f(y); y += h; };
     add(70, (y) => rung(y, 'Escalón 1: etapa 0', NCs, null, [], 'E0'));
     add(100, (y) => rung(y, 'Escalón 2: etapa 1', [a('E0'), a('PA')], a('E1'), [b('E2'), a('PP')], 'E1'));
     add(100, (y) => rung(y, 'Escalón 3: etapa 2', [a('E1'), a('P1')], a('E2'), [b('E3'), a('PP')], 'E2'));
@@ -138,6 +141,44 @@
   };
   const ovg = (t) => `<span class="mtr-ovg">${t}</span>`;
   const NOM = ['Etapa 0', 'Etapa 1', 'Etapa 2', 'Etapa 3', 'Etapa 4', 'Etapa 5', 'Etapa 6', 'Salidas'];
+  const ESCN = ['E0', 'E1', 'E2', 'T1', 'E3', 'E4', 'T2', 'E5', 'E6', 'KA', 'KB'];
+  const escalera = (M) => {
+    const S = M.S, I = M.I, k = M.esc || 1, c = (x) => `<span class="mtr-chip${x ? ' v' : ''}">${x ? 1 : 0}</span>`;
+    const pp = ov('PP'), big = (tit, eq, v) => `<div style="margin:10px 0"><div style="font-size:.9rem;color:var(--texto-2)">${tit}</div><div class="mtr-eqln mtr-big">${eq}${v === undefined ? '' : c(v)}</div></div>`;
+    const nav = ESCN.map((n, i) => `<button type="button" class="boton chico eqz-btn${k === i + 1 ? ' sel' : ''}" data-es="${i + 1}" style="min-width:0;padding:4px 10px" title="Escalón ${i + 1}">${i + 1} · ${n}</button>`).join('') +
+      `<button type="button" class="boton chico eqz-btn${k === 12 ? ' on' : ''}" data-es="12" style="min-width:0;padding:4px 10px">Escalera completa</button>`;
+    const bar = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${nav}</div>`;
+    if (k === 12) return bar + escaleraSvg(M, 0) + `<p class="mtr-nota" style="text-align:center">Con los pulsadores de arriba sigue el funcionamiento: los contactos que conducen se ponen verdes.</p>`;
+    // ecuación de cada escalón
+    const ET = { 2: ['E1', 'E0 · PA', 'E2', S.E0 && I.PA, !S.E2], 3: ['E2', 'E1 · P1', 'E3', S.E1 && I.P1, !S.E3], 5: ['E3', 'E2 · T1', 'E6', S.E2 && S.T1, !S.E6], 6: ['E4', 'E0 · PA', 'E5', S.E0 && I.PA, !S.E5], 8: ['E5', 'E4 · T2', 'E6', S.E4 && S.T2, !S.E6] };
+    let h = '';
+    if (k === 1) {
+      h = big('Etapa 0: sin SET ni RESET, activa si ninguna otra lo está', `E0 = ${['E1', 'E2', 'E3', 'E4', 'E5', 'E6'].map(ov).join(' · ')}`, S.E0) +
+        `<p class="mtr-nota">Seis contactos normalmente cerrados en serie.</p>`;
+    } else if (ET[k]) {
+      const [e, se, sig, vse, vsig] = ET[k], ra = ov('RE' + e.slice(1));
+      h = big('Activación (SET)', `SE${e.slice(1)} = ${se}`, vse ? 1 : 0) +
+        big('Desactivación (RESET negado)', `${ra} = ${ov(sig)} · PP`, (vsig && I.PP) ? 1 : 0) +
+        big('Así queda el escalón', `${e} = (${se} + ${e}) · ${ov(sig)} · PP`, S[e]) +
+        `<p class="mtr-nota">SET en serie; el contacto ${e} en paralelo (enclavamiento); ${ra} en serie; bobina ${e}.</p>`;
+    } else if (k === 9) {
+      h = big('Activación (SET)', 'SE6 = E3 · E5 · P2', S.E3 && S.E5 && I.P2) +
+        big('Desactivación (RESET negado)', `${ov('RE6')} = P3`, I.P3) +
+        big('Así queda el escalón', 'E6 = (E3 · E5 · P2 + E6) · P3', S.E6) +
+        `<p class="mtr-nota">P3 es normalmente cerrado: pulsado vale 0 y apaga la etapa 6.</p>`;
+    } else if (k === 4 || k === 7) {
+      const t = k === 4 ? ['T1', 'E2', 8, S.t1, S.T1] : ['T2', 'E4', 5, S.t2, S.T2];
+      h = big('Entrada del temporizador', `${t[1]} activa`, S[t[1]]) + big('Temporizador con retardo a la conexión (TON)', `${t[0]} = TON(${t[1]}; ${t[2]} s)`, t[4]) +
+        `<p class="mtr-nota">Cuenta mientras ${t[1]} esté activa (ahora ${t[3].toFixed(1)} s de ${t[2]} s). Cuando llega a ${t[2]} s, ${t[0]} = 1. Si ${t[1]} se apaga, vuelve a cero.</p>`;
+    } else if (k === 10) {
+      h = big('Contactor A: etapa 1 o etapa 3', 'KA = E1 + E3', S.KA) + `<p class="mtr-nota">Una suma se dibuja con contactos en paralelo.</p>`;
+    } else {
+      h = big('Contactor B: etapa 5', 'KB = E5', S.KB) + `<p class="mtr-nota">Un solo contacto y la bobina.</p>`;
+    }
+    return bar + `<div class="mtr-split2"><div class="mtr-card"><div style="font-weight:600;font-size:1.1rem">Escalón ${k}: ${ESCN[k - 1]}</div>${h}
+      <div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="boton chico" data-es="${Math.max(1, k - 1)}">◀ Anterior</button><button type="button" class="boton chico" data-es="${k + 1}">Siguiente ▶</button></div></div>
+      <div class="mtr-card" style="padding:12px">${escaleraSvg(M, k)}</div></div>`;
+  };
   const ecuaciones = (M) => {
     const S = M.S, I = M.I, sel = M.sel || 0, c = (x) => `<span class="mtr-chip${x ? ' v' : ''}">${x ? 1 : 0}</span>`;
     const pp = ov('PP');
@@ -180,7 +221,7 @@
   const motorSvg = (id, col, bg) => `<svg viewBox="0 0 120 100" width="100%" style="max-width:150px"><rect x="12" y="26" width="64" height="48" rx="6" fill="${S2}" stroke="${BRD}" stroke-width="1.5"/><rect x="18" y="34" width="52" height="4" fill="var(--borde)"/><rect x="18" y="62" width="52" height="4" fill="var(--borde)"/><rect x="76" y="46" width="14" height="8" fill="${BRD}"/><g id="${id}" transform="translate(98 50)"><circle r="16" fill="${bg}" stroke="${col}" stroke-width="1.5"/><line x1="-14" y1="0" x2="14" y2="0" stroke="${col}" stroke-width="3"/><line x1="0" y1="-14" x2="0" y2="14" stroke="${col}" stroke-width="3"/><circle r="3" fill="${col}"/></g></svg>`;
   II.diagramas.motores = (cont, opts = {}) => {
     cont.classList.add('diagrama');
-    const M = crear(); M.sel = 0;
+    const M = crear(); M.sel = 0; M.esc = opts.esc || 1;
     cont.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
       <div style="flex:1 1 300px;min-width:0"><div class="mtr-btns" data-r="btns"></div>
         <div class="mtr-et" data-r="et" style="margin-top:12px"></div>
@@ -204,7 +245,7 @@
     const T = PL.pestanas(q('[data-r=tabs]'), defs, ini);
     const vistas = { grafcet: grafcet, ecuaciones: ecuaciones, escalera: escalera };
     let firma = '', ang = { a: 0, b: 0 }, last = performance.now(), raf = 0, vivo = true;
-    const sig = () => JSON.stringify([M.sel, M.S.E0, M.S.E1, M.S.E2, M.S.E3, M.S.E4, M.S.E5, M.S.E6, M.S.T1, M.S.T2, M.I]);
+    const sig = () => JSON.stringify([M.sel, M.esc, M.S.E0, M.S.E1, M.S.E2, M.S.E3, M.S.E4, M.S.E5, M.S.E6, M.S.T1, M.S.T2, M.I]);
     const pinta = () => {
       const f = sig();
       if (f !== firma) { firma = f; defs.forEach((d) => { T.raiz(d.id).innerHTML = vistas[d.id](M); }); }
@@ -221,10 +262,12 @@
       pinta(); raf = requestAnimationFrame(lazo);
     };
     T.raiz('ecuaciones').addEventListener('click', (e) => { const b = e.target.closest('[data-st]'); if (b) { M.sel = Number(b.dataset.st); firma = ''; pinta(); } });
+    T.raiz('escalera').addEventListener('click', (e) => { const b = e.target.closest('[data-es]'); if (b) { M.esc = Math.min(12, Number(b.dataset.es)); firma = ''; pinta(); } });
     q('[data-r=rst]').onclick = () => { M.reinicia(); };
     M.scan(0); pinta(); raf = requestAnimationFrame(lazo);
     return { destruir() { vivo = false; cancelAnimationFrame(raf); }, pestana: T.pestana };
   };
   ['grafcet', 'ecuaciones', 'escalera'].forEach((id) => { II.diagramas['motores_' + id] = (cont, o = {}) => II.diagramas.motores(cont, { ...o, pestana: id }); });
+  II.diagramas.motores_seguimiento = (cont, o = {}) => II.diagramas.motores(cont, { ...o, pestana: 'escalera', esc: 12 });
   PL.motores = { crear, valor };
 })();

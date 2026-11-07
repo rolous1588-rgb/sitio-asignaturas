@@ -59,11 +59,11 @@
       'E0 no tiene SET ni RESET: está activa cuando todas las demás etapas están apagadas, por eso son seis contactos normalmente cerrados en serie.'),
     { id: 'm-esc', tipo: 'explica', ciclo: 9, titulo: 'Bloque I · El diagrama escalera de los dos motores', diagrama: 'motores', pestana: 'escalera',
       ideas: [
-        'Son <b>11 escalones</b>: la etapa 0, las etapas 1 a 6, los temporizadores T1 y T2, y las salidas KA y KB.',
+        'Son <b>11 escalones</b>, en este orden: etapa 0, etapa 1, etapa 2, temporizador T1, etapa 3, etapa 4, temporizador T2, etapa 5, etapa 6, KA y KB. Avanza uno por uno: a la izquierda su ecuación y a la derecha su escalón.',
         'Cada etapa sigue el mismo molde: <b>SET</b> arriba en serie, <b>enclavamiento</b> en paralelo y <b>RESET negado</b> en serie, antes de la bobina.',
         'El temporizador de cada rama se pone <b>justo debajo de la etapa que lo activa</b>: T1 bajo la etapa 2 y T2 bajo la etapa 4.',
         '<b>KA</b> es una suma (E1 o E3) y por eso lleva dos contactos en <b>paralelo</b>; <b>KB</b> es un solo contacto.',
-        'En el panel, los contactos que conducen se ponen verdes y las bobinas activas se iluminan.'
+        'Al final, <b>Escalera completa</b> junto al panel y los motores: los contactos que conducen se ponen verdes y las bobinas activas se iluminan.'
       ] },
     rap('rm10', 9, 'En el escalón de la etapa 3, ¿dónde va el contacto del temporizador T1?',
       ['En serie con E2, en el SET', 'En paralelo con la bobina E3', 'En serie con el contacto del paro', 'No se usa en ese escalón'], 0,
@@ -71,7 +71,7 @@
     rap('rm11', 9, '¿Cómo se dibuja la salida KA = E1 + E3 en el escalera?',
       ['Dos contactos E1 y E3 en paralelo y la bobina KA', 'Dos contactos E1 y E3 en serie y la bobina KA', 'Un solo contacto E1 y la bobina KA', 'Un contacto E3 normalmente cerrado y la bobina KA'], 0,
       'La suma (o) se dibuja en paralelo: basta que E1 o E3 conduzca para energizar KA.'),
-    { id: 'm-prueba', tipo: 'explora', ciclo: 9, titulo: 'Pruébalo: los dos motores en marcha', diagrama: 'motores', pestana: 'grafcet',
+    { id: 'm-prueba', tipo: 'explora', ciclo: 9, titulo: 'Pruébalo: los dos motores en marcha', diagrama: 'motores_seguimiento',
       guia: [
         'Mantén pulsado <b>PA</b> un instante: ¿qué etapas se activan? ¿Qué motor arranca primero?',
         'Espera 5 s y observa cuándo arranca el motor B. Después pulsa <b>P1</b> y mira qué pasa con el motor A.',
@@ -150,7 +150,7 @@
     rm8: { min: 2, puntos: ['Cierra la pregunta. Refuerza: tres factores en el SET de la convergencia.'] },
     rm9: { min: 2, puntos: ['Cierra la pregunta. Refuerza: E0 es la ausencia de todas las demás etapas.'] },
     'm-esc': { min: 8, objetivo: 'Que vean cada ecuación convertida en un escalón y reconozcan el molde SET + enclavamiento + RESET negado.',
-      pasos: ['<b>Haz:</b> abre <b>3 · Escalera</b> y recorre los escalones con el dedo.', '<b>Di:</b> "Arriba el SET en serie; en paralelo el contacto con el nombre de la bobina; luego el RESET negado."', '<b>Haz:</b> mantén PA: los contactos que conducen se ponen verdes y las bobinas E1 y E4 se encienden.', '<b>Di:</b> "Cada temporizador va justo debajo de su etapa."'],
+      pasos: ['<b>Haz:</b> abre <b>3 · Escalera</b>. Empieza en el escalón 1 (etapa 0) y avanza con <b>Siguiente</b>: izquierda la ecuación, derecha su escalón. Sigue el orden: E0, E1, E2, T1, E3, E4, T2, E5, E6, KA, KB.', '<b>Di:</b> "Arriba el SET en serie; en paralelo el contacto con el nombre de la bobina; luego el RESET negado."', '<b>Haz:</b> mantén PA: los contactos que conducen se ponen verdes y las bobinas E1 y E4 se encienden.', '<b>Di:</b> "Cada temporizador va justo debajo de su etapa."'],
       preguntas: ['<b>"¿Cuál contacto es el enclavamiento?"</b> → El que tiene el mismo nombre que la bobina.', '<b>"¿Por qué KA lleva dos contactos en paralelo?"</b> → Porque KA = E1 + E3 (suma).'],
       dudas: [],
       transicion: 'Toca <b>Siguiente</b> para las preguntas rápidas.' },
