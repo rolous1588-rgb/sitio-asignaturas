@@ -137,7 +137,7 @@
   };
 
   // ---------- foro ----------
-  const notasForo = () => F.notas(D.resp['pl-foro'], D.alumnos, D.fantasmas);
+  const notasForo = () => F.notas(D.resp['pl-foro'], D.alumnos, D.fantasmas, (D.filas['pl-foro'] && D.filas['pl-foro'].extra && D.filas['pl-foro'].extra.restituidos) || []);
   const vistaControlForo = () => {
     const ex = extra(), abre = ex.abre ? Date.parse(ex.abre) : null, f1 = ex.fase1 ? Date.parse(ex.fase1) : null, f2 = ex.fase2 ? Date.parse(ex.fase2) : null, t = Date.now();
     const fase = !D.filas['pl-foro'] ? 'falta' : !abre || t < abre ? 'antes' : t <= f1 ? 'f1' : t <= f2 ? 'f2' : 'fin';
@@ -158,11 +158,14 @@
   const vistaReporteForo = () => {
     const ns = notasForo();
     return `<div class="controles" style="margin-bottom:12px"><button class="boton primario" data-acc="csv">Descargar para Excel (.csv)</button><button class="boton" data-acc="recargar">Actualizar</button></div>
-      <p class="nota">Nota /100 = cumplimiento (20) + calidad (50) + evaluaciones hechas (15) + evaluar con criterio (15). Ponderada = nota × 0,25. El enlace de cada aporte está en la última columna.</p>
-      <div class="tabla-envoltura"><table class="tabla"><tr><th>Nombre</th><th>Máquina</th><th>Cumpl. /20</th><th>Calidad /50</th><th>Eval. /15</th><th>Criterio /15</th><th>Nota /100</th><th>Pond. /${F.peso}</th><th>Alertas</th><th>Enlace</th></tr>
+      <p class="nota">Nota /100 = cumplimiento (20) + calidad (50) + evaluaciones hechas (15) + evaluar con criterio (15). Ponderada = nota × 0,25. Si 2 o más evaluadores marcan «no pude abrir el documento», la calidad es 0 y aparece «Sin acceso»: puedes restituirla si hubo un error (abre el enlace y compruébalo). El enlace de cada aporte está junto a esa columna.</p>
+      <div class="tabla-envoltura"><table class="tabla"><tr><th>Nombre</th><th>Máquina</th><th>Cumpl. /20</th><th>Calidad /50</th><th>Eval. /15</th><th>Criterio /15</th><th>Nota /100</th><th>Pond. /${F.peso}</th><th>Alertas</th><th>Enlace</th><th>Acceso</th></tr>
       ${ns.map((x) => `<tr><td>${II.esc(x.a.nombre)}</td><td style="white-space:normal">${x.aporte ? II.esc((x.aporte.respuesta.maquina || {}).nombre || '') : '—'}</td><td class="n">${II.fmt(x.ptsCumpl, 1)}</td><td class="n">${II.fmt(x.ptsCal, 1)}</td><td class="n">${II.fmt(x.ptsEval, 1)}</td><td class="n">${II.fmt(x.ptsBuen, 1)}</td>
         <td class="n"><b>${II.fmt(x.nota, 1)}</b></td><td class="n">${II.fmt(x.pond, 2)}</td><td style="white-space:normal">${x.alertas.map(II.esc).join('; ')}</td>
-        <td>${x.aporte && x.aporte.respuesta.enlace ? `<a href="${II.esc(x.aporte.respuesta.enlace)}" target="_blank" rel="noopener">abrir</a>` : '—'}</td></tr>`).join('')}</table></div>
+        <td>${x.aporte && x.aporte.respuesta.enlace ? `<a href="${II.esc(x.aporte.respuesta.enlace)}" target="_blank" rel="noopener">abrir</a>` : '—'}</td>
+        <td style="white-space:normal">${x.sinAcceso ? `<b style="color:var(--mal)">Sin acceso (${x.noAbrieron})</b><br><button class="boton chico" data-acc="restituir" data-c="${II.esc(x.a.carnet)}">Restituir calidad</button>`
+          : x.restituido ? `<b style="color:var(--ok)">Restituido</b><br><button class="boton chico" data-acc="quitar-restitucion" data-c="${II.esc(x.a.carnet)}">Volver a 0</button>`
+          : x.noAbrieron === 1 ? '<span style="color:var(--duda)">1 evaluador no pudo abrir</span>' : '—'}</td></tr>`).join('')}</table></div>
       ${borrarBloque()}`;
   };
 
@@ -186,9 +189,9 @@
     descargar('control-de-estudio-pl', [cab.map(q), ...filas]);
   };
   const csvForo = () => {
-    const cab = ['Nombre', 'Carnet', 'Máquina', 'Datos', 'Palabras', 'Cumplimiento (/20)', 'Calidad (/50)', 'Evaluaciones hechas (/15)', 'Evaluar con criterio (/15)', 'Nota (/100)', `Ponderada (/${F.peso})`, 'Evaluaciones recibidas', 'Evaluaciones hechas', 'Enlace', 'Alertas'];
+    const cab = ['Nombre', 'Carnet', 'Máquina', 'Datos', 'Palabras', 'Cumplimiento (/20)', 'Calidad (/50)', 'Evaluaciones hechas (/15)', 'Evaluar con criterio (/15)', 'Nota (/100)', `Ponderada (/${F.peso})`, 'Evaluaciones recibidas', 'Evaluaciones hechas', 'Enlace', 'Evaluadores que no pudieron abrir', 'Alertas'];
     const filas = notasForo().map((x) => { const m = x.aporte ? x.aporte.respuesta.maquina || {} : {};
-      return [q(x.a.nombre), q(x.a.carnet), q(m.nombre || ''), q(m.datos || ''), x.palabras, n(Math.round(x.ptsCumpl * 10) / 10), n(Math.round(x.ptsCal * 10) / 10), n(Math.round(x.ptsEval * 10) / 10), n(Math.round(x.ptsBuen * 10) / 10), n(x.nota), n(x.pond), x.nRecibidas, x.hechas, q(x.aporte ? x.aporte.respuesta.enlace : ''), q(x.alertas.join('; '))]; });
+      return [q(x.a.nombre), q(x.a.carnet), q(m.nombre || ''), q(m.datos || ''), x.palabras, n(Math.round(x.ptsCumpl * 10) / 10), n(Math.round(x.ptsCal * 10) / 10), n(Math.round(x.ptsEval * 10) / 10), n(Math.round(x.ptsBuen * 10) / 10), n(x.nota), n(x.pond), x.nRecibidas, x.hechas, q(x.aporte ? x.aporte.respuesta.enlace : ''), x.noAbrieron, q(x.alertas.join('; '))]; });
     descargar('foro-pl', [cab.map(q), ...filas]);
   };
 
@@ -221,6 +224,10 @@
       const f2 = extra().fase2 ? Date.parse(extra().fase2) : null;
       if (f2 && f2 < Date.now()) return aviso('Las fechas del foro ya pasaron: cámbialas primero.');
       return cambiar({ abre: new Date().toISOString() }, 'Foro abierto.');
+    }
+    if (acc === 'restituir' || acc === 'quitar-restitucion') {
+      const c = b.dataset.c, l = (extra().restituidos || []).filter((x) => x !== c);
+      return cambiar({ restituidos: acc === 'restituir' ? l.concat(c) : l }, acc === 'restituir' ? 'Calidad restituida.' : 'Restitución quitada.');
     }
     if (acc === 'foro-ocultar') return cambiar({ abre: null }, 'Volvió a «No abierto».');
     if (acc === 'guardar-fechas') {

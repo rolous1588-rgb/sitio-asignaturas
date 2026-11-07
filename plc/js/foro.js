@@ -155,7 +155,7 @@
             </ul>
             Si algo no está en el documento, tus compañeros no lo pueden evaluar.</li>
           <li><b>Configura el permiso; es obligatorio.</b> En Google Drive toca <b>Compartir</b>; en «Acceso general» elige <b>«Cualquier persona con el enlace»</b> y deja el rol en <b>«Lector»</b>. Antes de publicar, copia el enlace y ábrelo en una <b>pestaña de incógnito</b> para comprobar que se ve sin iniciar sesión.
-            <div class="aviso" style="margin:6px 0 0;border-color:#e6b4b4;background:#fdf0f0">⚠️ <b>Si el documento no se puede abrir y leer, tus compañeros no podrán evaluarlo y tu nota del foro será 0.</b></div></li>
+            <div class="aviso" style="margin:6px 0 0;border-color:#e6b4b4;background:#fdf0f0">⚠️ <b>Si 2 de tus 3 evaluadores no pueden abrir y leer tu documento, tu aporte recibe 0 en calidad (50 de los 100 puntos).</b> Conservas los puntos de cumplimiento (20) y los de evaluar a tus compañeros (30).</div></li>
           <li>Responde las 4 preguntas en sus cuadros, con <b>entre ${F.minPal} y ${F.maxPal} palabras en total</b> (la plataforma las cuenta): resumen de lo que está en tu documento.</li>
           <li>Pega el <b>enlace de Google Drive o Docs</b> (obligatorio): tus compañeros lo abrirán para revisar tu trabajo.</li>
           <li>Revisa y publica. <b>Una vez publicado no se puede editar.</b> Tu borrador se guarda solo en este dispositivo.</li>
@@ -165,7 +165,8 @@
           <li>La plataforma te asigna <b>3 aportes</b>, sin el nombre del autor. Abre el enlace de cada uno para revisar su documento.</li>
           <li>En cada uno, califica 4 criterios con <b>0, 1 o 2</b> puntos:
             <ul style="margin:4px 0 0;padding-left:18px">${F.rubrica.map((c) => `<li><b>${c.t}:</b> ${c.d}</li>`).join('')}</ul></li>
-          <li>Si el <b>enlace no abre</b> o el documento <b>no tiene el desarrollo completo</b>, califica con <b>0</b> y explícalo en tu comentario.</li>
+          <li>Primero responde: <b>«¿Pudiste abrir y leer el documento?»</b> Si marcas <b>No</b>, escribe en una línea qué te apareció (por ejemplo «pide permiso» o «no existe») y no llenas la rúbrica. Si <b>2 de los 3 evaluadores</b> de un aporte marcan No, ese aporte recibe 0 en calidad; si solo uno lo marca, su evaluación no cuenta y vale lo que califiquen los otros dos.</li>
+          <li>Si el documento abre pero <b>le falta desarrollo</b> (por ejemplo, no tiene los diagramas), califica con la rúbrica, con 0 en lo que falte, y explícalo en tu comentario.</li>
           <li>Escribe un <b>comentario de al menos ${F.minComentario} palabras</b>: una pregunta técnica, una mejora o una comparación con tu máquina.</li>
           <li>Verás los comentarios que recibió tu aporte (sin el nombre de quien los escribió) y podrás marcar si te sirvieron 👍 o no 👎.</li>
         </ol>
@@ -174,7 +175,7 @@
           <li><b>Tu aporte; hasta 70 puntos</b>
             <ul style="margin:4px 0 0;padding-left:18px">
               <li><b>Cumplimiento (20):</b> llenaste los 4 cuadros (al menos ${F.minCuadro} palabras cada uno) y tu texto tiene entre ${F.minPal} y ${F.maxPal} palabras. Fuera de ese rango pierdes puntos.</li>
-              <li><b>Calidad (50):</b> sale de las notas de tus compañeros con la rúbrica. Se usa la <b>mediana</b>: una nota muy alta o muy baja no te afecta.</li>
+              <li><b>Calidad (50):</b> sale de las notas de tus compañeros con la rúbrica. Se usa la <b>mediana</b>: una nota muy alta o muy baja no te afecta. <b>Si 2 de tus 3 evaluadores no pudieron abrir tu documento, la calidad es 0.</b></li>
             </ul></li>
           <li><b>Tu trabajo como evaluador; hasta 30 puntos</b>
             <ul style="margin:4px 0 0;padding-left:18px">
@@ -227,8 +228,9 @@
       ${F.preguntas.map((p, i) => `<label class="campo"><span>${i + 1}. ${p}</span>
         <textarea class="entrada" data-c="c${i + 1}" rows="5" style="resize:vertical">${II.esc(b['c' + (i + 1)] || '')}</textarea>
         <small class="nota" data-n="c${i + 1}"></small></label>`).join('')}
-      <label class="campo"><span><b>Enlace de tu documento en Google Drive o Docs (obligatorio)</b>. Debe empezar con https://docs.google.com o https://drive.google.com y estar compartido con «Cualquier persona con el enlace» como Lector. <b>Ábrelo en una pestaña de incógnito antes de publicar: si no se puede leer, tu nota del foro será 0.</b></span><input class="entrada" data-c="enlace" inputmode="url" placeholder="https://docs.google.com/document/d/…" value="${II.esc(b.enlace || '')}"></label>
+      <label class="campo"><span><b>Enlace de tu documento en Google Drive o Docs (obligatorio)</b>. Debe empezar con https://docs.google.com o https://drive.google.com y estar compartido con «Cualquier persona con el enlace» como Lector. <b>Ábrelo en una pestaña de incógnito antes de publicar: si no se puede leer, pierdes los 50 puntos de calidad.</b></span><input class="entrada" data-c="enlace" inputmode="url" placeholder="https://docs.google.com/document/d/…" value="${II.esc(b.enlace || '')}"></label>
       <div class="nota" data-rol="enlace" style="margin:-4px 0 10px"></div>
+      <label class="opcion ${b.incognito ? 'elegida' : ''}" style="margin:0 0 10px"><input type="checkbox" data-c="incognito" ${b.incognito ? 'checked' : ''}> <span><b>Abrí mi enlace en una pestaña de incógnito y se lee sin iniciar sesión.</b> Entiendo que, si 2 de mis 3 evaluadores no pueden abrirlo, mi aporte recibe 0 en calidad.</span></label>
       <div class="aviso" data-rol="total" style="margin:0 0 10px"></div>
       <button class="boton primario grande bloque" id="b-publicar">Publicar mi aporte</button>
       <p class="nota" style="margin:6px 0 0">Una vez publicado no se puede editar. El borrador se guarda solo en este dispositivo.</p>
@@ -255,6 +257,8 @@
       ne.textContent = !en ? '' : ok ? '✓ Enlace de Google válido' : 'El enlace debe ser de Google Drive o Google Docs (https://docs.google.com/… o https://drive.google.com/…)';
       ne.style.color = ok ? 'var(--ok)' : 'var(--duda)';
       if (!ok) falta.push('el enlace de Google Drive o Docs con tu documento');
+      if (!v.incognito) falta.push('marcar que abriste tu enlace en incógnito');
+      cont.querySelectorAll('label.opcion').forEach((o) => o.classList.toggle('elegida', o.querySelector('input').checked));
       const bp = II.$('#b-publicar');
       bp.disabled = falta.length > 0;
       bp.title = falta.length ? 'Falta: ' + falta.join(', ') : '';
@@ -270,7 +274,7 @@
       if (btn.disabled) return;
       btn.disabled = true; btn.textContent = 'Publicando…';
       const maq = F.maquina(alumno.carnet);
-      const resp = { titulo: maq.nombre, maquina: { id: maq.id, nombre: maq.nombre, datos: maq.textoDatos }, c1: v.c1.trim(), c2: v.c2.trim(), c3: v.c3.trim(), c4: v.c4.trim(), enlace: v.enlace.trim().slice(0, 500), palabras: tot, porCuadro: pc };
+      const resp = { titulo: maq.nombre, maquina: { id: maq.id, nombre: maq.nombre, datos: maq.textoDatos }, c1: v.c1.trim(), c2: v.c2.trim(), c3: v.c3.trim(), c4: v.c4.trim(), enlace: v.enlace.trim().slice(0, 500), incognito: true, palabras: tot, porCuadro: pc };
       const r = await enviar('foro-aporte', resp);
       if (r === 'cerrado') { avisoBreve('No se pudo publicar: la fase 1 ya cerró o ya publicaste antes.', 'mal', 8000); await leerEstado(); return pintar(); }
       II.guardar(k('publicado'), resp);
@@ -300,37 +304,53 @@
     if (i < 0) { cont.innerHTML = ''; return; }
     const a = asig[i];
     const hecha = (est.hechas || []).map(String).includes(String(a.id));
-    const b = II.leer(k('ev-' + a.id), { rub: [null, null, null, null], com: '' });
+    const b = II.leer(k('ev-' + a.id), { abre: null, mot: '', rub: [null, null, null, null], com: '' });
     cont.innerHTML = `<div class="tarjeta" style="border-color:#c9dbf3">${vistaAporte(a.texto || {}, `Aporte ${i + 1}; autor anónimo`)}</div>
       ${hecha ? '<div class="aviso ok">✓ Ya evaluaste este aporte.</div>' : `
       <div class="tarjeta"><span class="etiqueta">Tu evaluación del aporte ${i + 1}</span>
-        <div class="nota" style="margin:0 0 8px">Si el enlace no abre o el documento no tiene el desarrollo completo, califica con 0 y explícalo en tu comentario.</div>
+        <div class="grupo-campo"><div class="pregunta" style="margin-bottom:6px"><b>Primero: ¿pudiste abrir y leer el documento de Google Drive?</b></div>
+          <div class="opciones">
+            <label class="opcion ${b.abre === true ? 'elegida' : ''}"><input type="radio" name="abre" value="1" ${b.abre === true ? 'checked' : ''}><b style="margin-right:6px">Sí</b> se abre y se lee</label>
+            <label class="opcion ${b.abre === false ? 'elegida' : ''}"><input type="radio" name="abre" value="0" ${b.abre === false ? 'checked' : ''}><b style="margin-right:6px">No</b> no pude abrirlo o leerlo</label>
+          </div></div>
+        <div id="ev-no" style="display:${b.abre === false ? 'block' : 'none'}">
+          <label class="campo"><span>Escribe en una línea qué te apareció (por ejemplo «pide permiso de acceso» o «el archivo no existe»). Si 2 de los 3 evaluadores de este aporte marcan No, el aporte recibe 0 en calidad.</span>
+            <textarea class="entrada" id="ev-mot" rows="2" style="resize:vertical">${II.esc(b.mot || '')}</textarea></label>
+        </div>
+        <div id="ev-si" style="display:${b.abre === true ? 'block' : 'none'}">
+        <div class="nota" style="margin:0 0 8px">Si el documento abre pero le falta desarrollo (por ejemplo, no tiene los diagramas), califica con la rúbrica, con 0 en lo que falte, y explícalo en tu comentario.</div>
         ${F.rubrica.map((c, j) => `<div class="grupo-campo"><div class="pregunta" style="margin-bottom:6px"><b>${c.t}</b> <span class="nota">${c.d}</span></div>
           <div class="opciones">${c.n.map((txt, v) => `<label class="opcion ${b.rub[j] === v ? 'elegida' : ''}"><input type="radio" name="r${j}" value="${v}" ${b.rub[j] === v ? 'checked' : ''}><b style="font-family:var(--mono);margin-right:6px">${v}</b> ${txt}</label>`).join('')}</div></div>`).join('')}
         <label class="campo"><span>Tu comentario (al menos ${F.minComentario} palabras): una pregunta técnica, una mejora o una comparación con tu máquina. El autor lo verá sin tu nombre.</span>
           <textarea class="entrada" id="ev-com" rows="5" style="resize:vertical">${II.esc(b.com || '')}</textarea><small class="nota" id="ev-n"></small></label>
+        </div>
         <button class="boton primario grande bloque" id="b-evaluar">Enviar evaluación</button>
         <p class="nota" style="margin:6px 0 0">Una vez enviada no se puede cambiar.</p>
       </div>`}`;
     if (hecha) return;
-    const leer = () => ({ rub: F.rubrica.map((_, j) => { const x = cont.querySelector(`input[name=r${j}]:checked`); return x ? +x.value : null; }), com: II.$('#ev-com').value });
+    const leer = () => { const ab = cont.querySelector('input[name=abre]:checked'); return { abre: ab ? ab.value === '1' : null, mot: II.$('#ev-mot').value, rub: F.rubrica.map((_, j) => { const x = cont.querySelector(`input[name=r${j}]:checked`); return x ? +x.value : null; }), com: II.$('#ev-com').value }; };
     const revisar = () => {
       const v = leer();
       II.guardar(k('ev-' + a.id), v);
       cont.querySelectorAll('.opcion').forEach((o) => o.classList.toggle('elegida', o.querySelector('input').checked));
-      const n = F.palabras(v.com);
+      II.$('#ev-no').style.display = v.abre === false ? 'block' : 'none';
+      II.$('#ev-si').style.display = v.abre === true ? 'block' : 'none';
+      const n = F.palabras(v.com), nm = F.palabras(v.mot);
       const e = II.$('#ev-n'); e.textContent = `${n} palabras${n < F.minComentario ? `; faltan ${F.minComentario - n}` : ' ✓'}`; e.style.color = n < F.minComentario ? 'var(--duda)' : 'var(--ok)';
-      II.$('#b-evaluar').disabled = v.rub.some((x) => x == null) || n < F.minComentario;
-      return { v, n };
+      II.$('#b-evaluar').disabled = v.abre == null || (v.abre === true ? v.rub.some((x) => x == null) || n < F.minComentario : nm < 3);
+      return { v, n, nm };
     };
     cont.querySelectorAll('input[type=radio]').forEach((x) => x.addEventListener('change', revisar));
     II.$('#ev-com').addEventListener('input', revisar);
+    II.$('#ev-mot').addEventListener('input', revisar);
     revisar();
     dobleToque(II.$('#b-evaluar'), '¿Enviar? Ya no podrás cambiarla. Toca otra vez', async (btn) => {
-      const { v, n } = revisar();
+      const { v, n, nm } = revisar();
       if (btn.disabled) return;
       btn.disabled = true; btn.textContent = 'Enviando…';
-      const r = await enviar('foro-eval', { aporte: String(a.id), rubrica: v.rub, total: v.rub.reduce((s, x) => s + x, 0), comentario: v.com.trim(), palabras: n });
+      const r = await enviar('foro-eval', v.abre === false
+        ? { aporte: String(a.id), abre: false, motivo: v.mot.trim().slice(0, 300), comentario: 'No pude abrir el documento: ' + v.mot.trim().slice(0, 300), palabras: nm }
+        : { aporte: String(a.id), abre: true, rubrica: v.rub, total: v.rub.reduce((s, x) => s + x, 0), comentario: v.com.trim(), palabras: n });
       if (r === 'cerrado') avisoBreve('No se pudo enviar: la fase 2 ya cerró o ya evaluaste este aporte.', 'mal', 8000);
       else avisoBreve(r === 'cola' ? '⏳ Sin conexión: tu evaluación se enviará sola al reconectar.' : '✓ Evaluación enviada.', r === 'cola' ? 'duda' : 'ok');
       if (r !== 'cerrado') { est.hechas = (est.hechas || []).concat(String(a.id)); localStorage.removeItem(k('ev-' + a.id)); }

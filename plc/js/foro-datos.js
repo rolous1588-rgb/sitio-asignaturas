@@ -4,7 +4,7 @@
 // (lo usan foro.js y el panel docente).
 // Envíos en 'respuestas':
 //   foro-aporte { titulo, maquina:{id,nombre,datos}, c1..c4, enlace (Google Drive/Docs), palabras, porCuadro:[4] }
-//   foro-eval   { aporte: '<id>', rubrica:[4 × 0..2], total, comentario, palabras }
+//   foro-eval   { aporte: '<id>', abre: true|false, rubrica:[4 × 0..2], total, comentario, palabras }  (abre:false = «no pude abrir el documento»: { aporte, abre:false, motivo, comentario, palabras })
 //   foro-util   { eval: '<id>', util: true|false }   (lo marca el autor; vale la última)
 // ============================================================
 (function () {
@@ -124,8 +124,11 @@
 
   // ---------- nota de todos: respuestas = filas de la sesión pl-foro; alumnos = [{carnet, nombre}] ----------
   // fantasmas: carnets que no entran a ningún conteo (la cuenta de ensayo del docente)
-  const notas = (respuestas, alumnos = [], fantasmas = []) => {
+  // restituidos: carnets a los que el docente les devolvió la calidad aunque 2 o más evaluadores marcaron «no abre»
+  const notas = (respuestas, alumnos = [], fantasmas = [], restituidos = []) => {
     const fan = new Set(fantasmas.map(String));
+    const rest = new Set((restituidos || []).map(String));
+    const noAbre = (e) => !!e.respuesta && e.respuesta.abre === false;
     const porCreado = (a, b) => String(a.creado).localeCompare(String(b.creado));
     const rs = respuestas.filter((r) => !fan.has(String(r.carnet))).sort(porCreado);
     const aportes = new Map();               // carnet → fila del aporte (el primero)
@@ -148,9 +151,16 @@
       if (ev && autorDe.get(String(ev.respuesta.aporte)) === u.carnet) util.set(String(ev.id), !!u.respuesta.util);
     });
     const total = (e) => +e.respuesta.total || 0;
-    const calidad = new Map();
-    aportes.forEach((r, c) => { const t = (porAporte.get(String(r.id)) || []).map(total); calidad.set(c, t.length ? mediana(t) / 8 : null); });
-    const medCurso = mediana(Array.from(calidad.values()).filter((v) => v != null));
+    // calidad: las evaluaciones «no pude abrir» no puntúan; si 2 o más evaluadores no pudieron abrir el documento, la calidad es 0
+    const calidad = new Map(), acceso = new Map();
+    aportes.forEach((r, c) => {
+      const ev = porAporte.get(String(r.id)) || [];
+      const nos = ev.filter(noAbre).length, t = ev.filter((e) => !noAbre(e)).map(total);
+      const sin = nos >= 2 && !rest.has(c);
+      acceso.set(c, { nos, sin });
+      calidad.set(c, sin ? 0 : t.length ? mediana(t) / 8 : null);
+    });
+    const medCurso = mediana(Array.from(calidad.entries()).filter(([c, v]) => v != null && !acceso.get(c).sin).map(([, v]) => v));
     const n = aportes.size;
     const textos = new Map(); aportes.forEach((r, c) => textos.set(c, trios(textoAporte(r))));
 
@@ -170,8 +180,8 @@
       const frac = asignadas > 0 ? hechas / asignadas : 1;
       const ptsEval = 15 * frac;
       // buen evaluador: cercanía a la mediana de los otros evaluadores (10) + comentarios útiles (5)
-      const dist = mias.map((e) => {
-        const otros = (porAporte.get(String(e.respuesta.aporte)) || []).filter((x) => x !== e).map(total);
+      const dist = mias.filter((e) => !noAbre(e)).map((e) => {
+        const otros = (porAporte.get(String(e.respuesta.aporte)) || []).filter((x) => x !== e && !noAbre(x)).map(total);
         return otros.length ? Math.max(0, 1 - Math.abs(total(e) - mediana(otros)) / 4) : null;
       }).filter((x) => x != null);
       const conc = dist.length ? dist.reduce((s, x) => s + x, 0) / dist.length : 1;
@@ -185,7 +195,11 @@
         let max = 0, con = null;
         textos.forEach((t, c) => { if (c === a.carnet) return; const p = parecido(textos.get(a.carnet), t); if (p > max) { max = p; con = c; } });
         if (max >= 0.35) alertas.push(`Texto parecido al de ${(gente.get(con) || { nombre: con }).nombre} (${Math.round(max * 100)} %)`);
-        const tt = recibidas.map(total);
+        const tt = recibidas.filter((e) => !noAbre(e)).map(total);
+        const ac = acceso.get(a.carnet) || { nos: 0, sin: false };
+        if (ac.sin) alertas.push('Enlace sin acceso: 2 o más evaluadores no pudieron abrirlo; calidad 0 automática');
+        else if (ac.nos >= 2) alertas.push('Calidad restituida por el docente (2 o más evaluadores no pudieron abrir el enlace)');
+        else if (ac.nos === 1) alertas.push('Un evaluador marcó que no pudo abrir el enlace; su evaluación no cuenta');
         if (tt.length >= 2 && Math.max(...tt) - Math.min(...tt) >= 5) alertas.push('Sus evaluadores no coinciden');
         if (cal == null) alertas.push('Nadie evaluó su aporte: se usó la mediana del curso');
         const m = (ap.respuesta || {}).maquina;
@@ -193,7 +207,7 @@
       }
       return {
         a, aporte: ap || null, palabras: cu.palabras, ptsCumpl: cu.pts, ptsCal, cal, nRecibidas: recibidas.length, recibidas,
-        asignadas, hechas, ptsEval, conc, ut, ptsBuen, nota, pond: Math.round(nota * 25) / 100, alertas,
+        asignadas, hechas, ptsEval, conc, ut, ptsBuen, nota, noAbrieron: ap ? (acceso.get(a.carnet) || {}).nos || 0 : 0, sinAcceso: !!(ap && (acceso.get(a.carnet) || {}).sin), restituido: !!(ap && rest.has(a.carnet) && ((acceso.get(a.carnet) || {}).nos || 0) >= 2), pond: Math.round(nota * 25) / 100, alertas,
         comentarios: mias
       };
     }).sort((x, y) => String(x.a.nombre).localeCompare(String(y.a.nombre), 'es'));
