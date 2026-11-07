@@ -49,8 +49,53 @@
     });
   };
 
+  // ---------- vista previa del docente (solo con la cuenta fantasma: no lee ni envía nada al servidor) ----------
+  // foro.html?ensayo=f1 | f2 | fin  (también se cambia con la barra inferior). Con datos de ejemplo.
+  let vista = String(II.params.get('ensayo') || '').toLowerCase();
+  if (!['f1', 'f2', 'fin'].includes(vista)) vista = '';
+  const simCache = {};
+  const ejemploAporte = (carnet, i) => {
+    const m = F.maquina(carnet);
+    const t = (x) => `[Texto de ejemplo ${i ? 'de un compañero' : 'tuyo'}] ${x}`;
+    return { titulo: m.nombre + ' (ejemplo)', maquina: { id: m.id, nombre: m.nombre, datos: m.textoDatos },
+      c1: t('Uso un sensor óptico NA con salida PNP para contar y un contactor para el motor; el pulsador de paro es NC. Direcciones: I0.0 marcha, I0.1 paro, Q0.0 motor.'),
+      c2: t('GRAFCET nivel 1: espera, marcha, conteo y desvío. Nivel 2: E1 activa el motor con el pulsador de marcha y avanza cuando el contador llega al lote; T1 controla el tiempo del desvío.'),
+      c3: t('SE1 = E0 por PA; RE1 = E2 por paro negado. El enclavamiento usa el contacto de la propia salida y, con De Morgan, el paro se escribe como negación de la suma.'),
+      c4: t('En cada escaneo se leen las entradas, se evalúan las ecuaciones y se actualizan las salidas. El paro de emergencia corta la potencia aparte. Pruebas: marcha normal, paro en medio del lote y falla del sensor.'),
+      enlace: 'https://docs.google.com/document/d/EJEMPLO' + i + '/edit', palabras: 246, porCuadro: [60, 60, 60, 66] };
+  };
+  const simular = (fz) => {
+    if (simCache[fz]) return simCache[fz];
+    const t = Date.now(), H = 3600e3, iso = (x) => new Date(x).toISOString();
+    const f1 = fz === 'f1' ? t + 3 * H : fz === 'f2' ? t - H : t - 25 * H;
+    const f2 = fz === 'f1' ? t + 27 * H : fz === 'f2' ? t + 23 * H : t - H;
+    const e = { ahora: iso(t), abre: iso(t - 2 * H), fase1: iso(f1), fase2: iso(f2), aporte: null, asignados: [], hechas: [], comentarios: [] };
+    if (fz !== 'f1') {
+      e.aporte = { id: 1, palabras: 246, texto: ejemploAporte(alumno.carnet, 0) };
+      e.asignados = ['1000001', '1000002', '1000003'].map((c, i) => ({ id: 100 + i, texto: ejemploAporte(c, i + 1) }));
+      e.comentarios = [
+        { id: 201, comentario: 'Buen trabajo: tus direcciones son coherentes con la máquina. Te sugiero explicar por qué el paro es NC y cómo cambia la ecuación si fuera NA.', util: null },
+        { id: 202, comentario: 'No pude abrir el documento: pide permiso de acceso', util: null }
+      ];
+    }
+    return (simCache[fz] = e);
+  };
+  const barraVista = () => {
+    if (!fantasma()) return;
+    let b = document.getElementById('barra-vista');
+    if (!b) { b = II.html('<div id="barra-vista" style="position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff8e1;border-top:2px solid #e0b84a;padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:.85rem"></div>'); document.body.appendChild(b); document.body.style.paddingBottom = '72px'; }
+    const op = [['', 'Real (hoy)'], ['f1', 'Fase 1'], ['f2', 'Fase 2'], ['fin', 'Terminado']];
+    b.innerHTML = '<b>Vista previa (solo tú; datos de ejemplo; no se envía nada):</b> ' + op.map(([v, t]) => `<button class="boton chico ${vista === v ? 'primario' : ''}" data-vv="${v}">${t}</button>`).join('');
+    b.querySelectorAll('[data-vv]').forEach((x) => x.addEventListener('click', async () => {
+      vista = x.dataset.vv; abierta = null;
+      const u = new URL(location.href); if (vista) u.searchParams.set('ensayo', vista); else u.searchParams.delete('ensayo'); history.replaceState(null, '', u);
+      await leerEstado(); pintar();
+    }));
+  };
+
   // ---------- servidor ----------
   const leerEstado = async () => {
+    if (alumno && fantasma() && vista) { est = simular(vista); offset = 0; return; }
     if (!II.sb || !alumno) return;
     const t0 = Date.now();
     try {
@@ -389,6 +434,7 @@
   const pintar = () => {
     if (reloj) clearInterval(reloj);
     if (!alumno) return pintarIngreso();
+    barraVista();
     if (!est) {
       main.innerHTML = '<div class="contenido angosto"><div class="tarjeta"><h2>Sin conexión</h2><div class="aviso mal">No se pudo leer el foro. Revisa tu conexión y recarga la página.</div></div></div>';
       return;
