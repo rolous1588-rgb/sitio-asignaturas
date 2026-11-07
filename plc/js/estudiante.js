@@ -271,6 +271,8 @@
       const k = clave('rap', paso.id);
       const pts = II.puntosRapida(paso);
       let st = II.leer(k, null); // { op, ok, pts, revelada, vacio, auto }
+      // si la clase vuelve a esta pregunta después de que se cerró vacía por un avance sin responder, se reabre
+      if (!libre && st && st.vacio && st.auto === 'avance' && filaEstado && filaEstado.paso === paso.id && !II.cierreDe(filaEstado, paso.id)) { st = null; II.guardar(k, null); }
       // cada carnet ve las opciones en otro orden: decir "es la C" no sirve
       const orden = II.mezclar(II.rng(alumno.carnet + '|' + paso.id), paso.o.map((_, i) => i));
       main.innerHTML = `<div class="contenido angosto"><div class="tarjeta">${cabecera(paso)}
