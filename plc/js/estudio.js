@@ -179,7 +179,7 @@
     if (ev && ev.enviado) return pintarResultado();
     if (ev && ev.inicio) return pintarEnCurso();
     if (srv && srv.inicio) { guardarEval({ ids: CE.seleccion(alumno.carnet), resp: {}, inicio: srv.inicio, actual: 0 }); return pintarEnCurso(); }
-    if (srv && srv.enviado) return pintarAviso('✓ Ya enviaste tu prueba', 'La enviaste desde otro dispositivo y tu nota quedó registrada. La nota y las soluciones se ven en ese dispositivo.', 'ok');
+    if (srv && srv.enviado) return pintarAviso('✓ Ya enviaste tu prueba', 'La enviaste desde otro dispositivo y tu prueba quedó registrada. La nota y las soluciones se publican al cierre general del control y se ven en ese dispositivo.', 'ok');
     const v = ventanaEfectiva();
     if (v.estado === 'sin-datos') return pintarAviso('Sin conexión', 'No se pudo leer el estado del control. Revisa tu conexión y recarga la página.', 'mal');
     if (v.estado === 'antes') return pintarAviso('⏳ El control todavía no abre', `Abre el <b>${fecha(v.abre)}</b> (hora de Bolivia). Esta pantalla se actualiza sola.`);
@@ -200,7 +200,7 @@
           <li><b class="n">2</b><span>Tienes <b>${M.minutos} minutos</b> desde que tocas «Empezar». El reloj <b>sigue corriendo</b> aunque cierres la página o se corte la conexión.</span></li>
           <li><b class="n">3</b><span>Puedes moverte entre las preguntas y cambiar tus respuestas hasta enviar. Al llegar a cero, <b>se envía solo</b> lo que tengas marcado.</span></li>
           <li><b class="n">4</b><span>Las preguntas con varias partes y las de ordenar dan <b>puntaje parcial</b>. En los cálculos se acepta un margen de ±2 %. Lo que dejes sin responder cuenta como incorrecto.</span></li>
-          <li><b class="n">5</b><span>Al enviar verás tu nota. Las soluciones se publican cuando cierre el control${v.cierra ? ` (${fecha(v.cierra)})` : ''}.</span></li>
+          <li><b class="n">5</b><span>Al enviar, tu prueba queda registrada y <b>no verás la nota ni las respuestas correctas</b>. Las calificaciones y la retroalimentación se publican <b>al cierre general del control${v.cierra ? ` (${fecha(v.cierra)})` : ''}</b>.</span></li>
         </ul>
         ${quedan < M.minutos ? `<div class="aviso duda">Faltan solo <b>${Math.max(0, Math.floor(quedan))} minutos</b> para el cierre: la prueba terminará antes de los ${M.minutos} minutos.</div>` : ''}
         ${local() ? `<div class="aviso info">${revision ? 'Revisión docente' : 'Modo ensayo'}: el reloj corre en este navegador y no se registra nada.</div>` : ''}
@@ -341,31 +341,53 @@
     return '<div class="aviso duda" id="ev-envio">⏳ <b>Enviando…</b> No cierres esta página hasta que diga «registrada». Si no tienes conexión, se enviará sola al reconectar.</div>';
   };
 
+  // Hasta el cierre general NO se muestra la nota, ni cuáles preguntas salieron bien, ni las soluciones
+  // (para que no se pasen las respuestas). En ensayo y revisión se puede mirar cómo se verá al publicarse.
+  let verComoPublicado = false;
   const pintarResultado = () => {
     const ev = leerEval();
     if (!ev || !ev.enviado) return pintar();
     const v = ventana();
-    const verSol = revision || local() || v.estado === 'cerrada';
+    const publicado = v.estado === 'cerrada' || ((revision || local()) && verComoPublicado);
+    const cierreTxt = v.cierra ? fecha(v.cierra) : 'el domingo 08/11 a las 23:59';
+    if (!publicado) {
+      main.innerHTML = `<div class="contenido angosto" style="max-width:760px">${revision ? barraRevision() : ''}
+        <div class="tarjeta" style="text-align:center">
+          <span class="etiqueta">Prueba enviada${ev.motivo === 'tiempo' ? ' al terminar el tiempo' : ''}</span>
+          <h2 style="margin:8px 0 6px">✓ Tu prueba quedó registrada</h2>
+          <p class="sub" style="margin:0">Las <b>calificaciones</b> y la <b>retroalimentación</b> (cuál era la respuesta correcta de cada pregunta) se publicarán <b>al cierre general del control de estudio</b>: ${cierreTxt}.</p>
+          ${avisoEnvio(ev)}
+        </div>
+        <div class="tarjeta"><div class="aviso info" style="margin:0">Vuelve a abrir esta página <b>después del cierre</b>, en este mismo dispositivo, para ver tu nota y las soluciones con tus respuestas. No es necesario que hagas nada más ahora.</div></div>
+        ${(revision || local()) ? `<div class="tarjeta" style="border-color:#f0d9a8;background:var(--duda-claro)"><div class="nota" style="color:#8a5a12;margin-bottom:8px"><b>${revision ? 'Revisión docente' : 'Modo ensayo'}:</b> el estudiante real ve solo lo de arriba hasta el cierre.</div>
+          <div class="controles"><button class="boton chico" id="b-ver-pub">Ver cómo se verá al publicarse (nota y soluciones)</button>${revision ? '' : '<button class="boton chico peligro" id="b-reiniciar-ensayo">Reiniciar el ensayo</button>'}</div></div>` : ''}
+      </div>`;
+      const bv = II.$('#b-ver-pub'); if (bv) bv.addEventListener('click', () => { verComoPublicado = true; pintarResultado(); });
+      const br = II.$('#b-reiniciar-ensayo'); if (br) br.addEventListener('click', () => { localStorage.removeItem(k('eval')); location.hash = ''; alHash(); });
+      if (revision) enlazarRevision();
+      revisarEnvio(); vistaInt = setInterval(revisarEnvio, 3000);
+      return;
+    }
     const insts = ev.ids.map((id) => CE.instancia(id, alumno.carnet));
     const fr = insts.map((q) => CE.calificar(q, ev.resp[q.id]));
     main.innerHTML = `<div class="contenido angosto" style="max-width:760px">${revision ? barraRevision() : ''}
       <div class="tarjeta" style="text-align:center">
-        <span class="etiqueta">Prueba enviada${ev.motivo === 'tiempo' ? ' al terminar el tiempo' : ''}</span>
+        <span class="etiqueta">Calificación publicada${ev.motivo === 'tiempo' ? '; enviada al terminar el tiempo' : ''}</span>
         <div class="grande-numero" style="margin:8px 0 0">${II.fmt(ev.nota, 1)}<small style="font-size:.45em;color:var(--texto-3)"> / 100</small></div>
         <p class="sub" style="margin:4px 0 0">Equivale a <b>${II.fmt((ev.nota * CE.META.peso) / 100, 2)} de ${CE.META.peso} puntos</b> de la nota del módulo.</p>
         ${avisoEnvio(ev)}
+        ${(revision || local()) && v.estado !== 'cerrada' ? '<div class="controles" style="justify-content:center;margin-top:8px"><button class="boton chico" id="b-ocultar-pub">Volver a la vista del estudiante</button></div>' : ''}
       </div>
       <div class="tarjeta"><h3>Pregunta por pregunta</h3>
         <div class="chips-preg">${fr.map((p, j) => `<button type="button" class="${p >= 0.999 ? 'ok' : p > 0 ? 'duda' : 'mal'}" data-j="${j}" title="${II.fmt(p * 100, 0)} %">${j + 1}</button>`).join('')}</div>
         <p class="nota" style="margin:0">Verde: correcta; ámbar: parcial; rojo: incorrecta o sin responder.</p>
-        ${verSol ? '' : `<div class="aviso info" style="margin-bottom:0">Las <b>soluciones</b> se publican cuando cierre el control (${v.cierra ? fecha(v.cierra) : 'el domingo 23:59'}). Vuelve a abrir esta página <b>en este mismo dispositivo</b> para verlas con tus respuestas.</div>`}
       </div>
-      ${verSol ? `<div>${insts.map((_, j) => `<div class="tarjeta" data-sol="${j}"></div>`).join('')}</div>` : ''}
+      <div>${insts.map((_, j) => `<div class="tarjeta" data-sol="${j}"></div>`).join('')}</div>
     </div>`;
-    if (verSol) {
-      insts.forEach((q, j) => CE.render(II.$(`[data-sol="${j}"]`), q, ev.resp[q.id], { mostrar: true, numero: j + 1 }));
-      II.$$('.chips-preg button').forEach((b) => b.addEventListener('click', () => II.$(`[data-sol="${b.dataset.j}"]`).scrollIntoView({ behavior: 'smooth', block: 'start' })));
-    }
+    insts.forEach((q, j) => CE.render(II.$(`[data-sol="${j}"]`), q, ev.resp[q.id], { mostrar: true, numero: j + 1 }));
+    II.$$('.chips-preg button').forEach((b) => b.addEventListener('click', () => II.$(`[data-sol="${b.dataset.j}"]`).scrollIntoView({ behavior: 'smooth', block: 'start' })));
+    const bo = II.$('#b-ocultar-pub'); if (bo) bo.addEventListener('click', () => { verComoPublicado = false; pintarResultado(); });
+    if (revision) enlazarRevision();
     revisarEnvio(); vistaInt = setInterval(revisarEnvio, 3000);
   };
 
