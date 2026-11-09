@@ -92,7 +92,9 @@
 
   II.sb = II.configurado
     ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY, {
-        auth: { persistSession: true, autoRefreshToken: true, storageKey: 'ii-docente' },
+        // Sin bloqueo entre pestañas (09/11/2026, mismo arreglo que Medidas y Transformadas): con varias pestañas abiertas,
+        // el bloqueo de sesión de supabase-js (navigator.locks) dejaba el panel en blanco esperando la cuenta docente.
+        auth: { persistSession: true, autoRefreshToken: true, storageKey: 'ii-docente', lock: async (_nombre, _espera, fn) => await fn() },
         realtime: { params: { eventsPerSecond: 10 } }
       })
     : null;
