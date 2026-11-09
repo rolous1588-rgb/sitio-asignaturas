@@ -109,14 +109,14 @@
       : `<p><b>Vibración de un motor.</b> Un acelerómetro entrega una señal senoidal con nivel. Un período dura <b>${numH(d.Tms)}&nbsp;ms</b> y la señal oscila entre <b>${numH(d.vmin)}&nbsp;V</b> y <b>${numH(d.vmax)}&nbsp;V</b>.</p>`,
     pasos: () => [
       { t: 'Halla', tex: null,
-        items: [{ id: 'T', et: 'T\\ (\\text{s})', pts: 5 }, { id: 'f', et: 'f\\ (\\text{Hz})', pts: 5 }, { id: 'w', et: '\\omega_0\\ (\\text{rad/s})', pts: 5 }, { id: 'a0', et: 'a_0\\ (\\text{valor medio})', pts: 5 }] }
+        items: [{ id: 'T', et: 'T\\ (\\text{s})', pts: 4 }, { id: 'f', et: 'f\\ (\\text{Hz})', pts: 4 }, { id: 'w', et: '\\omega_0\\ (\\text{rad/s})', pts: 4 }, { id: 'a0', et: 'a_0\\ (\\text{valor medio de la señal})', pts: 4 }, { id: 'f3', et: '\\text{frecuencia del 3.}^{\\text{er}}\\text{ armónico}\\ (\\text{Hz})', pts: 4 }] }
     ],
     esperado(d, u) {
       const g = (id, def) => (u(id) == null || u(id) === 0 ? def : u(id));
       const T = g('T', d.T), f = g('f', 1 / T);
-      return { T: d.T, f: 1 / T, w: 2 * PI * f, a0: (d.vmax + d.vmin) / 2 };
+      return { T: d.T, f: 1 / T, w: 2 * PI * f, a0: (d.vmax + d.vmin) / 2, f3: 3 * f };
     },
-    final: (d) => `T = ${RC.tex(d.T)}\\ \\text{s};\\quad f = ${RC.tex(1 / d.T)}\\ \\text{Hz};\\quad \\omega_0 = 2\\pi f = ${dec(r4(2 * PI / d.T))}\\ \\text{rad/s};\\quad a_0 = ${RC.tex((d.vmax + d.vmin) / 2)}`
+    final: (d) => `T = ${RC.tex(d.T)}\\ \\text{s};\\quad f = ${RC.tex(1 / d.T)}\\ \\text{Hz};\\quad \\omega_0 = 2\\pi f = ${dec(r4(2 * PI / d.T))}\\ \\text{rad/s};\\quad a_0 = ${RC.tex((d.vmax + d.vmin) / 2)};\\quad f_3 = 3f = ${dec(r4(3 / d.T))}\\ \\text{Hz}`
   };
 
   // ===== P2: triangular par con alturas propias =====
@@ -132,10 +132,9 @@
     },
     f: (d) => (x) => d.c0 + (d.c1 - d.c0) * 2 * Math.abs(u0(x)),
     enunciado(d) {
-      return `<p>Señal triangular de período \\(T\\): ${d.pico ? 'tiene su <b>pico</b>' : 'tiene su <b>valle</b>'} en \\(t = 0\\).</p>
+      return `<p>Señal triangular de período \\(T\\).</p>
         ${RC.grafico(this.f(d))}
-        \\[f(t) = ${d.c0} ${d.c1 - d.c0 < 0 ? '-' : '+'} ${Math.abs(d.c1 - d.c0)}\\cdot\\dfrac{2|t|}{T},\\qquad |t| \\le \\dfrac{T}{2}\\]
-        <p class="mp-nota">Se repite con período \\(T\\). Serie: \\(f(t) = a_0 + \\sum_{n \\ge 1}\\left[a_n\\cos(n\\omega_0 t) + b_n\\sen(n\\omega_0 t)\\right]\\).</p>`;
+        \\[f(t) = ${d.c0} ${d.c1 - d.c0 < 0 ? '-' : '+'} ${Math.abs(d.c1 - d.c0)}\\cdot\\dfrac{2|t|}{T},\\qquad |t| \\le \\dfrac{T}{2}\\]`;
     },
     pasos: () => [
       { t: 'Halla los coeficientes', tex: null,
@@ -178,7 +177,7 @@
     },
     f: (d) => (x) => d.V0 + d.s * d.A * RC.BASE[d.tipo].g(x - d.d0),
     enunciado(d) {
-      return `<p>Esta es tu señal (dos períodos, el eje vertical está en \\(t = 0\\)). Responde <b>sin integrar</b>.</p>${RC.grafico(this.f(d))}`;
+      return `<p>Tu señal:</p>${RC.grafico(this.f(d))}`;
     },
     opsFijas: (d) => ({
       sim: ['Par', 'Impar', 'Ni par ni impar'].map((t, i) => ({ t: '\\text{' + t + '}', ok: i === d.res.sim })),
@@ -200,34 +199,36 @@
     }
   };
 
-  // ===== P4: leer un espectro (por carrera) =====
-  const PARES = [[3, 4], [4, 3], [6, 8], [8, 6], [5, 12], [12, 5]];
+  // ===== P4: ¿de quién es este espectro? (sin pistas) =====
+  // 4 ondas distintas (A–D) y sus 4 espectros (barras c0…c8, cada uno a su escala) en orden mezclado
+  RC.barras = (c) => {
+    const W = 340, H = 120, ml = 10, mr = 10, mt = 8, mb = 22, n = c.length;
+    const mx = Math.max(...c) || 1, paso = (W - ml - mr) / n, an = paso * 0.55;
+    const barras = c.map((v, i) => { const h = ((H - mt - mb) * v) / mx; const x = ml + paso * i + (paso - an) / 2; return `<rect x="${x.toFixed(1)}" y="${(H - mb - h).toFixed(1)}" width="${an.toFixed(1)}" height="${Math.max(h, 0).toFixed(1)}" rx="2" fill="#1d5fb4"/><text x="${(x + an / 2).toFixed(1)}" y="${H - 6}" font-size="12" text-anchor="middle" fill="#5b6b7f">${i}</text>`; }).join('');
+    return `<svg class="rc-graf" viewBox="0 0 ${W} ${H}" role="img" aria-label="Espectro"><line x1="${ml}" y1="${H - mb}" x2="${W - mr}" y2="${H - mb}" stroke="#9aa8b8" stroke-width="1"/>${barras}</svg>`;
+  };
+  const LETRAS = ['A', 'B', 'C', 'D'];
   P.p4 = {
-    titulo: 'Leer la serie', max: 25,
-    gen(r, car) {
-      const bio = /biom/i.test(car || '');
-      const f0 = bio ? elegir(r, [60, 72, 75, 90]) / 60 : 50;
-      const k = elegir(r, [1, 0.5, 2]);
-      const [p1, q1] = elegir(r, PARES.filter(([p, q]) => Math.hypot(p, q) >= 10));
-      const [p3, q3] = elegir(r, [[3, 4], [4, 3], [0.6, 0.8], [0.8, 0.6]]);
-      const sg = () => (r() < 0.5 ? -1 : 1);
-      const a0 = elegir(r, [0, 1, 2, 3, 5]) * k;
-      return { bio, f0, a0, a1: sg() * p1 * k, b1: sg() * q1 * k, a3: sg() * p3 * k, b3: sg() * q3 * k, a5: sg() * 0.6 * k, b5: sg() * 0.8 * k };
+    titulo: 'Espectros', max: 25,
+    gen(r) {
+      const tipos = RC.mezclar(r, TIPOS3).slice(0, 4);
+      const ondas = tipos.map((tipo) => ({ tipo, A: elegir(r, [1, 2, 3]) }));
+      const orden = RC.mezclar(r, [0, 1, 2, 3]); // orden[k] = onda que va en el espectro k+1
+      const espectros = orden.map((i) => { const o = ondas[i]; const c = RC.coef((x) => o.A * RC.BASE[o.tipo].g(x), 8); return c.a.map((a0, n) => (n === 0 ? Math.abs(a0) : Math.hypot(c.a[n], c.b[n]))); });
+      const de = ondas.map((_, i) => orden.indexOf(i)); // de[i] = espectro (0–3) de la onda i
+      return { ondas, espectros, de };
     },
     enunciado(d) {
-      const fila = (n, a, b) => `<tr><td>${n}</td><td class="mono">${dec(a).replace('{,}', ',').replace('-', '−')}</td><td class="mono">${dec(b).replace('{,}', ',').replace('-', '−')}</td></tr>`;
-      return `<p>${d.bio ? `<b>Pulso de un paciente</b>: frecuencia fundamental \\(f_0 = ${dec(r4(d.f0))}\\ \\text{Hz}\\) (${Math.round(d.f0 * 60)} latidos por minuto).` : '<b>Corriente de una carga no lineal</b> conectada a la red: \\(f_0 = 50\\ \\text{Hz}\\).'}
-        Su serie de Fourier tiene estos coeficientes (los que no aparecen valen 0):</p>
-        <table class="mp-tabla rc-tabla"><tr><th>\\(n\\)</th><th>\\(a_n\\)</th><th>\\(b_n\\)</th></tr>${fila(0, d.a0, '—')}${fila(1, d.a1, d.b1)}${fila(3, d.a3, d.b3)}${fila(5, d.a5, d.b5)}</table>
-        <p class="mp-nota">\\(a_0\\) es el valor medio. Los armónicos 2, 4 y 6 valen 0.</p>`;
+      const ondas = d.ondas.map((o, i) => `<div class="rc-p4-item"><b>Onda ${LETRAS[i]}</b>${RC.grafico((x) => o.A * RC.BASE[o.tipo].g(x))}</div>`).join('');
+      const esp = d.espectros.map((c, k) => `<div class="rc-p4-item"><b>Espectro ${k + 1}</b>${RC.barras(c)}</div>`).join('');
+      return `<p>Une cada onda con su espectro.</p>${ondas}${esp}`;
     },
-    ops: () => ['\\text{Media onda: } f(t + T/2) = -f(t)', '\\text{Es par}', '\\text{Es impar}', '\\text{Tiene nivel de continua}'],
+    opsFijas: (d) => Object.fromEntries(LETRAS.map((L, i) => [L, [1, 2, 3, 4].map((k) => ({ t: String(k), ok: k - 1 === d.de[i] }))])),
     pasos: () => [
-      { t: '1. Frecuencia y valor medio', tex: null, items: [{ id: 'f3', et: '\\text{frecuencia del 3.}^{\\text{er}}\\text{ armónico } f_3\\ (\\text{Hz})', pts: 8 }, { id: 'vm', et: '\\text{valor medio}', pts: 8 }] },
-      { t: '2. ¿Por qué faltan los pares?', tex: '\\text{Faltan los armónicos pares porque…}', items: [{ id: 'sim', et: '\\text{razón}', pts: 9, tipo: 'op' }] }
+      { t: 'Respuestas', tex: null, items: LETRAS.map((L, i) => ({ id: L, et: '\\text{Onda ' + L + ' → espectro}', pts: i === 3 ? 7 : 6, tipo: 'op', fila: true })) }
     ],
-    esperado: (d) => ({ f3: 3 * d.f0, vm: d.a0, sim: 0 }),
-    final: (d) => `f_3 = 3f_0 = ${dec(r4(3 * d.f0))}\\ \\text{Hz};\\quad a_0 = ${RC.tex(d.a0)};\\quad \\text{media onda}`
+    esperado: () => ({ A: 0, B: 0, C: 0, D: 0 }),
+    final: (d) => LETRAS.map((L, i) => `\\text{${L}: ${RC.BASE[d.ondas[i].tipo].n} → espectro ${d.de[i] + 1}}`).join('\\quad ')
   };
 
   RC.P = P;

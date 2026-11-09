@@ -261,7 +261,7 @@
     const v = est[p].vals[it.id];
     if (it.tipo === 'op') {
       const ops = d.op[it.id].map((o, i) => `<button type="button" class="mp-op rc-op ${String(v) === String(i) ? 'elegida' : ''}" data-op="${p}|${it.id}" data-k="${i}">\\(${o.t}\\)</button>`).join('');
-      return `<div class="rc-ops"><span class="et">Elige \\(${it.et}\\)</span>${ops}</div>`;
+      return `<div class="rc-ops${it.fila ? ' rc-ops-fila' : ''}"><span class="et">\\(${it.et}\\)</span>${ops}</div>`;
     }
     const id = p + '|' + it.id;
     return `<label class="mp-celda"><span class="et">\\(${it.et}\\)</span><span class="mp-num"><button type="button" class="mp-signo" data-signo="${id}" aria-label="Cambiar signo">±</button><input data-c="${id}" inputmode="decimal" autocomplete="off" value="${II.esc(v == null ? '' : v)}"></span></label>`;

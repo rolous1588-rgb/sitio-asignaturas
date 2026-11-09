@@ -286,3 +286,9 @@ body.examen { background-repeat: repeat; }
 .rc-celdas .mp-celda { display: grid; gap: 4px; }
 .rc-celdas .mp-num { display: grid; grid-template-columns: auto 1fr; gap: 8px; }
 .rc-celdas .mp-num input { width: 100%; font-size: 1.2rem; padding: 10px 12px; }
+
+/* P4: ondas y espectros */
+.rc-p4-item { margin: 8px 0 12px; }
+.rc-p4-item b { display: block; margin-bottom: 2px; }
+.rc-ops-fila { grid-template-columns: 1fr repeat(4, 52px); align-items: center; }
+.rc-ops-fila .rc-op { text-align: center; padding: 10px 0; }
