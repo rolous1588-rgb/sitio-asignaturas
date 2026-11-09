@@ -182,6 +182,14 @@ Carpeta `transformadas/recuperatorio/` (sesiones `tf-rec1` oficial y `tf-rec1-pr
 - Lo que un estudiante observado envía después de la hora de observación no se califica.
 - Pruebas: motor con Node (400 carnets: todo correcto = 100; verificación matemática de cada solución) y Playwright con un supabase-js falso y base compartida (docente + 4 estudiantes: códigos distintos, QR viejo rechazado, QR bloqueado, iniciar, verificar, observar, terminar con confirmación, reabrir, cuenta regresiva, terminar, publicar).
 
+## Transformadas · 2.º parcial de Series de Fourier por celular (09/11/2026)
+
+Carpeta `transformadas/parcial2/` (sesiones `tf-ex2` oficial y `tf-ex2-prueba` ensayo; observaciones en `tf-ex2-obs` y `tf-ex2-prueba-obs`). Copia del recuperatorio (`transformadas/recuperatorio/`): mismo estudiante, panel, QR, códigos, verificación, observado, cuenta regresiva y notas.
+
+- `js/rc-motor.js` (mismo espacio `RC`, otros problemas): P1 lee tu señal por carrera (20: T, f, ω₀, a₀; f y ω₀ se revisan con los números del estudiante), P2 triangular par con alturas propias, pico o valle en t = 0 (30: a₀, a₁, a₂, a₃, b₁), P3 reconocer sin integrar con 6 tipos de onda (cuadrada, triangular, diente, rectificada media y completa, pulso de un cuarto) corridas T/4, con nivel o invertidas (25: simetría, ¿cosenos?, ¿senos?, armónicos, a₀; las respuestas salen de integrar la onda de cada carnet, `RC.coef`), P4 leer un espectro por carrera (25: c₁, c₃, f₃, valor medio, por qué faltan los pares). `RC.datos(k, carnet, carrera)` y `RC.nota(carnet, est, carrera)` llevan la carrera. `RC.grafico` dibuja dos períodos en SVG.
+- **Observaciones**: con las notas publicadas, el estudiante escribe una por problema y toca «Enviar mis observaciones» (respuesta `obs` en `<sesión>-obs`, abierta por el panel al publicar; vale la última). El panel las muestra en «Observaciones de los estudiantes» y en una columna del Excel. Al volver a publicar (`extra.pub` cambia) los celulares recargan la nota.
+- Pruebas: motor con Node (600 casos, ambas carreras, respuestas con 3 cifras significativas = 100; coeficientes de la triangular contra integración numérica) y Playwright con supabase-js falso (docente + 4 estudiantes, incluidas las observaciones).
+
 ## Métodos Numéricos · Repaso de raíces (clase presencial, 14/10/2026)
 
 Carpeta `numericos/raices/` (sesión `mn-raices`, fila creada en `estado_sesion` el 14/10). Copia adaptada de `transformadas/fourier/` (mismo esquema: el docente proyecta su celular en horizontal; los estudiantes entran por QR con datos móviles). Usa las copias de Métodos en `../base/` (`config.js`, `nucleo.js`, `me.css`); trae su propia copia de `fs-onda.js`, `estudiante.js` y `proyectar.js`. Entrenamiento para el examen del viernes 16/10.
