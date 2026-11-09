@@ -292,8 +292,10 @@
     cab('Simulacro', 'Simulacro de examen');
     const pool = [];
     TEMAS.forEach((t) => { const p = II.mezclar(Math.random, t.rapidas.concat(itemsGenerados(t, 4))); pool.push(...p.slice(0, 2).map((q) => Object.assign({ tema: t.titulo }, q))); });
-    const extra = II.mezclar(Math.random, TEMAS).slice(0, 2).map((t) => Object.assign({ tema: t.titulo }, II.elegir(Math.random, t.rapidas)));
-    const qs = preparar(II.mezclar(Math.random, pool.concat(extra).filter((q, i, a) => a.findIndex((x) => x.t === q.t) === i)));
+    const todas = [];
+    TEMAS.forEach((t) => t.rapidas.forEach((q) => todas.push(Object.assign({ tema: t.titulo }, q))));
+    II.mezclar(Math.random, todas).forEach((q) => { if (pool.length < 20 && !pool.some((x) => x.t === q.t)) pool.push(q); });
+    const qs = preparar(II.mezclar(Math.random, pool));
     const resp = Array(qs.length).fill(null);
     let i = 0;
     const chips = () => '<div class="rp-chips">' + qs.map((_, j) => '<button class="' + (j === i ? 'act ' : '') + (resp[j] != null ? 'hecha' : '') + '" data-j="' + j + '">' + (j + 1) + '</button>').join('') + '</div>';
