@@ -545,9 +545,21 @@
 
   II.alCambiarConexion((ok) => { const d = $('#e-con'); d.classList.toggle('on', ok); d.classList.toggle('off', !ok); });
   (async () => {
+    $('#cont').innerHTML = '<div class="tarjeta"><p>Conectando…</p></div>';
     if (!II.sb) { $('#cont').innerHTML = '<div class="tarjeta"><div class="aviso mal">No se pudo conectar con la base de datos. Revisa internet y recarga.</div></div>'; return; }
-    const { data } = await II.sb.auth.getSession();
-    if (data && data.session && (await esDocente())) arrancar();
-    else vIngreso();
+    // Si la sesión no responde en 8 s, no dejar la pantalla en blanco: avisar y ofrecer recargar
+    const aviso = setTimeout(() => {
+      $('#cont').innerHTML = '<div class="tarjeta"><div class="aviso mal">La conexión está tardando. Cierra las otras pestañas de este sitio y toca «Recargar».</div><p><button class="btn" id="b-recargar">Recargar</button></p></div>';
+      $('#b-recargar').onclick = () => location.reload();
+    }, 8000);
+    try {
+      const { data } = await II.sb.auth.getSession();
+      const doc = data && data.session && (await esDocente());
+      clearTimeout(aviso);
+      if (doc) arrancar(); else vIngreso();
+    } catch (e) {
+      clearTimeout(aviso);
+      vIngreso();
+    }
   })();
 })();
