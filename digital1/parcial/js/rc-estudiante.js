@@ -498,14 +498,16 @@
       const c = res.cel[it.id];
       const tuya = it.tipo === 'op' ? (vals[it.id] == null ? '—' : RC.opTxt(d.op[it.id][Number(vals[it.id])])) : vals[it.id] ? II.esc(neg(vals[it.id])) : '—';
       const espT = it.tipo === 'op' ? RC.opTxt(d.op[it.id][c.exp]) : it.txt != null ? '<span class="mono">' + it.txt + '</span>' : `\\(${RC.tex(c.exp)}\\)`;
-      return `<tr class="${c.r === 'ok' ? 'ok' : 'mal'}"><td>${RC.etTxt(it)}</td><td class="mono">${tuya}</td><td>${c.r === 'ok' ? '✓' : '✗ ' + espT}</td><td>${II.fmt(c.pts, 2)}/${II.fmt(c.max, 2)}</td></tr>`;
+      return `<tr class="${c.r === 'ok' ? 'ok' : 'mal'}"><td>${RC.etTxt(it)}${c.anulada ? ' <small>(anulada)</small>' : ''}</td><td class="mono">${tuya}</td><td>${c.r === 'ok' ? '✓' : '✗ ' + espT}</td><td>${II.fmt(c.pts, 2)}/${II.fmt(c.max, 2)}</td></tr>`;
     };
+    // explicación de una pregunta anulada, solo para quien la tuvo mal o vacía
+    const explica = (q) => q.items.filter((it) => it.anulada && it.explica && res.cel[it.id].r !== 'ok').map((it) => `<div class="aviso duda rc-explica">${it.explica}</div>`).join('');
     const bloques = preguntas(p, d).map((q) => {
       const ptsQ = q.items.reduce((s, it) => s + res.cel[it.id].pts, 0), maxQ = q.items.reduce((s, it) => s + it.pts, 0);
       const t = (est.obs && est.obs[q.clave]) || '';
       return `<div class="rc-preg"><p class="rc-preg-t"><b>${II.esc(q.t)}</b><span>${II.fmt(Math.round(ptsQ * 100) / 100, 2)} / ${II.fmt(maxQ, 2)}</span></p>
         ${q.html ? `<div class="pd-enun">${q.html}</div>` : ''}${q.tex ? `<div class="ex-func rc-plantilla">\\[${q.tex}\\]</div>` : ''}
-        <div class="mp-tabla-scroll"><table class="mp-tabla ex-det">${q.items.map(fila).join('')}</table></div>
+        <div class="mp-tabla-scroll"><table class="mp-tabla ex-det">${q.items.map(fila).join('')}</table></div>${explica(q)}
         <label class="campo rc-obs-caja"><span>Observación sobre esta pregunta (opcional)</span><textarea data-obs-p="${q.clave}" rows="2" maxlength="800" placeholder="Escribe qué crees que está mal calificado y por qué">${II.esc(t)}</textarea></label></div>`;
     }).join('');
     return tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}; ${II.fmt(res.pts, 2)} / ${RC.MAX[p]}</span>

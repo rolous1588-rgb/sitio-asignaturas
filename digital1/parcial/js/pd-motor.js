@@ -407,20 +407,29 @@
     }
     return null;
   }
+  // Literales (P5 a): pregunta anulada el 09/11 por decisión del docente; el punto se da a todos y a quien
+  // la tuvo mal o vacía se le explica cómo se cuentan y para qué sirve contarlos.
+  function explicaLit(a) {
+    const cuenta = a.mi.map((g) => g.length);
+    return `<p><b>Esta pregunta se anuló: el punto se te da igual.</b></p>
+      <p>Un <b>literal</b> es una variable o su negada (A, B̄, C, D̄…). Se cuentan todas las veces que aparecen en la expresión mínima; una variable con barra cuenta como <b>un</b> literal.</p>
+      <p>En tu mapa: ${M('F = ' + sopT(a.mi, N4))} tiene ${a.nt} términos y ${cuenta.join(' + ')} = <b>${a.nl} literales</b>.</p>
+      <p><b>¿Para qué sirve contarlos?</b> Cada literal es una entrada de compuerta en el circuito. Por eso la expresión mínima es la que tiene menos términos (menos compuertas AND) y, entre las que tienen los mismos términos, menos literales (menos entradas y menos cables). Contar literales permite comparar dos soluciones y saber cuál es más barata y más simple de armar.</p>`;
+  }
   P.p5 = {
     titulo: 'Mapas de Karnaugh', max: 25,
     gen(r) { const a = mapaConX(r), b = deFuncion(r), c = deCircuito(r); return a && b && c ? { a, b, c } : null; },
     enunciado: () => '<p>Tres mapas de Karnaugh de 4 variables (filas AB, columnas CD). En b) y c) primero <b>llenas el mapa</b> (toca cada casilla: 1 o 0) y después eliges la expresión mínima.</p>',
     pasos: (d) => { const v = d && d.a; return [
       { t: 'a) Mapa con X', html: v ? `<p>Simplifica este mapa. Las <b>X</b> son condiciones que no importan.</p><div class="pd-fig">${K.estatico(4, d.a.f, {})}</div>` : '',
-        items: [{ id: 'ma', h: 'Expresión mínima de F', pts: 7, tipo: 'op' }, { id: 'nt', h: 'Cantidad de términos (grupos)', pts: 1, tol: EX }, { id: 'nl', h: 'Cantidad total de literales', pts: 1, tol: EX }] },
+        items: [{ id: 'ma', h: 'Expresión mínima de F', pts: 7, tipo: 'op' }, { id: 'nt', h: 'Cantidad de términos (grupos)', pts: 1, tol: EX }, { id: 'nl', h: 'Cantidad total de literales', pts: 1, tol: EX, anulada: true, explica: v ? explicaLit(d.a) : null }] },
       { t: 'b) De la función al mapa', html: 'Lleva esta función al mapa:', tex: v ? lineas('G', terminos(d.b.pu, N4), 2) : null, mapa: true, items: celdas('g', 4, v && d.b.f, 0.25, N4) },
       { t: 'b) Expresión mínima de G', items: [{ id: 'mb', h: 'G =', pts: 4, tipo: 'op' }] },
       { t: 'c) Del circuito al mapa', html: v ? `Lleva al mapa la función H de este circuito:<div class="pd-circ">${CI.svg(4, d.c.pu, N4, { mono: true, salida: 'H' })}</div>` : '', mapa: true, items: celdas('h', 4, v && d.c.f, 0.25, N4) },
       { t: 'c) Expresión mínima de H', items: [{ id: 'mc', h: 'H =', pts: 4, tipo: 'op' }] }]; },
     ops: (d, id) => { const q = id === 'ma' ? d.a : id === 'mb' ? d.b : d.c; return [q.mi].concat(q.dis).map((p) => ({ t: sopT(p, N4) })); },
     esperado: (d) => espBits('h', d.c.f, espBits('g', d.b.f, { nt: [d.a.nt], nl: [d.a.nl] })),
-    final: (d) => ['<p><b>a)</b></p>', mapaSol(4, d.a.f, N4), `F = ${sopT(d.a.mi, N4)}`, `<p>${d.a.nt} grupos y ${d.a.nl} literales. Las X se toman como 1 solo donde agrandan un grupo.</p>`,
+    final: (d) => ['<p><b>a)</b></p>', mapaSol(4, d.a.f, N4), `F = ${sopT(d.a.mi, N4)}`, `<p>${d.a.nt} grupos y ${d.a.nl} literales (cada literal es una entrada de compuerta: menos literales, circuito más simple). Las X se toman como 1 solo donde agrandan un grupo.</p>`,
       '<p><b>b)</b> Cada producto de 4 literales es una casilla; uno de 3 literales ocupa dos casillas vecinas.</p>', mapaSol(4, d.b.f, N4), `G = ${sopT(d.b.mi, N4)}`,
       `<p><b>c)</b> El circuito da ${M('H = ' + sopT(d.c.pu, N4))}. Llevado al mapa y agrupado:</p>`, mapaSol(4, d.c.f, N4), `H = ${sopT(d.c.mi, N4)}`]
   };
@@ -504,7 +513,7 @@
         const lista = [].concat(esp[it.id]);
         const q = RC.leer(v);
         r = q.vacio ? 'vacio' : q.invalido ? 'mal' : lista.some((e) => RC.cerca(q.v, e, it.tol)) ? 'ok' : 'mal';
-        cel[it.id] = { r, exp: lista[0], pts: r === 'ok' ? it.pts : 0, max: it.pts };
+        cel[it.id] = { r, exp: lista[0], pts: r === 'ok' || it.anulada ? it.pts : 0, max: it.pts, anulada: !!it.anulada };
       }
       pts += cel[it.id].pts;
     });

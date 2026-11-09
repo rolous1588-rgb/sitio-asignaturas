@@ -382,3 +382,4 @@ label.rc-obs-caja{display:block;border:none;margin-top:6px}
 label.rc-obs-caja span{font-size:.85rem;color:var(--texto-2)}
 .rc-resumen td{white-space:normal}
 .rc-resumen td:last-child{white-space:nowrap}
+.rc-explica p{margin:4px 0}

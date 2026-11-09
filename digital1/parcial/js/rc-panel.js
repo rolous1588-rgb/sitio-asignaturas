@@ -261,7 +261,7 @@
         <div><b>${pts(med)}</b><small>mediana</small></div>
         <div><b>${pts(ns[n - 1])}</b><small>nota más alta</small></div>
         <div><b>${pts(ns[0])}</b><small>nota más baja</small></div></div>
-      <p class="mp-nota">${n} estudiante${n === 1 ? '' : 's'} con nota${alumnos.length - n ? `; ${alumnos.length - n} observado${alumnos.length - n === 1 ? '' : 's'} no cuenta${alumnos.length - n === 1 ? '' : 'n'}` : ''}${sinNada ? `; ${sinNada} sin ninguna respuesta (nota 0)` : ''}.</p>
+      <p class="mp-nota">${n} estudiante${n === 1 ? '' : 's'} con nota${alumnos.length - n ? `; ${alumnos.length - n} observado${alumnos.length - n === 1 ? '' : 's'} no cuenta${alumnos.length - n === 1 ? '' : 'n'}` : ''}${sinNada ? `; ${sinNada} sin ninguna respuesta` : ''}.</p>
       <p class="rc-st-t">Cuántos en cada rango de notas</p>
       ${R.map((r, i) => `<div class="rc-hist ${r[0] >= aprueba ? 'ok' : 'mal'}"><span>${r[0]} a ${r[1]}</span><i><em style="width:${(100 * cnt[i]) / mx}%"></em></i><b>${cnt[i]}</b></div>`).join('')}
       <p class="rc-st-t">Promedio de cada problema</p>
@@ -542,7 +542,7 @@
       const cel = RC.items(p, d).map((it) => {
         const c = r.cel[it.id];
         const v = it.tipo === 'op' ? (vals[it.id] == null ? '—' : 'opción ' + (Number(vals[it.id]) + 1)) : vals[it.id] || '—';
-        return `<span class="mpp-cel ${c.r === 'vacio' ? '' : c.r}">${RC.etTxt(it)} <b>${esc(String(v).replace(/^-/, '−'))}</b> ${c.r === 'ok' ? '✓' : c.r === 'vacio' ? '—' : '✗'}</span>`;
+        return `<span class="mpp-cel ${c.r === 'vacio' ? '' : c.r}">${RC.etTxt(it)}${c.anulada ? ' (anulada, vale para todos)' : ''} <b>${esc(String(v).replace(/^-/, '−'))}</b> ${c.r === 'ok' ? '✓' : c.r === 'vacio' ? '—' : '✗'}</span>`;
       }).join('');
       return `<div class="mpp-det"><b>${RC.TITULO[p]} ${RC.NOMBRE[p]}: ${pts(r.pts)}/${RC.MAX[p]}</b><div class="mpp-dfila">${cel}</div></div>`;
     }).join('');
