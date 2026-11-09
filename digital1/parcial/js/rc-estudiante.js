@@ -213,7 +213,7 @@
     CONT(franja() + tarjeta(`<span class="etq">Parcial de Electrónica Digital 1</span>
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
-        <li>6 problemas (100 puntos): P1 conversiones (15); P2 álgebra de Boole y De Morgan (15); P3 circuito, tabla y NAND (20); P4 diseño de una aplicación (15); P5 mapa de Karnaugh con X (20); P6 XOR y paridad (15). Puedes usar papel y lápiz como hoja auxiliar; no se entrega.</li>
+        <li>6 problemas (100 puntos): P1 conversiones (10); P2 simplificación con Boole y De Morgan (15); P3 circuito, tabla y NAND (20); P4 diseño de dos aplicaciones (20); P5 tres mapas de Karnaugh (25); P6 XOR y paridad (10). Las tablas de verdad y los mapas se llenan tocando cada casilla. Puedes usar papel y lápiz como hoja auxiliar; no se entrega.</li>
         <li>Escribe cada resultado en su casilla: enteros o decimales, con coma o punto. El botón <b>±</b> cambia el signo. Usa al menos 3 cifras significativas (por ejemplo, 0,795 o 2750); se acepta ±2 %.</li>
         <li>Si un resultado depende de otro tuyo (por ejemplo, las pérdidas dependen de tu corriente), se revisa con <b>tus propios números</b>.</li>
         <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
@@ -248,13 +248,32 @@
     const P = RC.P[p];
     let h = tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}; ${RC.MAX[p]} puntos</span><div class="ex-func">${P.enunciado(d)}</div>`);
     P.pasos(d).forEach((ps) => {
-      const items = ps.items.map((it) => itemHTML(p, d, it)).join('');
-      h += tarjeta(`<h3 class="rc-paso">${II.esc(ps.t)}</h3>${ps.nota ? `<p class="mp-nota">${ps.nota}</p>` : ''}
+      const cuerpo = ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
+      h += tarjeta(`<h3 class="rc-paso">${II.esc(ps.t)}</h3>${ps.html ? `<div class="pd-enun">${ps.html}</div>` : ''}${ps.nota ? `<p class="mp-nota">${ps.nota}</p>` : ''}
         ${ps.tex ? `<div class="ex-func rc-plantilla">\\[${ps.tex}\\]</div>` : ''}
-        <div class="mp-celdas rc-celdas">${items}</div>`, 'rc-tpaso');
+        ${cuerpo}`, 'rc-tpaso');
     });
     h += `<div class="mp-pie rc-pie"><button class="boton prim bloque" data-enviar="${p}">Enviar ${RC.TITULO[p]}</button><span class="mp-int" data-estado="${p}"></span></div>`;
     return h;
+  }
+
+  // tabla de verdad completa o mapa de Karnaugh (Digital 1): se toca cada casilla: ? → 1 → 0 (→ X)
+  function botonY(p, it, x) {
+    const v = est[p].vals[it.id];
+    return `<button type="button" class="pd-y ${v ? 'v' + v : ''}" data-y="${p}|${it.id}" data-x="${x ? 1 : 0}">${v || '?'}</button>`;
+  }
+  function tablaY(p, ps) {
+    const ceros = `<button type="button" class="boton pd-ceros" data-ceros="${p}|${ps.items.map((it) => it.id).join(',')}">Poner 0 en las casillas vacías</button>`;
+    if (ps.mapa) {
+      const G = [0, 1, 3, 2], b2 = (n) => n.toString(2).padStart(2, '0');
+      return `<div class="pd-tabla"><table class="pd-km"><tr><th class="pd-kh">AB \\ CD</th>${G.map((c) => `<th>${b2(c)}</th>`).join('')}</tr>` +
+        G.map((f) => `<tr><th>${b2(f)}</th>${G.map((c) => `<td>${botonY(p, ps.items[(f << 2) | c], false)}</td>`).join('')}</tr>`).join('') +
+        `</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0.</p>${ceros}`;
+    }
+    const T = ps.tabla;
+    return `<div class="pd-tabla"><table class="tt tight pd-tt"><tr>${T.cols.map((c) => `<th>${II.esc(c)}</th>`).join('')}<th>Y</th></tr>` +
+      ps.items.map((it) => `<tr>${it.bits.split('').map((x) => `<td>${x}</td>`).join('')}<td>${botonY(p, it, T.x)}</td></tr>`).join('') +
+      `</table></div><p class="mp-nota">Toca cada casilla de Y para cambiarla: ? → 1 → 0${T.x ? ' → X' : ''}.</p>${ceros}`;
   }
 
   function itemHTML(p, d, it) {
@@ -306,6 +325,35 @@
         if (!inp.value.includes('/')) inp.value = inp.value + '/';
         cambiar(inp);
         inp.focus();
+      };
+    });
+    $$('[data-y]').forEach((b) => {
+      b.onclick = () => {
+        const [p, id] = b.dataset.y.split('|');
+        const ciclo = b.dataset.x === '1' ? ['1', '0', 'X'] : ['1', '0'];
+        const n = ciclo[(ciclo.indexOf(est[p].vals[id]) + 1) % ciclo.length];
+        est[p].vals[id] = n;
+        b.textContent = n;
+        b.className = 'pd-y v' + n;
+        anotarCambio(p);
+        guardarEst();
+        pintarGuardado();
+        programarAvance();
+      };
+    });
+    $$('[data-ceros]').forEach((b) => {
+      b.onclick = () => {
+        const [p, ids] = b.dataset.ceros.split('|');
+        ids.split(',').forEach((id) => {
+          if (est[p].vals[id]) return;
+          est[p].vals[id] = '0';
+          const y = document.querySelector(`[data-y="${p}|${id}"]`);
+          if (y) { y.textContent = '0'; y.className = 'pd-y v0'; }
+        });
+        anotarCambio(p);
+        guardarEst();
+        pintarGuardado();
+        programarAvance();
       };
     });
     $$('[data-op]').forEach((b) => {
