@@ -300,3 +300,8 @@ body.examen { background-repeat: repeat; }
 .rc-op { line-height: 1.3; }
 .ex-func, .mp-tabla-scroll, .rc-op { position: relative; } /* que el MathML oculto de KaTeX no ensanche la página */
 .ex-func { font-size: 1rem; }
+.rc-pen .campo { display: block; margin: 8px 0; }
+.rc-pen .campo > span { display: block; font-size: .85rem; color: var(--suave, #555); margin-bottom: 4px; }
+.rc-pen input, .rc-pen textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 8px; }
+.rc-pen-tabla { margin-top: 10px; }
+.rc-pen-tabla tr.mal td { color: #b42318; font-weight: 700; }

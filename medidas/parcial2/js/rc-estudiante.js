@@ -419,6 +419,7 @@
     let h = tarjeta(`<span class="etq">2.º parcial; nota publicada</span>
       <div class="mp-res"><div class="grande">${II.fmt(mia.n, 2)}<small> / 100</small></div></div>
       <table class="mp-tabla"><tr><th>Problema</th><th>Puntos</th></tr>${RC.PROB.map((p) => `<tr><td>${RC.TITULO[p]}; ${RC.NOMBRE[p]}</td><td>${II.fmt(mia.p ? mia.p[p] : local.res[p].pts, 2)} / ${RC.MAX[p]}</td></tr>`).join('')}</table>
+      ${mia.pen ? `<table class="mp-tabla rc-pen-tabla"><tr><td>Nota del examen</td><td>${II.fmt(mia.examen, 2)} / 100</td></tr><tr class="mal"><td>Penalización</td><td>−${II.fmt(mia.pen.pts, 2)}</td></tr>${mia.pen.motivo ? `<tr><td colspan="2"><b>Motivo:</b> ${II.esc(mia.pen.motivo)}</td></tr>` : ''}<tr><td><b>Nota final</b></td><td><b>${II.fmt(mia.n, 2)} / 100</b></td></tr></table>` : ''}
       ${igual ? '' : '<div class="aviso duda">Tu nota se calculó con lo último que llegó al docente. El detalle de abajo es lo que quedó en tu celular y puede no coincidir.</div>'}
       <p class="mp-nota">✓ completo; ✗ o vacía, 0. Si crees que algo está mal calificado, escribe una <b>observación</b> debajo de ese problema y envíala al final.</p>`);
     RC.PROB.forEach((p) => {
