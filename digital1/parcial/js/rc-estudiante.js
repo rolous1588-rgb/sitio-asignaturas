@@ -1,7 +1,7 @@
 // ============================================================
 // Electrónica Digital 1 · parcial por celular (09/11/2026), copia del 2.º parcial de Medidas — celular del estudiante
 // Copia del 2.º parcial de Transformadas (transformadas/parcial2/, a su vez copia del recuperatorio de Laplace) con 7 problemas.
-// Observaciones: con las notas publicadas, el estudiante escribe una por problema y las envía a la sesión «<sesión>-obs».
+// Observaciones: con las notas publicadas, el estudiante escribe una por pregunta (clave «p1.0», con su etiqueta en «etq») y las envía a la sesión «<sesión>-obs».
 // Entrada: QR proyectado en la TV (?t=código). Sirve para todos mientras el docente no lo cambie ni lo bloquee.
 // Fases (estado_sesion.extra):
 //   sin «abre» → espera · abre → en curso (también para los que llegan tarde)
@@ -461,40 +461,57 @@
     soltarPantalla();
     const mia = notas[alumno.reg];
     if (!mia) { CONT(tarjeta('<h2>Notas publicadas</h2><p>No se encontró una nota para este registro. Habla con el docente.</p>')); return; }
-    if (mia.obs) { CONT(tarjeta('<span class="etq">2.º parcial; nota publicada</span><h2>Examen observado</h2><p>Habla con el docente.</p>')); return; }
+    if (mia.obs) { CONT(tarjeta('<span class="etq">Parcial; nota publicada</span><h2>Examen observado</h2><p>Habla con el docente.</p>')); return; }
     const local = RC.nota(alumno.carnet, est, CAR());
     const igual = mia.h === RC.firma(est);
-    let h = tarjeta(`<span class="etq">2.º parcial; nota publicada</span>
+    let h = tarjeta(`<span class="etq">Parcial; nota publicada</span>
       <div class="mp-res"><div class="grande">${II.fmt(mia.n, 2)}<small> / 100</small></div></div>
-      <table class="mp-tabla"><tr><th>Problema</th><th>Puntos</th></tr>${RC.PROB.map((p) => `<tr><td>${RC.TITULO[p]}; ${RC.NOMBRE[p]}</td><td>${II.fmt(mia.p ? mia.p[p] : local.res[p].pts, 2)} / ${RC.MAX[p]}</td></tr>`).join('')}</table>
+      <div class="mp-tabla-scroll"><table class="mp-tabla rc-resumen"><tr><th>Problema</th><th>Puntos</th></tr>${RC.PROB.map((p) => `<tr><td>${RC.TITULO[p]}; ${RC.NOMBRE[p]}</td><td>${II.fmt(mia.p ? mia.p[p] : local.res[p].pts, 2)} / ${RC.MAX[p]}</td></tr>`).join('')}</table></div>
       ${igual ? '' : '<div class="aviso duda">Tu nota se calculó con lo último que llegó al docente. El detalle de abajo es lo que quedó en tu celular y puede no coincidir.</div>'}
-      <p class="mp-nota">✓ completo; ✗ o vacía, 0. Si crees que algo está mal calificado, escribe una <b>observación</b> debajo de ese problema y envíala al final.</p>`);
-    RC.PROB.forEach((p) => {
-      h += detalleProblema(p, local.res[p]);
-      const t = (est.obs && est.obs[p]) || '';
-      h += `<div class="tarjeta rc-obs-caja"><label class="campo"><span>Observación sobre ${RC.TITULO[p]} (opcional)</span><textarea data-obs-p="${p}" rows="3" maxlength="800" placeholder="Por ejemplo: en Q escribí 1600 y creo que debía valer…">${II.esc(t)}</textarea></label></div>`;
-    });
-    h += tarjeta(`<span class="etq">Observaciones</span><p>Revisa tu detalle. Si tienes observaciones, escríbelas arriba (una por problema) y envíalas juntas. Puedes volver a enviarlas: vale lo último. El docente las revisará y volverá a publicar las notas si corresponde.</p>
+      <p class="mp-nota">✓ completo; ✗ o vacía, 0. Si crees que algo está mal calificado, escribe una <b>observación</b> debajo de esa pregunta y envíalas todas juntas al final.</p>`);
+    RC.PROB.forEach((p) => { h += detalleProblema(p, local.res[p]); });
+    h += tarjeta(`<span class="etq">Observaciones</span><p>Revisa tu detalle. Si tienes observaciones, escríbelas arriba, debajo de cada pregunta, y envíalas juntas. Puedes volver a enviarlas: vale lo último. El docente las revisará y volverá a publicar las notas si corresponde.</p>
       <button class="boton prim bloque" id="b-obs">Enviar mis observaciones</button><div id="obs-estado" class="mp-nota">${est.obsEnv ? 'Enviadas ✓ ' + new Date(est.obsEnv).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : ''}</div>`);
     CONT(h);
     $$('[data-obs-p]').forEach((ta) => ta.addEventListener('input', () => { est.obs = est.obs || {}; est.obs[ta.dataset.obsP] = ta.value; guardarEst(); }));
     $('#b-obs').onclick = enviarObs;
   }
 
+  // Preguntas de un problema (una observación por pregunta): cada paso es una pregunta; un paso con varias
+  // casillas «a)», «b)», «c)» se parte en una pregunta por casilla. Clave = «p1.0», «p1.1», …
+  function preguntas(p, d) {
+    const g = [];
+    RC.P[p].pasos(d).forEach((ps) => {
+      const partir = ps.items.length > 1 && ps.items.every((it) => it.tipo !== 'bit' && /^[a-z]\)/.test(it.h || ''));
+      if (partir) ps.items.forEach((it) => g.push({ t: it.h, items: [it] }));
+      else g.push({ t: ps.t, items: ps.items, html: ps.html || '', tex: ps.tex || '' });
+    });
+    return g.map((x, i) => ({ ...x, clave: p + '.' + i, etq: RC.TITULO[p] + ' ' + x.t }));
+  }
+  const gruposObs = () => RC.PROB.reduce((a, p) => a.concat(preguntas(p, RC.datos(p, alumno.carnet, CAR()))), []);
+
   function detalleProblema(p, res) {
     const d = RC.datos(p, alumno.carnet, CAR());
     const P = RC.P[p];
     const vals = est[p].vals;
-    const filas = RC.items(p, d).map((it) => {
+    const fila = (it) => {
       const c = res.cel[it.id];
       const tuya = it.tipo === 'op' ? (vals[it.id] == null ? '—' : RC.opTxt(d.op[it.id][Number(vals[it.id])])) : vals[it.id] ? II.esc(neg(vals[it.id])) : '—';
       const espT = it.tipo === 'op' ? RC.opTxt(d.op[it.id][c.exp]) : it.txt != null ? '<span class="mono">' + it.txt + '</span>' : `\\(${RC.tex(c.exp)}\\)`;
       return `<tr class="${c.r === 'ok' ? 'ok' : 'mal'}"><td>${RC.etTxt(it)}</td><td class="mono">${tuya}</td><td>${c.r === 'ok' ? '✓' : '✗ ' + espT}</td><td>${II.fmt(c.pts, 2)}/${II.fmt(c.max, 2)}</td></tr>`;
+    };
+    const bloques = preguntas(p, d).map((q) => {
+      const ptsQ = q.items.reduce((s, it) => s + res.cel[it.id].pts, 0), maxQ = q.items.reduce((s, it) => s + it.pts, 0);
+      const t = (est.obs && est.obs[q.clave]) || '';
+      return `<div class="rc-preg"><p class="rc-preg-t"><b>${II.esc(q.t)}</b><span>${II.fmt(Math.round(ptsQ * 100) / 100, 2)} / ${II.fmt(maxQ, 2)}</span></p>
+        ${q.html ? `<div class="pd-enun">${q.html}</div>` : ''}${q.tex ? `<div class="ex-func rc-plantilla">\\[${q.tex}\\]</div>` : ''}
+        <div class="mp-tabla-scroll"><table class="mp-tabla ex-det">${q.items.map(fila).join('')}</table></div>
+        <label class="campo rc-obs-caja"><span>Observación sobre esta pregunta (opcional)</span><textarea data-obs-p="${q.clave}" rows="2" maxlength="800" placeholder="Escribe qué crees que está mal calificado y por qué">${II.esc(t)}</textarea></label></div>`;
     }).join('');
     return tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}; ${II.fmt(res.pts, 2)} / ${RC.MAX[p]}</span>
       <div class="ex-func">${P.enunciado(d)}</div>
-      <p class="mp-nota">Tus respuestas. Si una casilla está mal, al lado va el valor que salía <b>con tus números</b>.</p>
-      <div class="mp-tabla-scroll"><table class="mp-tabla ex-det">${filas}</table></div>
+      <p class="mp-nota">Tus respuestas, pregunta por pregunta. Si una casilla está mal, al lado va el valor correcto.</p>
+      ${bloques}
       <p class="mp-nota">Solución:</p><div class="ex-func">${[].concat(P.final(d)).map((l) => (l.charAt(0) === '<' ? l : '\\[' + l + '\\]')).join('')}</div>`);
   }
 
@@ -502,14 +519,15 @@
     const b = $('#b-obs');
     const box = $('#obs-estado');
     const textos = {};
-    RC.PROB.forEach((p) => { const t = String((est.obs && est.obs[p]) || '').trim(); if (t) textos[p] = t.slice(0, 800); });
+    const etq = {};
+    gruposObs().forEach((q) => { const t = String((est.obs && est.obs[q.clave]) || '').trim(); if (t) { textos[q.clave] = t.slice(0, 800); etq[q.clave] = q.etq; } });
     if (!Object.keys(textos).length) { box.textContent = 'Escribe al menos una observación antes de enviar.'; return; }
     b.disabled = true;
     box.textContent = 'Enviando…';
     const mia = notas && notas[alumno.reg];
     const { error } = await II.sb.from('respuestas').insert({
       sesion: SID_OBS, actividad: 'obs', carnet: alumno.carnet, nombre: alumno.nombre,
-      respuesta: { reg: alumno.reg, cod: codigo(), car: CAR(), textos, nota: mia ? mia.n : null },
+      respuesta: { reg: alumno.reg, cod: codigo(), car: CAR(), textos, etq, nota: mia ? mia.n : null },
       correcta: null, intento: 1, puntaje: 0
     });
     b.disabled = false;

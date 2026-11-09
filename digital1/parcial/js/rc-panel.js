@@ -147,7 +147,7 @@
       ing = di || [];
       const { data: dr } = await II.sb.from('respuestas').select('id,carnet,nombre,respuesta,creado').eq('sesion', SID_OBS).order('id').range(0, 999);
       reclamos = {};
-      (dr || []).forEach((r) => { const x = r.respuesta || {}; if (x.reg) reclamos[x.reg] = { textos: x.textos || {}, creado: r.creado, nombre: r.nombre, carnet: r.carnet }; });
+      (dr || []).forEach((r) => { const x = r.respuesta || {}; if (x.reg) reclamos[x.reg] = { textos: x.textos || {}, etq: x.etq || {}, creado: r.creado, nombre: r.nombre, carnet: r.carnet }; });
       II.marcarConexion(true);
       agrupar();
       await asignarCodigos();
@@ -217,6 +217,57 @@
   }
 
   // ---------------- vistas ----------------
+  // orden de la lista y nota de aprobación (se recuerdan en este navegador)
+  const ORDENES = [['ver', 'Sin verificar primero'], ['notaD', 'Nota: de mayor a menor'], ['notaA', 'Nota: de menor a mayor'], ['nombre', 'Apellido (A a Z)'], ['salidas', 'Más salidas de la página']];
+  let orden = II.leer('px-panel-orden-' + SID, 'ver');
+  let aprueba = Number(II.leer('px-panel-aprueba-' + SID, 51)) || 51;
+  const nota = (a) => (a.cal ? a.cal.total : 0);
+  function ordenados() {
+    const L = alumnos.slice(), nom = (p, q) => String(p.nombre).localeCompare(String(q.nombre), 'es');
+    const obsUlt = (p, q) => (!!p.obs - !!q.obs); // los observados al final cuando se ordena por nota
+    if (orden === 'notaD') return L.sort((p, q) => obsUlt(p, q) || nota(q) - nota(p) || nom(p, q));
+    if (orden === 'notaA') return L.sort((p, q) => obsUlt(p, q) || nota(p) - nota(q) || nom(p, q));
+    if (orden === 'nombre') return L.sort(nom);
+    if (orden === 'salidas') return L.sort((p, q) => ((q.sal && q.sal.n) || 0) - ((p.sal && p.sal.n) || 0) || nom(p, q));
+    return L;
+  }
+
+  // ---------------- estadísticas (con el examen terminado; sin los observados) ----------------
+  let claveStats = '';
+  function pintarStats() {
+    const t = $('#t-stats'), box = $('#stats');
+    if (!t || !box) return;
+    const f = fase();
+    t.classList.toggle('oculto', f !== 'terminado');
+    if (f !== 'terminado') return;
+    const L = alumnos.filter((a) => !a.obs), ns = L.map(nota).sort((x, y) => x - y), n = ns.length;
+    const clave = JSON.stringify([aprueba, ns, alumnos.length]);
+    if (clave === claveStats) return;
+    claveStats = clave;
+    if (!n) { box.innerHTML = '<p class="mp-nota">Todavía no hay notas.</p>'; return; }
+    const ap = ns.filter((x) => x >= aprueba - 1e-9).length, re = n - ap;
+    const prom = ns.reduce((a, x) => a + x, 0) / n;
+    const med = n % 2 ? ns[(n - 1) / 2] : (ns[n / 2 - 1] + ns[n / 2]) / 2;
+    const sinNada = L.filter((a) => !a.av).length;
+    const pc = (x) => Math.round((100 * x) / n);
+    const R = [[0, 20], [21, 40], [41, aprueba - 1], [aprueba, 70], [71, 85], [86, 100]].filter((r) => r[1] >= r[0]);
+    const cnt = R.map((r, i) => ns.filter((x) => (i === 0 || x >= r[0]) && (i === R.length - 1 || x < R[i + 1][0])).length);
+    const mx = Math.max(1, ...cnt);
+    const probs = RC.PROB.map((p) => { const m = L.reduce((s, a) => s + a.cal.res[p].pts, 0) / n; return [p, m, Math.round((100 * m) / RC.MAX[p])]; });
+    box.innerHTML = `<div class="rc-st">
+        <div class="ok"><b>${ap}</b><small>aprobados (${pc(ap)} %)</small></div>
+        <div class="mal"><b>${re}</b><small>reprobados (${pc(re)} %)</small></div>
+        <div><b>${pts(prom)}</b><small>promedio</small></div>
+        <div><b>${pts(med)}</b><small>mediana</small></div>
+        <div><b>${pts(ns[n - 1])}</b><small>nota más alta</small></div>
+        <div><b>${pts(ns[0])}</b><small>nota más baja</small></div></div>
+      <p class="mp-nota">${n} estudiante${n === 1 ? '' : 's'} con nota${alumnos.length - n ? `; ${alumnos.length - n} observado${alumnos.length - n === 1 ? '' : 's'} no cuenta${alumnos.length - n === 1 ? '' : 'n'}` : ''}${sinNada ? `; ${sinNada} sin ninguna respuesta (nota 0)` : ''}.</p>
+      <p class="rc-st-t">Cuántos en cada rango de notas</p>
+      ${R.map((r, i) => `<div class="rc-hist ${r[0] >= aprueba ? 'ok' : 'mal'}"><span>${r[0]} a ${r[1]}</span><i><em style="width:${(100 * cnt[i]) / mx}%"></em></i><b>${cnt[i]}</b></div>`).join('')}
+      <p class="rc-st-t">Promedio de cada problema</p>
+      ${probs.map(([p, m, q]) => `<div class="rc-hist ${q >= 51 ? 'ok' : 'mal'}"><span>${RC.TITULO[p]} ${esc(RC.NOMBRE[p])}</span><i><em style="width:${q}%"></em></i><b>${pts(m)}/${RC.MAX[p]}</b></div>`).join('')}`;
+  }
+
   function vPanel() {
     $('#cont').innerHTML = `<div class="aviso oculto" id="aviso"></div>
       <div class="rc-vistas"><button data-v="qr" class="${vistaP === 'qr' ? 'activa' : ''}">QR (para la TV)</button><button data-v="control" class="${vistaP === 'control' ? 'activa' : ''}">Control</button></div>
@@ -231,11 +282,17 @@
           <div id="ver-res"></div></div>
         <div id="alertas"></div>
         <div class="tarjeta" id="t-reclamos"><span class="etq">Observaciones de los estudiantes</span><div id="reclamos"><p class="mp-nota">Se abren al publicar las notas.</p></div></div>
-        <div class="tarjeta"><span class="etq">Estudiantes</span><p class="mp-nota">Arriba, los que faltan verificar. Toca un nombre para ver sus respuestas y salidas.</p><div id="lista"></div></div>
+        <div class="tarjeta oculto" id="t-stats"><span class="etq">Resultados del examen</span>
+          <div class="rc-orden"><span>Aprueba con</span><input class="exp-min" id="i-aprueba" type="number" min="1" max="100" value="${aprueba}"><span>o más</span></div><div id="stats"></div></div>
+        <div class="tarjeta"><span class="etq">Estudiantes</span>
+          <div class="rc-orden"><span>Ordenar por</span><select id="s-orden">${ORDENES.map((o) => `<option value="${o[0]}" ${o[0] === orden ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>
+          <p class="mp-nota">Toca un nombre para ver sus respuestas y salidas.</p><div id="lista"></div></div>
         ${PRUEBA ? '<div class="tarjeta"><span class="etq">Ensayo</span><p class="mp-nota">Deja el ensayo como nuevo: borra registros, respuestas, códigos y notas.</p><button class="boton" id="b-reiniciar" style="color:var(--mal);border-color:var(--mal)">Reiniciar el ensayo y borrar sus datos</button></div>' : ''}
         <div class="tarjeta"><button class="boton" id="b-salir">Salir</button></div>
       </div>`;
     $$('[data-v]').forEach((b) => { b.onclick = () => { vistaP = b.dataset.v; II.guardar('px-panel-vista-' + SID, vistaP); vPanel(); }; });
+    $('#s-orden').onchange = (e) => { orden = e.target.value; II.guardar('px-panel-orden-' + SID, orden); listaForzada = true; pintarListas(); };
+    $('#i-aprueba').oninput = (e) => { const v = Number(e.target.value); if (v >= 1 && v <= 100) { aprueba = v; II.guardar('px-panel-aprueba-' + SID, v); claveStats = ''; pintarStats(); } };
     $('#b-salir').onclick = async () => { await II.sb.auth.signOut(); location.reload(); };
     $('#f-ver').onsubmit = (ev) => { ev.preventDefault(); buscado = String($('#i-cod').value || '').trim(); pintarVer(); };
     const br = $('#b-reiniciar');
@@ -257,7 +314,7 @@
   let claveQR = '', claveControl = '', claveLista = '', listaForzada = false;
   function pintar(forzar) {
     if (vistaP === 'qr') pintarQR(forzar);
-    else { if (forzar) listaForzada = true; pintarControl(forzar); pintarListas(); pintarVer(); pintarReclamos(); }
+    else { if (forzar) listaForzada = true; pintarControl(forzar); pintarListas(); pintarVer(); pintarReclamos(); pintarStats(); }
   }
 
   // ---------------- vista QR ----------------
@@ -386,6 +443,14 @@
   }
 
   // ---------------- observaciones de los estudiantes ----------------
+  // una por pregunta (clave «p1.0» + etiqueta) o, en el formato anterior, una por problema (clave «p1»)
+  function obsLista(rec) {
+    const T = (rec && rec.textos) || {}, E = (rec && rec.etq) || {};
+    return Object.keys(T).filter((k) => String(T[k] || '').trim()).map((k) => {
+      const p = k.split('.')[0];
+      return { k, p: RC.PROB.includes(p) ? p : null, etq: E[k] || RC.TITULO[k] || k, t: T[k] };
+    }).sort((x, y) => RC.PROB.indexOf(x.p) - RC.PROB.indexOf(y.p) || Number(x.k.split('.')[1] || 0) - Number(y.k.split('.')[1] || 0));
+  }
   let claveRec = '';
   function pintarReclamos() {
     const box = $('#reclamos');
@@ -398,7 +463,7 @@
     box.innerHTML = lista.length
       ? `<p class="mp-nota">${lista.length} ${lista.length === 1 ? 'estudiante envió' : 'estudiantes enviaron'} observaciones. Van también en el Excel.</p>` + lista.map((a) => `<div class="exp-al alerta"><div class="l1"><b>${esc(a.nombre)}</b><span class="n">${pts(a.cal.total)}/100</span></div>
           <div class="l2">C.U. ${esc(a.carnet)}; código ${esc(a.cod || '—')}; enviada ${hora(a.rec.creado)}</div>
-          ${RC.PROB.filter((p) => a.rec.textos[p]).map((p) => `<p class="rc-rec"><b>${RC.TITULO[p]} (${pts(a.cal.res[p].pts)}/${RC.MAX[p]}):</b> ${esc(a.rec.textos[p])}</p>`).join('')}</div>`).join('')
+          ${obsLista(a.rec).map((o) => `<p class="rc-rec"><b>${esc(o.etq)}${o.p ? ` (${RC.TITULO[o.p]}: ${pts(a.cal.res[o.p].pts)}/${RC.MAX[o.p]})` : ''}:</b> ${esc(o.t)}</p>`).join('')}</div>`).join('')
       : `<p class="mp-nota">${ex.publicado ? 'Todavía nadie envió observaciones.' : 'Se abren al publicar las notas.'}</p>`;
   }
 
@@ -427,11 +492,12 @@
     if (!l) return;
     const f = fase();
     // solo se vuelve a pintar si algo cambió (para no desarmar un doble toque)
-    const clave = JSON.stringify([f, alumnos.map((a) => [a.reg, a.nombre, a.cod, a.ver, a.obs, a.av, a.termino, a.sal && a.sal.n, a.sal && a.sal.abierta, a.sal && a.sal.foco && a.sal.foco.n, a.mismoCU, a.ndisp, f === 'terminado' ? a.cal.total : 0])]);
+    const clave = JSON.stringify([f, orden, alumnos.map((a) => [a.reg, a.nombre, a.cod, a.ver, a.obs, a.av, a.termino, a.sal && a.sal.n, a.sal && a.sal.abierta, a.sal && a.sal.foco && a.sal.foco.n, a.mismoCU, a.ndisp, f === 'terminado' ? a.cal.total : 0])]);
     if (clave === claveLista && !listaForzada) return;
     claveLista = clave;
     listaForzada = false;
-    l.innerHTML = alumnos.length ? alumnos.map((a, i) => {
+    l.innerHTML = alumnos.length ? ordenados().map((a) => {
+      const i = alumnos.indexOf(a);
       const s = a.sal || {};
       const chips = [];
       chips.push(a.obs ? '<span class="mpp-c mal">OBSERVADO</span>' : a.ver ? '<span class="mpp-c ok">verificado</span>' : '<span class="mpp-c mal">sin verificar</span>');
@@ -503,14 +569,14 @@
     const num = (x) => (x == null ? '' : String(Math.round(x * 100) / 100).replace('.', ','));
     const cab = ['C.U.', 'C.I.', 'Apellidos', 'Nombres', 'Carrera', 'Código', 'Verificado', 'Observado', 'Terminó', ...RC.PROB.map((p) => `${RC.TITULO[p]} (${RC.MAX[p]})`), 'Nota (100)', 'Avance %', 'Salidas', 'Segundos fuera', 'Pérdidas de foco', 'Recargas', 'Celulares', 'Registros con este C.U.', 'Último envío', 'Observaciones'];
     const filas = [cab.map(cel).join(';')];
-    alumnos.forEach((a) => {
+    ordenados().forEach((a) => {
       const s = a.sal || {};
       const [ap, no] = String(a.nombre || '').split(', ');
       filas.push([a.carnet, a.info.ci || '', a.info.apellidos || ap || '', a.info.nombres || no || '', a.info.carrera || '', a.cod || '',
         a.ver ? 'sí ' + hora(a.ver) : 'no', a.obs ? 'OBSERVADO ' + hora(a.obs) : '', a.termino ? 'sí' : '',
         ...RC.PROB.map((p) => num(a.cal.res[p].pts)), num(a.cal.total), a.av,
         s.n || 0, s.seg || 0, (s.foco && s.foco.n) || 0, s.recargas || 0, a.ndisp, a.mismoCU, hora(a.ultT),
-        a.rec ? RC.PROB.filter((p) => a.rec.textos[p]).map((p) => RC.TITULO[p] + ': ' + a.rec.textos[p]).join(' | ') : ''].map(cel).join(';'));
+        a.rec ? obsLista(a.rec).map((o) => o.etq + ': ' + o.t).join(' | ') : ''].map(cel).join(';'));
     });
     const blob = new Blob(['﻿' + filas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const el = document.createElement('a');
