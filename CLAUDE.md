@@ -108,6 +108,7 @@ Carpeta `medidas/`. El docente proyecta **su celular en horizontal** al televiso
 - Las respuestas se leen directamente desde la página del docente (RLS: solo docente). La TV muestra todo anónimo.
 - Regla de factura usada: ELFEC (FP ≥ 0,85; recargo = cargo × (0,85/FP − 1)). Pendiente confirmar la de CESSA (Sucre): no se encontró publicada.
 - Avance: el lunes 05/10 se llegó hasta e2 (11 estudiantes). El miércoles 07/10 se continúa desde `repaso2` (teoría de dos vatímetros en adelante).
+- **Repaso para el 2.º parcial** (09/11, borrador sin enlace en la portada): `repaso.html` + `css/repaso.css` + `js/repaso-ej.js` (c1–c5 = e1–e5 de clase con solución en LaTeX; n1–n17 nuevos con el motor `ejNum`: casillas numéricas con coma o punto, opciones, diagrama para explorar, regla del «?») + `js/repaso-temas.js` (`FP.REPASO.TEMAS`: 7 temas desde el 05/10, teoría, diagramas, errores con datos de la base, rápidas) + `js/repaso.js` (rutas `#/`, `#/t/<tema>[/ej|/pr]`, `#/e/<tema>/<ej>`, `#/sim`). Carga solo `base/nucleo.js` y `base/tex.js`: no se conecta a la base. Avance en `localStorage` (`merep-v1-`).
 - Puesta a tierra: filas `me-tierra` y `me-lab4` creadas el 04/11. Publicado el 04/11 a pedido del docente (se usó en clase ese día). El 05/11 se agregaron los diagramas de `tierra-diagramas2.js`.
 
 ## Módulo Electrónica Digital 1 (clases presenciales, desde oct 2026)
