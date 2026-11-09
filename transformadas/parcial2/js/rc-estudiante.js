@@ -214,7 +214,7 @@
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
         <li>4 problemas (100 puntos): P1 lee tu señal (20); P2 triangular (30); P3 reconocer sin integrar (25); P4 espectro (25). Puedes usar tu formulario.</li>
-        <li>Escribe cada resultado en su casilla: enteros, decimales con coma o punto, o fracciones como <b>2/5</b>. Usa al menos 3 cifras significativas (por ejemplo, 0,0125 o 314); se acepta ±2 %.</li>
+        <li>Escribe cada resultado en su casilla: enteros o decimales, con coma o punto. El botón <b>±</b> cambia el signo. Usa al menos 3 cifras significativas (por ejemplo, 0,0125 o 314); se acepta ±2 %.</li>
         <li>Si un resultado depende de otro tuyo (por ejemplo, \(f\) depende de tu \(T\)), se revisa con <b>tus propios números</b>.</li>
         <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
         <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
@@ -250,7 +250,7 @@
     P.pasos(d).forEach((ps) => {
       const items = ps.items.map((it) => itemHTML(p, d, it)).join('');
       h += tarjeta(`<h3 class="rc-paso">${II.esc(ps.t)}</h3>${ps.nota ? `<p class="mp-nota">${ps.nota}</p>` : ''}
-        <div class="ex-func rc-plantilla">\\[${ps.tex}\\]</div>
+        ${ps.tex ? `<div class="ex-func rc-plantilla">\\[${ps.tex}\\]</div>` : ''}
         <div class="mp-celdas rc-celdas">${items}</div>`, 'rc-tpaso');
     });
     h += `<div class="mp-pie rc-pie"><button class="boton prim bloque" data-enviar="${p}">Enviar ${RC.TITULO[p]}</button><span class="mp-int" data-estado="${p}"></span></div>`;
@@ -264,7 +264,7 @@
       return `<div class="rc-ops"><span class="et">Elige \\(${it.et}\\)</span>${ops}</div>`;
     }
     const id = p + '|' + it.id;
-    return `<label class="mp-celda"><span class="et">\\(${it.et}\\)</span><span class="mp-num"><button type="button" class="mp-signo" data-signo="${id}" aria-label="Cambiar signo">±</button><input data-c="${id}" inputmode="decimal" autocomplete="off" value="${II.esc(v == null ? '' : v)}"><button type="button" class="mp-signo" data-barra="${id}" aria-label="Fracción">/</button></span></label>`;
+    return `<label class="mp-celda"><span class="et">\\(${it.et}\\)</span><span class="mp-num"><button type="button" class="mp-signo" data-signo="${id}" aria-label="Cambiar signo">±</button><input data-c="${id}" inputmode="decimal" autocomplete="off" value="${II.esc(v == null ? '' : v)}"></span></label>`;
   }
 
   const firmaProb = (p) => JSON.stringify(est[p].vals);

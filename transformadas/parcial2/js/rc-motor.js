@@ -45,7 +45,8 @@
   const r4 = (x) => Math.round(x * 1e4) / 1e4;
   RC.txt = (x) => { const f = RC.frac(x); if (!f) return String(r4(x)).replace('.', ',').replace('-', '−'); return (f.p < 0 ? '−' : '') + Math.abs(f.p) + (f.q === 1 ? '' : '/' + f.q); };
   RC.tex = (x) => { const f = RC.frac(x); if (!f) return String(r4(x)).replace('.', '{,}'); return f.q === 1 ? String(f.p) : (f.p < 0 ? '-' : '') + '\\tfrac{' + Math.abs(f.p) + '}{' + f.q + '}'; };
-  const dec = (x) => String(x).replace('.', '{,}');
+  const dec = (x) => String(x).replace('.', '{,}'); // dentro de LaTeX
+  const numH = (x) => String(x).replace('.', ',').replace('-', '−'); // en texto HTML
 
   // ---------- ondas y gráfico ----------
   const frac1 = (x) => x - Math.floor(x);
@@ -104,10 +105,10 @@
       return { bio, Tms, vmax, vmin, T: Tms / 1000 };
     },
     enunciado: (d) => d.bio
-      ? `<p><b>Oxímetro de pulso.</b> La señal de un dedo late a <b>${d.lpm} latidos por minuto</b>. Es aproximadamente senoidal y oscila entre <b>${dec(d.vmin)}</b> y <b>${dec(d.vmax)}</b> (unidades del sensor).</p>`
-      : `<p><b>Vibración de un motor.</b> Un acelerómetro entrega una señal senoidal con nivel. Un período dura <b>${dec(d.Tms)}&nbsp;ms</b> y la señal oscila entre <b>${dec(d.vmin)}&nbsp;V</b> y <b>${dec(d.vmax)}&nbsp;V</b>.</p>`,
+      ? `<p><b>Oxímetro de pulso.</b> La señal de un dedo late a <b>${d.lpm} latidos por minuto</b>. Es aproximadamente senoidal y oscila entre <b>${numH(d.vmin)}</b> y <b>${numH(d.vmax)}</b> (unidades del sensor).</p>`
+      : `<p><b>Vibración de un motor.</b> Un acelerómetro entrega una señal senoidal con nivel. Un período dura <b>${numH(d.Tms)}&nbsp;ms</b> y la señal oscila entre <b>${numH(d.vmin)}&nbsp;V</b> y <b>${numH(d.vmax)}&nbsp;V</b>.</p>`,
     pasos: () => [
-      { t: 'Halla', tex: 'T\\ (\\text{s});\\quad f\\ (\\text{Hz});\\quad \\omega_0\\ (\\text{rad/s});\\quad a_0',
+      { t: 'Halla', tex: null,
         items: [{ id: 'T', et: 'T\\ (\\text{s})', pts: 5 }, { id: 'f', et: 'f\\ (\\text{Hz})', pts: 5 }, { id: 'w', et: '\\omega_0\\ (\\text{rad/s})', pts: 5 }, { id: 'a0', et: 'a_0\\ (\\text{valor medio})', pts: 5 }] }
     ],
     esperado(d, u) {
@@ -137,7 +138,7 @@
         <p class="mp-nota">Se repite con período \\(T\\). Serie: \\(f(t) = a_0 + \\sum_{n \\ge 1}\\left[a_n\\cos(n\\omega_0 t) + b_n\\sen(n\\omega_0 t)\\right]\\).</p>`;
     },
     pasos: () => [
-      { t: 'Halla los coeficientes', tex: 'a_0;\\quad a_1;\\quad a_2;\\quad a_3;\\quad b_1',
+      { t: 'Halla los coeficientes', tex: null,
         items: [{ id: 'a0', et: 'a_0', pts: 6 }, { id: 'a1', et: 'a_1', pts: 6 }, { id: 'a2', et: 'a_2', pts: 6 }, { id: 'a3', et: 'a_3', pts: 6 }, { id: 'b1', et: 'b_1', pts: 6 }] }
     ],
     esperado(d) {
@@ -202,7 +203,7 @@
   // ===== P4: leer un espectro (por carrera) =====
   const PARES = [[3, 4], [4, 3], [6, 8], [8, 6], [5, 12], [12, 5]];
   P.p4 = {
-    titulo: 'Espectro', max: 25,
+    titulo: 'Leer la serie', max: 25,
     gen(r, car) {
       const bio = /biom/i.test(car || '');
       const f0 = bio ? elegir(r, [60, 72, 75, 90]) / 60 : 50;
@@ -222,12 +223,11 @@
     },
     ops: () => ['\\text{Media onda: } f(t + T/2) = -f(t)', '\\text{Es par}', '\\text{Es impar}', '\\text{Tiene nivel de continua}'],
     pasos: () => [
-      { t: '1. Amplitudes', tex: 'c_n = \\sqrt{a_n^{2} + b_n^{2}}', items: [{ id: 'c1', et: 'c_1', pts: 5 }, { id: 'c3', et: 'c_3', pts: 5 }] },
-      { t: '2. Frecuencia y valor medio', tex: 'f_3\\ (\\text{Hz});\\quad \\text{valor medio}', items: [{ id: 'f3', et: 'f_3\\ (\\text{Hz})', pts: 5 }, { id: 'vm', et: '\\text{valor medio}', pts: 5 }] },
-      { t: '3. ¿Por qué faltan los pares?', tex: '\\text{Faltan los armónicos pares porque…}', items: [{ id: 'sim', et: '\\text{razón}', pts: 5, tipo: 'op' }] }
+      { t: '1. Frecuencia y valor medio', tex: null, items: [{ id: 'f3', et: '\\text{frecuencia del 3.}^{\\text{er}}\\text{ armónico } f_3\\ (\\text{Hz})', pts: 8 }, { id: 'vm', et: '\\text{valor medio}', pts: 8 }] },
+      { t: '2. ¿Por qué faltan los pares?', tex: '\\text{Faltan los armónicos pares porque…}', items: [{ id: 'sim', et: '\\text{razón}', pts: 9, tipo: 'op' }] }
     ],
-    esperado: (d) => ({ c1: Math.hypot(d.a1, d.b1), c3: Math.hypot(d.a3, d.b3), f3: 3 * d.f0, vm: d.a0, sim: 0 }),
-    final: (d) => `c_1 = ${RC.tex(Math.hypot(d.a1, d.b1))};\\quad c_3 = ${RC.tex(Math.hypot(d.a3, d.b3))};\\quad f_3 = 3f_0 = ${dec(r4(3 * d.f0))}\\ \\text{Hz};\\quad a_0 = ${RC.tex(d.a0)};\\quad \\text{media onda}`
+    esperado: (d) => ({ f3: 3 * d.f0, vm: d.a0, sim: 0 }),
+    final: (d) => `f_3 = 3f_0 = ${dec(r4(3 * d.f0))}\\ \\text{Hz};\\quad a_0 = ${RC.tex(d.a0)};\\quad \\text{media onda}`
   };
 
   RC.P = P;
