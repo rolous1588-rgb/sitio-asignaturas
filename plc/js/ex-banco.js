@@ -47,6 +47,89 @@
   const cuenta = (nv, f) => tabla(nv, f).filter(Boolean).length;
 
   // ============================================================
+  // DIBUJOS (mismo estilo que en clase: blanco y negro; etapa inicial con cuadro doble;
+  // doble barra para ramas simultáneas; acción en un rectángulo unido a su etapa; la última transición vuelve a E0)
+  // ============================================================
+  let NIDG = 0;
+  const INK = 'var(--texto)', FON = 'var(--superficie)';
+  const gl = (x1, y1, x2, y2, w) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${INK}" stroke-width="${w || 1.5}"/>`;
+  const gt = (x, y, s, o = {}) => `<text x="${x}" y="${y}" text-anchor="${o.a || 'middle'}" dominant-baseline="central" style="font:${o.w || 700} ${o.z || 14}px Inter,sans-serif;fill:${INK}">${s}</text>`;
+  const gcaja = (x, y, t, ini, z) => `<rect x="${x - 25}" y="${y - 18}" width="50" height="36" rx="2" stroke="${INK}" stroke-width="1.5" style="fill:${FON}"/>`
+    + (ini ? `<rect x="${x - 20}" y="${y - 13}" width="40" height="26" rx="2" stroke="${INK}" stroke-width="1.5" style="fill:${FON}"/>` : '') + gt(x, y, t, { z: z || 14 });
+  const gacc = (x, y, lineas, lado, z, cn, wmin) => {   // rectángulo de acción unido a la etapa; lado 'i' = izquierda, 'd' = derecha
+    z = z || 13; cn = cn || 55; const dy = z + 5;
+    const w = Math.max(wmin || 96, 0.68 * z * Math.max(...lineas.map((s) => s.length)) + 20), h = Math.max(36, 12 + dy * lineas.length);
+    const x0 = lado === 'i' ? x - 25 - cn - w : x + 25 + cn, xe = lado === 'i' ? x - 25 : x + 25, xr = lado === 'i' ? x - 25 - cn : x + 25 + cn;
+    return gl(xe, y, xr, y) + `<rect x="${x0}" y="${y - h / 2}" width="${w}" height="${h}" rx="2" stroke="${INK}" stroke-width="1.5" style="fill:${FON}"/>`
+      + lineas.map((s, i) => gt(x0 + w / 2, y - (lineas.length - 1) * dy / 2 + i * dy, s, { w: 500, z })).join('');
+  };
+  const gtrans = (x, y, lab, lado, z) => `<line x1="${x - 24}" y1="${y}" x2="${x + 24}" y2="${y}" stroke="${INK}" stroke-width="3.5"/>`
+    + (lado === 'i' ? gt(x - 36, y, lab, { a: 'end', z }) : gt(x + 36, y, lab, { a: 'start', z }));
+  const gmarca = (id) => `<defs><marker id="${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#16202c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>`;
+  const gsvg = (w, h, aria, cuerpo, ancho, minw, x0) => `<div class="lienzo" style="margin:8px 0;text-align:center"><svg viewBox="${x0 || 0} 0 ${w} ${h}" style="width:100%;min-width:${minw || 0}px;max-width:${ancho}px;height:auto" role="img" aria-label="${aria}">${cuerpo}</svg></div>`;
+
+  // GRAFCET lineal E0 → E1 → E2 → E3 → E0. acc: lista de líneas de cada etapa 1..3; tr: 4 condiciones (E0→E1, E1→E2, E2→E3, E3→E0)
+  const grafLineal = (acc, tr) => {
+    const id = 'gx' + (++NIDG), x = 170, Y = [45, 155, 265, 375], yT = Y[3] + 75;
+    let o = gmarca(id);
+    for (let i = 0; i < 3; i++) o += gl(x, Y[i] + 18, x, Y[i + 1] - 18) + gtrans(x, (Y[i] + Y[i + 1]) / 2, tr[i], 'd');
+    o += gl(x, Y[3] + 18, x, yT) + gtrans(x, yT, tr[3], 'd');
+    o += `<path d="M${x} ${yT}V${yT + 40}H40V15H${x}V27" fill="none" stroke="${INK}" stroke-width="1.5" marker-end="url(#${id})"/>`;
+    o += gcaja(x, Y[0], 'E0', true);
+    for (let i = 1; i <= 3; i++) o += gcaja(x, Y[i], 'E' + i) + gacc(x, Y[i], acc[i - 1], 'd');
+    return gsvg(390, yT + 50, 'GRAFCET de la máquina', o, 420, 0, 22);
+  };
+  // GRAFCET con dos ramas simultáneas (divergencia y convergencia en AND, doble barra). ramaI y ramaD: [acción etapa superior, acción etapa inferior]
+  const grafParalelo = (ent, ramaI, ramaD, trI, trD, sal) => {
+    const id = 'gx' + (++NIDG), xI = 70, xD = 250, xc = 160, z = 15, za = 14;
+    let o = gmarca(id);
+    o += gl(xc, 63, xc, 95) + gtrans(xc, 95, ent, 'd', z) + gl(xc, 95, xc, 125);
+    o += gl(xI - 30, 125, xD + 30, 125, 2.5) + gl(xI - 30, 131, xD + 30, 131, 2.5);
+    [xI, xD].forEach((x) => { o += gl(x, 131, x, 167) + gl(x, 203, x, 282) + gl(x, 318, x, 350); });
+    o += gtrans(xI, 245, trI, 'd', z) + gtrans(xD, 245, trD, 'd', z);
+    o += gl(xI - 30, 350, xD + 30, 350, 2.5) + gl(xI - 30, 356, xD + 30, 356, 2.5) + gl(xc, 356, xc, 395) + gtrans(xc, 395, sal, 'd', z);
+    o += `<path d="M${xc} 395V480H14V15H${xc}V27" fill="none" stroke="${INK}" stroke-width="1.5" marker-end="url(#${id})"/>`;
+    o += gcaja(xc, 45, 'E0', true, z);
+    o += gcaja(xI, 185, 'E1', false, z) + gacc(xI, 185, ramaI[0], 'd', za, 20, 74) + gcaja(xI, 300, 'E2', false, z) + gacc(xI, 300, ramaI[1], 'd', za, 20, 74);
+    o += gcaja(xD, 185, 'E3', false, z) + gacc(xD, 185, ramaD[0], 'd', za, 20, 74) + gcaja(xD, 300, 'E4', false, z) + gacc(xD, 300, ramaD[1], 'd', za, 20, 74);
+    return gsvg(410, 500, 'GRAFCET con dos ramas simultáneas', o, 460);
+  };
+
+  // Escalón de escalera: árbol de contactos en serie (s) y paralelo (p); la hoja es un contacto (nc = normalmente cerrado)
+  const lf = (f, nc) => ({ f, nc: !!nc });
+  const ser = (...c) => ({ t: 's', c }), par = (...c) => ({ t: 'p', c });
+  const evalT = (n, v) => (n.f ? (n.nc ? !v[n.f] : !!v[n.f]) : n.t === 's' ? n.c.every((x) => evalT(x, v)) : n.c.some((x) => evalT(x, v)));
+  const CW = 76, CH = 66, PAD = 14;
+  const lay = (n) => {
+    if (n.f) return { w: CW, h: CH, cy: CH / 2, n };
+    const k = n.c.map(lay);
+    if (n.t === 's') {
+      const cy = Math.max(...k.map((q) => q.cy)), bajo = Math.max(...k.map((q) => q.h - q.cy));
+      return { w: k.reduce((a, q) => a + q.w, 0), h: cy + bajo, cy, k, n };
+    }
+    return { w: Math.max(...k.map((q) => q.w)) + 2 * PAD, h: k.reduce((a, q) => a + q.h, 0), cy: k[0].cy, k, n };
+  };
+  const dibL = (L, x, y) => {   // (x, y) = esquina superior izquierda del bloque
+    const n = L.n; let o = '';
+    if (n.f) {
+      const cx = x + L.w / 2, cy = y + L.cy;
+      o += gl(x, cy, cx - 9, cy, 2) + gl(cx + 9, cy, x + L.w, cy, 2) + gl(cx - 9, cy - 16, cx - 9, cy + 16, 3) + gl(cx + 9, cy - 16, cx + 9, cy + 16, 3);
+      if (n.nc) o += gl(cx - 15, cy + 15, cx + 15, cy - 15, 2);
+      return o + gt(cx, cy - 27, n.f);
+    }
+    if (n.t === 's') { let xx = x; L.k.forEach((q) => { o += dibL(q, xx, y + L.cy - q.cy); xx += q.w; }); return o; }
+    let yy = y; const ys = [];
+    L.k.forEach((q) => { const cy = yy + q.cy; ys.push(cy); o += gl(x, cy, x + PAD, cy, 2) + dibL(q, x + PAD, yy) + gl(x + PAD + q.w, cy, x + L.w, cy, 2); yy += q.h; });
+    return o + gl(x, ys[0], x, ys[ys.length - 1], 2) + gl(x + L.w, ys[0], x + L.w, ys[ys.length - 1], 2);
+  };
+  const escalon = (arbol) => {
+    const L = lay(arbol), top = 40, yc = top + L.cy, H = top + L.h + 24, xi = 52, xo = xi + L.w, xc = xo + 50, xr = xc + 18 + 36;
+    let o = gl(22, 12, 22, H - 12, 4) + gl(xr, 12, xr, H - 12, 4) + gl(22, yc, xi, yc, 2) + dibL(L, xi, top) + gl(xo, yc, xc - 18, yc, 2)
+      + `<circle cx="${xc}" cy="${yc}" r="18" stroke="${INK}" stroke-width="3" style="fill:${FON}"/>` + gt(xc, yc, 'Q', { z: 16 }) + gl(xc + 18, yc, xr, yc, 2);
+    return gsvg(xr + 22, H, 'Escalón de escalera con los contactos A, B, C y D y la bobina Q', o, Math.round((xr + 22) * 1.5));
+  };
+
+  // ============================================================
   // PARTE A
   // ============================================================
   const S = (id, tema, tipo, peso, plantillas) => ({ id, tema, tipo, peso, plantillas });
@@ -168,16 +251,16 @@
     S('a6', 'a', 'num', 3, [
       num((r) => {
         const L = [
-          ['A en paralelo con B, todo eso en serie con C en paralelo con /D', 4, (a, b, c, d) => (a || b) && (c || !d)],
-          ['A en serie con B, todo eso en paralelo con C en serie con D', 4, (a, b, c, d) => (a && b) || (c && d)],
-          ['A (NA) en serie con B (NC), todo eso en paralelo con C (NA) en serie con D (NC)', 4, (a, b, c, d) => (a && !b) || (c && !d)],
-          ['A (NC) en paralelo con B (NA), todo eso en serie con C (NA) y D (NC)', 4, (a, b, c, d) => (!a || b) && c && !d]
+          [ser(par(lf('A'), lf('B')), par(lf('C'), lf('D', 1))), '(A + B) · (C + /D)'],
+          [par(ser(lf('A'), lf('B')), ser(lf('C'), lf('D'))), 'A · B + C · D'],
+          [par(ser(lf('A'), lf('B', 1)), ser(lf('C'), lf('D', 1))), 'A · /B + C · /D'],
+          [ser(par(lf('A', 1), lf('B')), lf('C'), lf('D', 1)), '(/A + B) · C · /D']
         ];
-        const [t, nv, f] = el(r, L);
-        const n = cuenta(nv, f);
-        return { t: `Un escalón de escalera tiene los contactos A, B, C y D, en serie y en paralelo así: ${t}. En una descripción «/X» indica contacto normalmente cerrado y la bobina Q se activa si hay un camino cerrado. De las 16 combinaciones posibles de A, B, C y D, ¿en cuántas se activa Q?`,
-          valor: n, unidad: 'combinaciones', tolRel: 0.001, sol: `Se evalúan las 16 combinaciones con la tabla de verdad: Q se activa en ${n}.`,
-          por: 'Serie es producto (AND) y paralelo es suma (OR); un contacto NC se lee negado. Se cuenta cuántas de las 16 filas dan 1.' };
+        const [arbol, eq] = el(r, L);
+        const n = cuenta(4, (a, b, c, d) => evalT(arbol, { A: a, B: b, C: c, D: d }));
+        return { t: `Observa el escalón de la figura.${escalon(arbol)}De las 16 combinaciones posibles de A, B, C y D, ¿en cuántas se activa la bobina Q?`,
+          valor: n, unidad: 'combinaciones', tolRel: 0.001, sol: `Q = ${eq}; se evalúan las 16 combinaciones con la tabla de verdad y Q se activa en ${n}.`,
+          por: 'Serie es producto (AND) y paralelo es suma (OR); un contacto con barra diagonal (NC) se lee negado. Se cuenta cuántas de las 16 filas dan 1.' };
       })
     ]),
     // A7: enclavamiento y bobinas
@@ -290,18 +373,12 @@
     const todos = [['E0'], ['E1', 'E3'], ['E2', 'E3'], ['E1', 'E4'], ['E2', 'E4'], ['E1'], ['E3']];
     const campos = est.map((s, i) => ({ id: 'e' + i, tipo: 'select', pregunta: `${String.fromCharCode(97 + i)}) Justo después del evento ${i + 1}, ¿qué etapas están activas y qué salidas están encendidas?`, opciones: opc(r, lab(s), todos.filter((x) => x.join() !== s.join()).map(lab)) }));
     const esperado = {}; campos.forEach((c, i) => { esperado[c.id] = lab(est[i]); });
-    const tabla = `<table class="tabla" style="margin:8px 0"><tr><th>Etapa</th><th>Acción</th><th>Transición que sale</th></tr>
-      <tr><td>E0 (inicial)</td><td>ninguna</td><td>${L.PA}: pasa a E1 y E3 a la vez (divergencia en AND)</td></tr>
-      <tr><td>E1</td><td>${L.A1} = 1</td><td>${L.S1}: pasa a E2</td></tr>
-      <tr><td>E2</td><td>${L.A2} = 1</td><td>espera a E4 (convergencia en AND)</td></tr>
-      <tr><td>E3</td><td>${L.B1} = 1; arranca el temporizador T de ${T} s</td><td>T cumplido: pasa a E4</td></tr>
-      <tr><td>E4</td><td>${L.B2} = 1</td><td>espera a E2 (convergencia en AND)</td></tr>
-      <tr><td>E2 y E4 juntas</td><td>—</td><td>${L.PR}: vuelven a E0</td></tr></table>`;
+    const figura = grafParalelo(L.PA, [[`${L.A1} = 1`], [`${L.A2} = 1`]], [[`${L.B1} = 1`, 'arranca T', `(${T} s)`], [`${L.B2} = 1`]], L.S1, `T (${T} s)`, L.PR);
     const lista = '<ol style="margin:6px 0;padding-left:20px">' + ev.map((e) => `<li>A los <b>${e.t} s</b> de pulsar ${L.PA}: ${e.ev === 'PA' ? 'se pulsa <b>' + L.PA + '</b> (inicio)' : nombreEv[e.ev]}.</li>`).join('') + '</ol>';
     return {
       intro: 'Lee el GRAFCET y predice qué pasa.',
-      enunciado: `<p>Este GRAFCET de nivel 2 tiene dos ramas que avanzan al mismo tiempo. El temporizador T cuenta mientras E3 esté activa. Se pulsa ${L.PA} en el instante 0 con el sistema en reposo (E0), y después ocurren estos eventos, uno a uno (si un evento no cambia nada, el estado sigue igual):</p>${tabla}${lista}
-        <p class="nota">Una transición solo se franquea si todas sus etapas de entrada están activas y la condición se cumple.</p>`,
+      enunciado: `<div style="font-weight:400;font-size:.98rem;line-height:1.5"><p>Lee el GRAFCET de la figura. Las dos ramas avanzan al mismo tiempo (doble barra). Se pulsa ${L.PA} en el instante 0 con el sistema en reposo (E0) y después ocurren estos eventos, uno a uno (si un evento no cambia nada, el estado sigue igual):</p>${figura}${lista}
+        <p class="nota">${L.PA} y ${L.PR}: pulsadores; ${L.S1}: sensor; T: temporizador de ${T} s que cuenta mientras E3 está activa.</p></div>`,
       campos, esperado,
       solucion: '<ol style="margin:6px 0;padding-left:20px">' + est.map((s, i) => `<li>Después del evento ${i + 1}: <b>${lab(s)}</b>.</li>`).join('') + `</ol><p>El temporizador de ${T} s empieza cuando se activa E3 (con ${L.PA}); si ya venció antes de un evento, E4 ya está activa. La convergencia ${L.PR} solo actúa cuando E2 y E4 están activas a la vez.</p>`
     };
@@ -375,24 +452,14 @@
     { PA: 'I1', PP: 'I0', A: 'I2', B: 'I3', T: 'T3' },
     { PA: 'MA', PP: 'PR', A: 'SA', B: 'SB', T: 'TM' }
   ];
-  const svgLineal = (N, M) => {
-    const caja = (y, e, acc, ini) => `<rect x="70" y="${y}" width="90" height="34" fill="#fff" stroke="#1b2430" stroke-width="2"/>${ini ? `<rect x="64" y="${y - 6}" width="102" height="46" fill="none" stroke="#1b2430" stroke-width="2"/>` : ''}
-      <text x="115" y="${y + 22}" text-anchor="middle" font-size="15" font-weight="700" fill="#1b2430">${e}</text>${acc ? `<line x1="160" y1="${y + 17}" x2="190" y2="${y + 17}" stroke="#1b2430" stroke-width="2"/><rect x="190" y="${y + 3}" width="190" height="28" fill="#fff" stroke="#1b2430" stroke-width="2"/><text x="285" y="${y + 22}" text-anchor="middle" font-size="13" fill="#1b2430">${acc}</text>` : ''}`;
-    const trans = (y, txt) => `<line x1="115" y1="${y - 14}" x2="115" y2="${y + 14}" stroke="#1b2430" stroke-width="2"/><line x1="105" y1="${y}" x2="125" y2="${y}" stroke="#1b2430" stroke-width="3"/><text x="135" y="${y + 5}" font-size="13" fill="#1b2430">${txt}</text>`;
-    return `<svg viewBox="0 0 400 440" style="width:100%;max-width:380px;height:auto" role="img" aria-label="GRAFCET lineal de cuatro etapas">
-      ${caja(20, 'E0', '', true)}${trans(75, N.PA)}
-      ${caja(100, 'E1', `${M.Q1[0]} = 1`)}${trans(155, N.A)}
-      ${caja(180, 'E2', `${M.Q2[0]} = 1 (arranca ${N.T})`)}${trans(235, N.T + ' (fin del tiempo)')}
-      ${caja(260, 'E3', `${M.Q3[0]} = 1`)}${trans(315, N.B)}
-      <path d="M 70 277 H 40 V 37 H 64" fill="none" stroke="#1b2430" stroke-width="2"/><polygon points="64,37 56,32 56,42" fill="#1b2430"/>
-      <text x="8" y="378" font-size="12" fill="#5a6676">El paro ${N.PP} (contacto NC) detiene cualquier</text>
-      <text x="8" y="394" font-size="12" fill="#5a6676">etapa y vuelve a E0.</text>
-      <text x="8" y="414" font-size="12" fill="#5a6676">${M.L[0]} está encendida en E2 y E3.</text></svg>`;
-  };
   const casoC = (r) => {
     const M = el(r, MAQ), N = el(r, NSEN);
     const n = (x) => ov(N[x]);
-    const txt = M.txt.replace('{Q1}', `${M.Q1[1]} (<b>${M.Q1[0]}</b>)`).replace('{A}', `${M.A} (<b>${N.A}</b>)`).replace('{Q2}', `${M.Q2[1]} (<b>${M.Q2[0]}</b>)`).replace('{Tn}', `${M.Tn} (temporizador <b>${N.T}</b>, TON activado con E2)`).replace('{Q3}', `${M.Q3[1]} (<b>${M.Q3[0]}</b>)`).replace('{B}', `${M.B} (<b>${N.B}</b>)`).replace('{L}', `${M.L[1][0].toUpperCase() + M.L[1].slice(1)} (<b>${M.L[0]}</b>)`);
+    const leyenda = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:3px 16px;font-size:.88rem;margin:6px 0">
+      <div><b>${N.PA}</b>: pulsador de marcha (NA)</div><div><b>${N.PP}</b>: pulsador de paro (NC; vale 1 si no se toca)</div>
+      <div><b>${N.A}</b>: ${M.A}</div><div><b>${N.B}</b>: ${M.B}</div><div><b>${N.T}</b>: temporizador (${M.Tn}), activado con E2</div>
+      <div><b>${M.Q1[0]}</b>: ${M.Q1[1]}</div><div><b>${M.Q2[0]}</b>: ${M.Q2[1]}</div><div><b>${M.Q3[0]}</b>: ${M.Q3[1]}</div><div><b>${M.L[0]}</b>: ${M.L[1]}</div></div>`;
+    const figura = grafLineal([[`${M.Q1[0]} = 1`], [`${M.Q2[0]} = 1`, `${M.L[0]} = 1`, `arranca ${N.T}`], [`${M.Q3[0]} = 1`, `${M.L[0]} = 1`]], [N.PA, N.A, N.T, N.B]);
     const f = [
       ['a', 'SE1', `E0 · ${N.PA}`, [`E1 · ${N.PA}`, `E0 + ${N.PA}`, `E0 · ${n('PA')}`, `E0 · ${N.A}`]],
       ['b', 'RE1', `E2 + ${n('PP')}`, [`E2 · ${n('PP')}`, `E2 + ${N.PP}`, `E0 + ${n('PP')}`, `E1 + ${n('PP')}`]],
@@ -419,9 +486,8 @@
     const solucion = '<ul style="margin:6px 0;padding-left:20px">' + [...f, ...camposB].map((c) => `<li><b>${c.id}) ${esc(c.ok)}.</b> ${sols[c.id]}</li>`).join('') + '</ul>';
     return {
       intro: `Diseña el control de una ${M.nombre}.`,
-      enunciado: `<p>Una <b>${M.nombre}</b> trabaja con el GRAFCET de nivel 2 de la figura. ${txt} El pulsador de marcha es <b>${N.PA}</b> (NA) y el de paro es <b>${N.PP}</b> (NC; su bit vale 1 si no se toca). La barra encima indica negación; «·» es producto (AND) y «+» es suma (OR).</p>
-        <div style="text-align:center">${svgLineal(N, M)}</div>
-        <p>Cada etapa se escribe como E = (SET + E) · negado(RESET). Elige la ecuación correcta en cada casillero.</p>`,
+      enunciado: `<div style="font-weight:400;font-size:.98rem;line-height:1.5"><p>Máquina: <b>${M.nombre}</b>. Se controla con el GRAFCET de nivel 2 de la figura.</p>${figura}${leyenda}
+        <p>El paro ${N.PP} actúa sobre cualquier etapa y devuelve el sistema a E0. Cada etapa se escribe E = (SET + E) · negado(RESET); la barra encima indica negación.</p></div>`,
       campos, esperado, solucion
     };
   };
