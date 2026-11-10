@@ -204,7 +204,7 @@
         <h2>${M.titulo}</h2>
         <p class="sub">${II.esc(alumno.nombre)}; CI ${II.esc(alumno.carnet)}</p>
         <ul class="ideas">
-          <li><b class="n">1</b><span><b>${M.nEval} preguntas en 3 partes</b> sobre todo lo visto en el módulo: A) diagnóstico de E/S y fallas; B) leer y predecir un GRAFCET o una escalera; C) diseñar con ecuaciones SET/RESET. Cada carnet recibe casos y valores distintos.</span></li>
+          <li><b class="n">1</b><span><b>${M.nEval} preguntas cortas</b> sobre todo lo visto en el módulo: diagnóstico de E/S, escaneo y fallas; leer un GRAFCET y simular el escaneo de ecuaciones; ecuaciones SET/RESET de una máquina; y cálculos de detalle. Cada carnet recibe casos y valores distintos. No hay que diseñar nada: cada pregunta es un pedazo.</span></li>
           <li><b class="n">2</b><span>Tienes <b>${M.minutos} minutos</b> desde que tocas «Empezar». El reloj <b>sigue corriendo</b> aunque cierres la página o se corte la conexión.</span></li>
           <li><b class="n">3</b><span>Puedes moverte entre las preguntas y cambiar tus respuestas hasta enviar. Al llegar a cero, <b>se envía solo</b> lo que tengas marcado.</span></li>
           <li><b class="n">4</b><span>Las preguntas con varias partes y las de ordenar dan <b>puntaje parcial</b>. En los cálculos se acepta un margen de ±2 %. Lo que dejes sin responder cuenta como incorrecto.</span></li>

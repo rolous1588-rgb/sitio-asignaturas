@@ -18,12 +18,13 @@
 
   EX.META = {
     id: 'pl-ex', titulo: 'Examen final', subtitulo: 'Programación de Controladores e Interfaces Industriales',
-    minutos: 60, peso: 40, nEval: 13
+    minutos: 60, peso: 40, nEval: 30
   };
   EX.TEMAS = {
     a: 'Parte A; diagnóstico de E/S, escaneo, escalera y GRAFCET',
     b: 'Parte B; leer y predecir',
-    c: 'Parte C; diseñar'
+    c: 'Parte C; ecuaciones de la máquina',
+    n: 'Parte N; cálculos y reglas'
   };
 
   // ---------- constructores ----------
@@ -425,13 +426,97 @@
     };
   };
 
-  // ---------- casillas de las partes B y C ----------
+  // ---------- B y C en pedazos: cada pregunta toma UN casillero del caso (con su enunciado) ----------
+  const pieza = (caso, ids) => opg((r) => {
+    const g = caso(r);
+    const id = el(r, ids), c = g.campos.find((x) => x.id === id);
+    const ok = g.esperado[id];
+    const mal = c.opciones.filter((x) => x !== ok);
+    return { t: g.enunciado.replace(' Elige la ecuación correcta en cada casillero.', '') + `<p style="margin-top:8px"><b>${c.pregunta.replace(/^[a-j]\)\s*/, '')}</b></p>`, ok, mal, por: `Respuesta: ${esc(ok)}.<div style="margin-top:6px">${g.solucion}</div>` };
+  });
   const B = [
-    S('b1', 'b', 'campos', 15, [cam(casoB1)]),
-    S('b2', 'b', 'campos', 15, [cam(casoB2)])
+    S('b1', 'b', 'opcion', 3, [pieza(casoB1, ['e1'])]), S('b2', 'b', 'opcion', 3, [pieza(casoB1, ['e2'])]),
+    S('b3', 'b', 'opcion', 3, [pieza(casoB1, ['e3'])]), S('b4', 'b', 'opcion', 3, [pieza(casoB1, ['e4'])]),
+    S('b5', 'b', 'opcion', 3, [pieza(casoB2, ['s1'])]), S('b6', 'b', 'opcion', 3, [pieza(casoB2, ['s2'])]),
+    S('b7', 'b', 'opcion', 3, [pieza(casoB2, ['s3'])]), S('b8', 'b', 'opcion', 3, [pieza(casoB2, ['s4'])])
   ];
-  const C = [S('c1', 'c', 'campos', 40, [cam(casoC)])];
+  const C = [
+    S('c1', 'c', 'opcion', 4, [pieza(casoC, ['a', 'c', 'e'])]), S('c2', 'c', 'opcion', 4, [pieza(casoC, ['b', 'd', 'f'])]),
+    S('c3', 'c', 'opcion', 4, [pieza(casoC, ['g'])]), S('c4', 'c', 'opcion', 4, [pieza(casoC, ['h'])]),
+    S('c5', 'c', 'opcion', 4, [pieza(casoC, ['i'])]), S('c6', 'c', 'opcion', 4, [pieza(casoC, ['j'])])
+  ];
 
-  EX.SLOTS = [...A, ...B, ...C];
+  // ============================================================
+  // PARTE N: cálculos y reglas de detalle (conocimientos sueltos)
+  // ============================================================
+  const IDEN = [
+    ['(A + B) · (A + /B)', 2, (a, b) => (a || b) && (a || !b), 'A', (a) => a],
+    ['A + /A · B', 2, (a, b) => a || (!a && b), 'A + B', (a, b) => a || b],
+    ['A · (A + B)', 2, (a, b) => a && (a || b), 'A', (a) => a],
+    ['/A · /B + /A · B', 2, (a, b) => (!a && !b) || (!a && b), '/A', (a) => !a],
+    ['(A + B) · /A', 2, (a, b) => (a || b) && !a, '/A · B', (a, b) => !a && b],
+    ['A · B + A · /B + /A · B', 2, (a, b) => (a && b) || (a && !b) || (!a && b), 'A + B', (a, b) => a || b]
+  ];
+  const SIMPLES = [['A', (a) => a], ['/A', (a) => !a], ['B', (a, b) => b], ['/B', (a, b) => !b], ['A + B', (a, b) => a || b], ['A · B', (a, b) => a && b], ['/A · B', (a, b) => !a && b], ['A · /B', (a, b) => a && !b], ['A + /B', (a, b) => a || !b], ['/A + B', (a, b) => !a || b]];
+  const N = [
+    S('n1', 'n', 'num', 4, [
+      num((r) => {
+        const a = el(r, [4, 5, 6, 8, 9, 12]), T = el(r, [6, 7, 10, 11, 14]), T2 = el(r, [3, 4, 5, 6]), t0 = a === T ? 1 : 0;
+        const tot = Math.max(a, T + t0) + T2;
+        return { t: `Un GRAFCET reparte el trabajo en dos ramas al mismo tiempo desde E0. La rama 1 (E1) dura ${a} s hasta que llega su sensor. La rama 2 (E3) espera un temporizador de ${T + t0} s. Cuando las dos terminan (convergencia en AND), pasa a E6, que dura un temporizador de ${T2} s, y vuelve a E0. ¿Cuánto dura como mínimo un ciclo completo, desde que se pulsa la marcha hasta que termina E6?`,
+          valor: tot, unidad: 's', tolRel: 0.001, sol: `Las ramas corren a la vez: dura lo que dure la más lenta, ${Math.max(a, T + t0)} s; luego ${T2} s de E6: ${tot} s.`,
+          por: 'En una divergencia en AND las ramas avanzan en paralelo; la convergencia espera a la más lenta. Luego se suma lo que sigue.' };
+      })
+    ]),
+    S('n2', 'n', 'num', 4, [
+      num((r) => {
+        const I = el(r, [8, 10, 12, 14, 16, 18]);
+        const c = ((I - 4) / 16) * 4095;
+        return { t: `Un módulo de entradas analógicas de 12 bits (0 a 4095 cuentas) mide un transmisor de 4–20 mA: 4 mA = 0 cuentas y 20 mA = 4095 cuentas, en forma lineal. El transmisor entrega ${I} mA. ¿Qué número de cuentas lee el PLC?`,
+          valor: c, unidad: 'cuentas', sol: `(${I} − 4) / 16 · 4095 = ${f3(c)} cuentas.`, por: 'Se resta el 4 mA del cero vivo, se divide entre el span de 16 mA y se multiplica por el fondo de escala del conversor.' };
+      }),
+      num((r) => {
+        const c = el(r, [683, 1024, 1365, 2048, 2730, 3413]);
+        const I = 4 + (16 * c) / 4095;
+        return { t: `Un módulo de entradas analógicas de 12 bits (0 a 4095 cuentas) mide un transmisor de 4–20 mA: 4 mA = 0 cuentas y 20 mA = 4095 cuentas. El PLC lee ${c} cuentas. ¿Qué corriente circula por el lazo, en mA?`,
+          valor: I, unidad: 'mA', sol: `4 + 16 · ${c} / 4095 = ${f3(I)} mA.`, por: 'Se invierte la escala: cuentas sobre fondo de escala por 16 mA, más el 4 mA del cero vivo.' };
+      })
+    ]),
+    S('n3', 'n', 'opcion', 3, [
+      opg((r) => {
+        const P = el(r, [6, 9, 18, 30, 48, 60]), I = P / 24;
+        const sol = I <= 0.5 ? 'Las dos: tanto el transistor (0,5 A) como el relé (2 A) la soportan' : I <= 2 ? 'Solo la salida a relé; el transistor se pasa de 0,5 A' : 'Ninguna directamente: hace falta un contactor o relé auxiliar';
+        const todas = ['Las dos: tanto el transistor (0,5 A) como el relé (2 A) la soportan', 'Solo la salida a relé; el transistor se pasa de 0,5 A', 'Ninguna directamente: hace falta un contactor o relé auxiliar', 'Solo la salida a transistor, porque es de corriente continua y más rápida'];
+        return { t: `Una carga de ${P} W a 24 V en corriente continua se conecta a una salida del PLC. Cada canal a transistor soporta 0,5 A y cada canal a relé soporta 2 A. ¿Qué salida sirve?`, ok: sol, mal: todas.filter((x) => x !== sol), por: `I = P / V = ${P} / 24 = ${f3(I)} A. ${sol}.` };
+      })
+    ]),
+    S('n4', 'n', 'opcion', 3, IDEN.map(([ent, nv, f, res, fr]) => opg((r) => {
+      const pon = (x) => x.replace(/\/([A-Z])/g, (_, v) => ov(v));
+      const malas = SIMPLES.filter(([, g]) => !equiv(2, f, g)).map(([t]) => t);
+      return { t: `Simplifica con álgebra booleana: ${pon(ent)}. (La barra indica negación; «·» es AND y «+» es OR.)`, ok: pon(res), mal: mez(r, malas).slice(0, 3).map(pon), por: `${pon(ent)} = ${pon(res)}.` };
+    }))),
+    S('n5', 'n', 'num', 4, [
+      num((r) => {
+        const cad = ['Q', 'M3', 'M2', 'M1'], eq = { Q: 'M3', M3: 'M2', M2: 'M1', M1: 'P' };
+        const orden = mez(r, cad.slice());
+        const est = { Q: 0, M3: 0, M2: 0, M1: 0 }; let sc = 0;
+        while (!est.Q && sc < 10) { sc++; orden.forEach((k) => { est[k] = eq[k] === 'P' ? 1 : est[eq[k]]; }); }
+        const lista = orden.map((k, i) => `${i + 1}) ${k} = ${eq[k]}`).join('; ');
+        return { t: `Un PLC evalúa los escalones de arriba abajo en este orden: ${lista}. Todas las variables empiezan en 0 y el pulsador P se pone en 1 antes del primer escaneo y se mantiene. Cada escalón usa el valor que las variables tienen en ese momento. ¿En qué escaneo se activa Q por primera vez? (El primer escaneo es el 1.)`,
+          valor: sc, unidad: 'escaneo', tolRel: 0.001, sol: `Q se activa en el escaneo ${sc}.`, por: 'Un valor se propaga en el mismo escaneo solo hacia los escalones que están más abajo; si el escalón que lo lee está más arriba, lo ve en el escaneo siguiente.' };
+      })
+    ]),
+    S('n6', 'n', 'num', 4, [
+      num((r) => {
+        const T = el(r, [10, 20, 25, 40]), f = el(r, [5, 10]), d = el(r, [8, 10]);
+        const v = 2 * T + f + d;
+        return { t: `Un PLC con tiempo de ciclo de ${T} ms lee las entradas al inicio del ciclo y escribe las salidas al final. El filtro de la entrada digital tarda ${f} ms y el relé de la salida tarda ${d} ms en cerrar. ¿Cuál es el tiempo máximo, en ms, entre que cambia un sensor y que actúa la salida? (Usa el peor caso: el sensor cambia justo después de haberse leído las entradas.)`,
+          valor: v, unidad: 'ms', sol: `2 · ${T} + ${f} + ${d} = ${v} ms.`, por: 'En el peor caso el cambio espera casi un ciclo para ser leído y otro ciclo hasta que se escriben las salidas; se suman los retardos del filtro y del relé.' };
+      })
+    ])
+  ];
+  // las dos primeras de N valen 3 y 4 según el reparto; n3 y n4 valen 3
+
+  EX.SLOTS = [...A, ...B, ...C, ...N];
   EX.PESO_TOTAL = EX.SLOTS.reduce((a, s) => a + s.peso, 0);
 })();
