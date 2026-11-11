@@ -287,6 +287,7 @@ Carpeta `numericos/parcial2/` (copia de `numericos/examen/`, independiente). Ses
 - Revisión (panel): en el detalle de cada estudiante, nota de razonamiento 0 a 100, feedback y observación por método. Se guardan en la fila `mn-ex2-notas` (`extra.revision[carnet]`).
 - Nota final por método = 70 % lo automático + 30 % el razonamiento (sobre el máximo del método). «Publicar notas» no publica si falta alguna revisión.
 - Códigos de 3 cifras: el panel detecta repetidos y asigna otro libre (`extra.codigos`); la página del estudiante lo lee. Pendiente para el integrador: una función en la base que asigne códigos al registrarse.
+- Confirmación del código: en el detalle de cada estudiante, «Confirmar: coincide ✓» guarda `extra.ver[carnet] = código`; el celular muestra el código fijo arriba (`#e-cod`) y «✓ verificado» cuando coincide. El panel tiene «Buscar por código (3 cifras)» en la lista de estudiantes.
 - Pruebas: Node (`prueba-motor` sobre `parcial2`: 300 carnets con todo bien = 100) y navegador con base compartida (docente + 3 estudiantes, revisión, faltantes y publicación).
 
 ## Pendiente

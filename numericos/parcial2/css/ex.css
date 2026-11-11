@@ -3,6 +3,10 @@
    (usa me.css y ../practica/css/mp.css)
    ============================================================ */
 body.examen { background-repeat: repeat; }
+.ex-cod { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: .95rem; background: var(--acento-claro); color: var(--acento-2); border-radius: 12px; padding: 4px 12px; white-space: nowrap; }
+.ex-cod b { font-size: 1.7rem; letter-spacing: .08em; line-height: 1; }
+.ex-cod small { font-family: 'Inter', system-ui, sans-serif; font-size: .72rem; font-weight: 800; color: var(--ok); }
+.ex-verif { margin-top: 8px; }
 .ex-reloj { font-family: var(--mono); font-weight: 800; font-size: 1rem; background: var(--acento-claro); color: var(--acento-2); border-radius: 99px; padding: 4px 12px; white-space: nowrap; }
 .ex-reloj.urgente { background: var(--mal-claro); color: var(--mal); }
 .ex-codigo { margin: 10px 0; padding: 10px 14px; border-radius: 12px; background: var(--superficie-2); font-size: 1rem; }

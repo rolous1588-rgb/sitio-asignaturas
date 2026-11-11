@@ -134,6 +134,16 @@
   const lab = (id) => `\\(${LAB[id] || id}\\)`;
 
   function barra() {
+    // código de 3 cifras fijo arriba (lo confirma el docente contra su panel)
+    const c = $('#e-cod');
+    if (c) {
+      if (alumno) {
+        const cod = codigo();
+        const ok = !!(ex.ver && ex.ver[alumno.carnet] === cod);
+        c.innerHTML = `Código <b>${II.esc(String(cod))}</b>${ok ? '<small>✓ verificado</small>' : ''}`;
+        c.classList.remove('oculto');
+      } else c.classList.add('oculto');
+    }
     $('#e-nombre').textContent = alumno ? alumno.nombre + (SID === 'mn-ex2-prueba' ? '; ENSAYO' : '') : '2.º parcial de Métodos' + (SID === 'mn-ex2-prueba' ? '; ensayo' : '');
     const r = $('#e-reloj');
     const s = restante();

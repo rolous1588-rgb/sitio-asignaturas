@@ -22,6 +22,7 @@
   let resp = [];
   let ultimoId = 0;
   let alumnos = [];
+  let filtroCod = '';
   let qrAbierto = false;
   let tokenVisto = null;
 
@@ -111,6 +112,14 @@
     if (texto) aviso(texto, 'ok');
     pintarControl(true);
     return true;
+  }
+  // confirmación del docente: el código del panel coincide con el que muestra el celular del estudiante
+  async function marcarCodigo(a, on) {
+    const ver = { ...(ex.ver || {}) };
+    if (on) ver[a.carnet] = codigoDe(a); else delete ver[a.carnet];
+    const ok = await cambiar({ ver }, on ? `Código ${codigoDe(a)} confirmado para ${a.nombre}.` : 'Confirmación quitada.');
+    pintarListas();
+    return ok;
   }
   const nuevoToken = () => Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8);
   const iso = (ms) => new Date(ms).toISOString();
@@ -328,6 +337,7 @@
 
   function detalle(a) {
     const s = a.sal || {};
+    const verificado = !!(ex.ver && ex.ver[a.carnet] === codigoDe(a));
     const marca = { ok: '✓', red: '≈', mal: '✗', vacio: '—' };
     const metodos = EX.MET.map((m) => {
       const r = a.cal.res[m];
@@ -349,6 +359,7 @@
       <h2>${esc(a.nombre)}</h2>
       <p class="mp-nota">C.U. ${esc(a.carnet)}; C.I. ${esc(a.info.ci || '—')}; ${esc(a.info.carrera || '')}<br>
         Código ${esc(codigoDe(a))}; ${a.ndisp} celular${a.ndisp === 1 ? '' : 'es'} (${esc(s.disp || a.info.tipo || '—')}); entró ${hora(a.primero)}; último guardado ${hora(a.snapT)} (${a.nsnap} envíos)</p>
+      <div class="mpp-det ex-verif"><b>Código ${esc(codigoDe(a))}</b> — ${verificado ? 'confirmado: coincide con el que muestra su celular.' : 'mira su celular: ¿muestra el mismo número?'}<br><button class="boton ${verificado ? '' : 'prim'}" id="d-ver">${verificado ? 'Quitar confirmación' : 'Confirmar: coincide ✓'}</button></div>
       <div class="mpp-det"><b>Salidas de la página: ${s.n || 0} (${s.seg || 0} s en total; la más larga ${s.max || 0} s)</b><div class="mpp-dfila">${salidas}</div>
         <p class="mp-nota">Pérdidas de foco sin salir: ${(s.foco && s.foco.n) || 0} (${(s.foco && s.foco.seg) || 0} s); recargas: ${s.recargas || 0}; pantalla encendida: ${esc(s.pantalla || '—')}${s.abierta ? '; <b>fuera de la página ahora</b>' : ''}</p>
         ${cambios ? `<p class="mp-nota">Cambió respuestas poco después de volver:</p><div class="mpp-dfila">${cambios}</div>` : ''}</div>
@@ -358,6 +369,7 @@
     document.body.appendChild(capa);
     capa.onclick = (e) => { if (e.target === capa) capa.remove(); };
     $('#d-cerrar').onclick = () => capa.remove();
+    $('#d-ver').onclick = async (e) => { e.currentTarget.disabled = true; await marcarCodigo(a, !verificado); capa.remove(); detalle(a); };
     const dh = $('#d-hab');
     if (dh) dh.onclick = () => { capa.remove(); habilitar([a.carnet]); };
     if (a.nsnap > 0) cargarRevision(a, capa);
@@ -431,10 +443,15 @@
     }
     const conSal = alumnos.filter((a) => a.sal && (a.sal.n || (a.sal.foco && a.sal.foco.n)));
     $('#alertas').innerHTML = conSal.length ? `<div class="aviso duda">⚠ ${conSal.length} ${conSal.length === 1 ? 'estudiante salió' : 'estudiantes salieron'} de la página o perdieron el foco. Tócalos en la lista para ver el detalle.</div>` : '';
-    $('#lista').innerHTML = alumnos.length ? alumnos.map((a, i) => {
+    const q = filtroCod.trim();
+    const vis = q ? alumnos.filter((a) => codigoDe(a).startsWith(q)) : alumnos;
+    $('#buscado').textContent = q ? (vis.length ? `${vis.length} coincidencia${vis.length === 1 ? '' : 's'}` : 'Ningún código empieza con «' + q + '».') : '';
+    $('#lista').innerHTML = alumnos.length ? vis.map((a) => {
+      const i = alumnos.indexOf(a);
       const s = a.sal || {};
       const chips = [];
       if (ex.abre) chips.push(`<span class="mpp-c ${a.hab ? '' : 'mal'}">${a.hab ? 'habilitado' : 'sin habilitar'}</span>`);
+      if (ex.ver && ex.ver[a.carnet] === codigoDe(a)) chips.push('<span class="mpp-c">código confirmado ✓</span>');
       chips.push(`<span class="mpp-c">${a.filas}/9 filas</span>`);
       if (a.snapT) chips.push(`<span class="mpp-c">guardó ${hora(a.snapT)}</span>`);
       if (s.n) chips.push(`<span class="mpp-c mal">salió ${s.n}; ${s.seg} s</span>`);
@@ -481,10 +498,13 @@
         <p class="mp-nota">${PRUEBA ? '<a href="panel.html">Ir al examen oficial</a>' : '<a href="panel.html?s=prueba">Ir al examen de ensayo</a>'}</p><div id="control"></div></div>
       <div id="alertas"></div>
       <div class="tarjeta oculto"><span class="etq">Llegaron tarde</span><div id="tarde"></div></div>
-      <div class="tarjeta"><span class="etq">Estudiantes</span><p class="mp-nota">Toca un nombre para ver sus salidas de la página y sus respuestas.</p><div id="lista"></div></div>
+      <div class="tarjeta"><span class="etq">Estudiantes</span><p class="mp-nota">Toca un nombre para ver sus salidas de la página y sus respuestas.</p>
+        <label class="campo"><span>Buscar por código (3 cifras)</span><input id="buscar-cod" type="search" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="Ej.: 298" value="${filtroCod}"></label>
+        <p class="mp-nota" id="buscado"></p><div id="lista"></div></div>
       ${PRUEBA ? '<div class="tarjeta"><span class="etq">Ensayo</span><p class="mp-nota">Deja el ensayo como nuevo: borra registros, respuestas y notas.</p><button class="boton" id="b-reiniciar" style="color:var(--mal);border-color:var(--mal)">Reiniciar el ensayo y borrar sus datos</button></div>' : ''}
       <div class="tarjeta"><button class="boton" id="b-salir">Salir</button></div>`;
     $('#b-salir').onclick = async () => { await II.sb.auth.signOut(); location.reload(); };
+    $('#buscar-cod').oninput = (e) => { filtroCod = e.target.value.replace(/\D/g, '').slice(0, 3); pintarListas(); };
     const br = $('#b-reiniciar');
     if (br) dobleToque(br, 'Toca otra vez para borrar todo el ensayo', async () => {
       await Promise.all([II.sb.from('respuestas').delete().eq('sesion', SID), II.sb.from('ingresos').delete().eq('sesion', SID)]);
