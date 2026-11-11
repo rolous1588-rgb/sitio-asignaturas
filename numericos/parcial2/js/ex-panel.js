@@ -269,10 +269,10 @@
 
   // ---------------- revisión del razonamiento (parcial 2) ----------------
   // Revisión guardada en la fila <sesión>-notas: extra.revision[carnet] = { rz, fb, obs } (por método)
-  // Nota final de cada método (sobre su máximo): 50 % lo automático + 50 % el razonamiento (0–100).
+  // Nota final de cada método (sobre su máximo): 70 % lo automático + 30 % el razonamiento (0–100).
   const NOTA_FINAL = (a, rz) => {
     let t = 0;
-    EX.MET.forEach((m) => { t += 0.5 * a.cal.res[m].pts + 0.5 * EX.MAX[m] * ((rz && rz[m]) || 0) / 100; });
+    EX.MET.forEach((m) => { t += 0.7 * a.cal.res[m].pts + 0.3 * EX.MAX[m] * ((rz && rz[m]) || 0) / 100; });
     return Math.round(t * 100) / 100;
   };
   async function leerNotasFila() {

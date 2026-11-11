@@ -285,7 +285,7 @@ Carpeta `plc/` (sesión `pl-s1` «Fundamentos, E/S y primera lógica», 3 h por 
 Carpeta `numericos/parcial2/` (copia de `numericos/examen/`, independiente). Sesiones `mn-ex2` (oficial) y `mn-ex2-prueba` (ensayo); el canje del QR acepta `mn-ex%`. Tres problemas de aplicación, uno por método: bisección (diodo: `EX.FAM.bis`, Vs en 5 a 6 V), falsa posición (canal de Manning: `EX.FAM.fp`, Q en 2,5 a 4 m³/s) y Newton (catenaria: `EX.FAM.nr`, L en 104 a 107 m, a₀ = 90). Cada problema tiene dos preguntas de razonamiento (`EX.RAZON`: convergencia y significado de la solución), guardadas en `est[m].razon`.
 
 - Revisión (panel): en el detalle de cada estudiante, nota de razonamiento 0 a 100, feedback y observación por método. Se guardan en la fila `mn-ex2-notas` (`extra.revision[carnet]`).
-- Nota final por método = 50 % lo automático + 50 % el razonamiento (sobre el máximo del método). «Publicar notas» no publica si falta alguna revisión.
+- Nota final por método = 70 % lo automático + 30 % el razonamiento (sobre el máximo del método). «Publicar notas» no publica si falta alguna revisión.
 - Códigos de 3 cifras: el panel detecta repetidos y asigna otro libre (`extra.codigos`); la página del estudiante lo lee. Pendiente para el integrador: una función en la base que asigne códigos al registrarse.
 - Pruebas: Node (`prueba-motor` sobre `parcial2`: 300 carnets con todo bien = 100) y navegador con base compartida (docente + 3 estudiantes, revisión, faltantes y publicación).
 
