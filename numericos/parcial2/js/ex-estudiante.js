@@ -139,7 +139,7 @@
     if (c) {
       if (alumno) {
         const cod = codigo();
-        const ok = !!(ex.ver && ex.ver[alumno.carnet] === cod);
+        const ok = !!(ex.ver && ex.ver[alumno.carnet] && ex.ver[alumno.carnet].c === cod);
         c.innerHTML = `Código <b>${II.esc(String(cod))}</b>${ok ? '<small>✓ verificado</small>' : ''}`;
         c.classList.remove('oculto');
       } else c.classList.add('oculto');

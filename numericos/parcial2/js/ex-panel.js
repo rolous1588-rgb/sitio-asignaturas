@@ -22,7 +22,7 @@
   let resp = [];
   let ultimoId = 0;
   let alumnos = [];
-  let filtroCod = '';
+  let buscado = '';
   let qrAbierto = false;
   let tokenVisto = null;
 
@@ -114,9 +114,10 @@
     return true;
   }
   // confirmación del docente: el código del panel coincide con el que muestra el celular del estudiante
+  const verDe = (a) => !!(ex.ver && ex.ver[a.carnet] && ex.ver[a.carnet].c === codigoDe(a));
   async function marcarCodigo(a, on) {
     const ver = { ...(ex.ver || {}) };
-    if (on) ver[a.carnet] = codigoDe(a); else delete ver[a.carnet];
+    if (on) ver[a.carnet] = { t: iso(ahora()), c: codigoDe(a) }; else delete ver[a.carnet];
     const ok = await cambiar({ ver }, on ? `Código ${codigoDe(a)} confirmado para ${a.nombre}.` : 'Confirmación quitada.');
     pintarListas();
     return ok;
@@ -337,7 +338,7 @@
 
   function detalle(a) {
     const s = a.sal || {};
-    const verificado = !!(ex.ver && ex.ver[a.carnet] === codigoDe(a));
+    const verificado = verDe(a);
     const marca = { ok: '✓', red: '≈', mal: '✗', vacio: '—' };
     const metodos = EX.MET.map((m) => {
       const r = a.cal.res[m];
@@ -443,15 +444,11 @@
     }
     const conSal = alumnos.filter((a) => a.sal && (a.sal.n || (a.sal.foco && a.sal.foco.n)));
     $('#alertas').innerHTML = conSal.length ? `<div class="aviso duda">⚠ ${conSal.length} ${conSal.length === 1 ? 'estudiante salió' : 'estudiantes salieron'} de la página o perdieron el foco. Tócalos en la lista para ver el detalle.</div>` : '';
-    const q = filtroCod.trim();
-    const vis = q ? alumnos.filter((a) => codigoDe(a).startsWith(q)) : alumnos;
-    $('#buscado').textContent = q ? (vis.length ? `${vis.length} coincidencia${vis.length === 1 ? '' : 's'}` : 'Ningún código empieza con «' + q + '».') : '';
-    $('#lista').innerHTML = alumnos.length ? vis.map((a) => {
-      const i = alumnos.indexOf(a);
+    $('#lista').innerHTML = alumnos.length ? alumnos.map((a, i) => {
       const s = a.sal || {};
       const chips = [];
       if (ex.abre) chips.push(`<span class="mpp-c ${a.hab ? '' : 'mal'}">${a.hab ? 'habilitado' : 'sin habilitar'}</span>`);
-      if (ex.ver && ex.ver[a.carnet] === codigoDe(a)) chips.push('<span class="mpp-c">código confirmado ✓</span>');
+      if (verDe(a)) chips.push('<span class="mpp-c">en el aula ✓</span>');
       chips.push(`<span class="mpp-c">${a.filas}/9 filas</span>`);
       if (a.snapT) chips.push(`<span class="mpp-c">guardó ${hora(a.snapT)}</span>`);
       if (s.n) chips.push(`<span class="mpp-c mal">salió ${s.n}; ${s.seg} s</span>`);
@@ -464,6 +461,7 @@
         <div class="l2">${esc(a.info.carrera || '')}; C.U. ${esc(a.carnet)}; código ${esc(codigoDe(a))}</div><div class="l3">${chips.join('')}</div></button>`;
     }).join('') : '<p class="mp-nota">Todavía no se registró nadie.</p>';
     $$('[data-al]').forEach((b) => { b.onclick = () => detalle(alumnos[Number(b.dataset.al)]); });
+    pintarVer();
   }
 
   // ---------------- Excel ----------------
@@ -491,20 +489,43 @@
     el.remove();
   }
 
+  // ---------------- verificar en el aula (por código) ----------------
+  function pintarVer() {
+    const box = $('#ver-res');
+    if (!box) return;
+    if (!buscado) { box.innerHTML = ''; return; }
+    const a = alumnos.find((x) => codigoDe(x) === buscado);
+    if (!a) { box.innerHTML = `<div class="aviso mal">Ningún registro con el código ${esc(buscado)}.</div>`; return; }
+    const ya = verDe(a);
+    box.innerHTML = `<div class="rc-ver-res ${ya ? 'ok' : ''}"><b>${esc(a.nombre)}</b><small>C.U. ${esc(a.carnet)}; ${esc(a.info.carrera || '')}; código ${esc(codigoDe(a))}</small>
+      ${ya ? `<div class="aviso ok">Ya verificado a las ${hora(ex.ver[a.carnet].t)}.</div>` : '<button class="boton prim bloque" id="b-confirmar">Confirmar: está en el aula</button>'}</div>`;
+    const b = $('#b-confirmar');
+    if (b) b.onclick = async () => {
+      b.disabled = true;
+      await marcarCodigo(a, true);
+      buscado = '';
+      const i = $('#i-cod'); if (i) { i.value = ''; i.focus(); }
+      pintarVer();
+    };
+  }
+
   // ---------------- armado ----------------
   function vPanel() {
     $('#cont').innerHTML = `<div class="aviso oculto" id="aviso"></div>
       <div class="tarjeta"><span class="etq">${PRUEBA ? 'Examen de ENSAYO (no es el oficial)' : 'Examen oficial'}</span><h2>2.º parcial de Métodos</h2>
         <p class="mp-nota">${PRUEBA ? '<a href="panel.html">Ir al examen oficial</a>' : '<a href="panel.html?s=prueba">Ir al examen de ensayo</a>'}</p><div id="control"></div></div>
+      <div class="tarjeta"><span class="etq">Verificar en el aula</span>
+        <p class="mp-nota">Escribe el código de 3 cifras que ves en el celular del estudiante, junto a su nombre.</p>
+        <form id="f-ver" class="rc-ver"><input id="i-cod" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="123" value="${esc(buscado)}"><button class="boton prim">Buscar</button></form>
+        <div id="ver-res"></div></div>
       <div id="alertas"></div>
       <div class="tarjeta oculto"><span class="etq">Llegaron tarde</span><div id="tarde"></div></div>
       <div class="tarjeta"><span class="etq">Estudiantes</span><p class="mp-nota">Toca un nombre para ver sus salidas de la página y sus respuestas.</p>
-        <label class="campo"><span>Buscar por código (3 cifras)</span><input id="buscar-cod" type="search" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="Ej.: 298" value="${filtroCod}"></label>
-        <p class="mp-nota" id="buscado"></p><div id="lista"></div></div>
+      <div id="lista"></div></div>
       ${PRUEBA ? '<div class="tarjeta"><span class="etq">Ensayo</span><p class="mp-nota">Deja el ensayo como nuevo: borra registros, respuestas y notas.</p><button class="boton" id="b-reiniciar" style="color:var(--mal);border-color:var(--mal)">Reiniciar el ensayo y borrar sus datos</button></div>' : ''}
       <div class="tarjeta"><button class="boton" id="b-salir">Salir</button></div>`;
     $('#b-salir').onclick = async () => { await II.sb.auth.signOut(); location.reload(); };
-    $('#buscar-cod').oninput = (e) => { filtroCod = e.target.value.replace(/\D/g, '').slice(0, 3); pintarListas(); };
+    $('#f-ver').onsubmit = (ev) => { ev.preventDefault(); buscado = String($('#i-cod').value || '').replace(/\D/g, '').slice(0, 3); pintarVer(); };
     const br = $('#b-reiniciar');
     if (br) dobleToque(br, 'Toca otra vez para borrar todo el ensayo', async () => {
       await Promise.all([II.sb.from('respuestas').delete().eq('sesion', SID), II.sb.from('ingresos').delete().eq('sesion', SID)]);
