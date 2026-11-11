@@ -426,11 +426,17 @@
       <div class="exp-flash">${flash || '&nbsp;'}</div>
       <div class="exp-n">Registrados: <b>${alumnos.length}</b>${ult ? `<br><small>Último: ${esc(ult.nombre)}</small>` : ''}</div>
       <div class="fila-bt"><button class="boton" id="q-nuevo">Nuevo QR</button><button class="boton prim" id="q-cerrar">Cerrar</button></div>
+      <div class="fila-bt"><button class="boton" id="q-copiar">Copiar enlace para los alumnos</button></div>
       <div class="fila-bt"><button class="boton" id="q-fijo">${ex.qr_fijo ? 'Un solo QR para todos: SÍ (tocar dos veces para volver a uno por persona)' : 'Usar un solo QR para todos (tocar dos veces)'}</button></div>`;
     dobleToque($('#q-fijo'), ex.qr_fijo ? 'Toca otra vez para volver al QR de uso único' : 'Toca otra vez: un solo QR para todos', async () => {
       await cambiar({ qr_fijo: !ex.qr_fijo }, ex.qr_fijo ? 'QR de uso único: cada QR sirve a una persona.' : 'Un solo QR para todos: no cambia al escanearse.');
       pintarQR(ex.qr_fijo ? 'Un solo QR para todos' : 'QR de uso único');
     });
+    $('#q-copiar').onclick = async () => {
+      const bt = $('#q-copiar');
+      try { await navigator.clipboard.writeText(url); bt.textContent = '✓ Enlace copiado: pégalo en el grupo'; }
+      catch (e) { bt.textContent = 'Copia este enlace: ' + url; }
+    };
     $('#q-nuevo').onclick = async () => { await cambiar({ token: nuevoToken() }); tokenVisto = ex.token; pintarQR('QR nuevo'); };
     $('#q-cerrar').onclick = () => { qrAbierto = false; capa.remove(); pintarControl(true); pintarListas(); };
   }
