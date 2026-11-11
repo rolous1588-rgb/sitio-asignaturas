@@ -3,6 +3,7 @@
 // ?s=prueba → examen de ensayo (mn-ex2-prueba); sin parámetro → examen oficial (mn-ex2)
 // estado_sesion.extra = { asincrona, token, qr_n, abre, hab: { carnet: true }, fin, cierra, pausa: { rest }, publicado }
 //   · QR de un solo uso: la RPC mn_canjear_qr cambia «token» cuando alguien lo escanea; «Nuevo QR» lo cambia a mano
+//   · qr_fijo = true: un solo QR para todos (no rota al escanearse)
 //   · Iniciar: abre = ahora y habilita a todos los registrados; los que llegan después se habilitan uno por uno
 //   · Cuenta regresiva: fin = ahora + minutos; detener guarda lo que falta en pausa.rest; cierra = fin + 60 s (margen de red)
 //   · Terminar: fin = ahora + 20 s · Publicar: notas en la fila «<sesión>-notas» y publicado = true
@@ -202,11 +203,11 @@
     const c = $('#control');
     if (!c) return;
     const reg = alumnos.length;
-    const clave = JSON.stringify([f, !!ex.pausa, ex.pausa && ex.pausa.rest, ex.fin, ex.publicado, reg, ex.qr_n]);
+    const clave = JSON.stringify([f, !!ex.pausa, ex.pausa && ex.pausa.rest, ex.fin, ex.publicado, reg, ex.qr_n, !!ex.qr_fijo]);
     if (!forzar && clave === claveControl) return;
     claveControl = clave;
     let h = `<div class="exp-fase"><span class="mpp-pill ${f === 'curso' ? 'ok' : f === 'terminado' ? 'mal' : 'duda'}">${f === 'espera' ? 'Antes de iniciar' : f === 'curso' ? 'En curso' : 'Terminado'}</span>
-      <span>${reg} registrados${ex.qr_n ? `; QR usados: ${ex.qr_n}` : ''}</span></div>`;
+      <span>${reg} registrados${ex.qr_n ? `; QR usados: ${ex.qr_n}` : ''}${ex.qr_fijo ? '; QR único para todos' : ''}</span></div>`;
     if (f === 'espera') {
       h += `<div class="exp-bt"><button class="boton prim" id="b-qr">Mostrar QR</button></div>
         <div class="exp-bt"><button class="boton" id="b-iniciar" style="border-color:var(--ok);color:var(--ok)">Iniciar examen (${reg})</button></div>
@@ -424,7 +425,12 @@
     capa.innerHTML = `<div class="qr">${II.qrSVG(url, 600)}</div>
       <div class="exp-flash">${flash || '&nbsp;'}</div>
       <div class="exp-n">Registrados: <b>${alumnos.length}</b>${ult ? `<br><small>Último: ${esc(ult.nombre)}</small>` : ''}</div>
-      <div class="fila-bt"><button class="boton" id="q-nuevo">Nuevo QR</button><button class="boton prim" id="q-cerrar">Cerrar</button></div>`;
+      <div class="fila-bt"><button class="boton" id="q-nuevo">Nuevo QR</button><button class="boton prim" id="q-cerrar">Cerrar</button></div>
+      <div class="fila-bt"><button class="boton" id="q-fijo">${ex.qr_fijo ? 'Un solo QR para todos: SÍ (tocar dos veces para volver a uno por persona)' : 'Usar un solo QR para todos (tocar dos veces)'}</button></div>`;
+    dobleToque($('#q-fijo'), ex.qr_fijo ? 'Toca otra vez para volver al QR de uso único' : 'Toca otra vez: un solo QR para todos', async () => {
+      await cambiar({ qr_fijo: !ex.qr_fijo }, ex.qr_fijo ? 'QR de uso único: cada QR sirve a una persona.' : 'Un solo QR para todos: no cambia al escanearse.');
+      pintarQR(ex.qr_fijo ? 'Un solo QR para todos' : 'QR de uso único');
+    });
     $('#q-nuevo').onclick = async () => { await cambiar({ token: nuevoToken() }); tokenVisto = ex.token; pintarQR('QR nuevo'); };
     $('#q-cerrar').onclick = () => { qrAbierto = false; capa.remove(); pintarControl(true); pintarListas(); };
   }

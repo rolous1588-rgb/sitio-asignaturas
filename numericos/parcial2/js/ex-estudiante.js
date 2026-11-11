@@ -1,6 +1,7 @@
 // ============================================================
 // Métodos Numéricos · 2.º parcial de Métodos (16/10/2026) — celular del estudiante
-// Entrada: QR de un solo uso que el docente muestra en su celular (?t=código; RPC mn_canjear_qr).
+// Entrada: QR que el docente muestra en su celular (?t=código). De uso único (RPC mn_canjear_qr) salvo que el docente
+// active «un solo QR para todos» (extra.qr_fijo): entonces basta con que el código siga siendo el vigente.
 // Fases (estado_sesion.extra):
 //   sin «abre» → espera · abre + carnet en «hab» → en curso · abre sin habilitar → llegó tarde (espera)
 //   fin (cuenta regresiva) alcanzado → terminado · publicado → nota y solución
@@ -166,9 +167,15 @@
     CONT(tarjeta('<p>Verificando el código…</p>'));
     let ok = false;
     try {
-      const { data, error } = await II.sb.rpc('mn_canjear_qr', { p_sesion: SID, p_token: TOKEN });
-      if (error) throw error;
-      ok = !!data;
+      // QR único para todos (extra.qr_fijo): no se canjea, basta con que siga siendo el vigente
+      const { data: fila } = await II.sb.from('estado_sesion').select('extra').eq('sesion', SID).maybeSingle();
+      const ex0 = (fila && fila.extra) || {};
+      if (ex0.qr_fijo && ex0.token === TOKEN) ok = true;
+      else {
+        const { data, error } = await II.sb.rpc('mn_canjear_qr', { p_sesion: SID, p_token: TOKEN });
+        if (error) throw error;
+        ok = !!data;
+      }
     } catch (e) {
       CONT(tarjeta('<h2>Sin conexión</h2><p>No se pudo verificar el código. Revisa tus datos móviles y vuelve a escanear.</p>'));
       return;
