@@ -280,6 +280,15 @@ Carpeta `plc/` (sesión `pl-s1` «Fundamentos, E/S y primera lógica», 3 h por 
 - Para agregar o corregir un estudiante: `insert/update` en `public.estudiantes` con los hashes (ver `supabase/modulo-plc-v3.sql`; el archivo no lleva datos).
 - Pendiente: «Control de estudio 1» y las demás sesiones aún no se construyen; carnet 4018904 entró el 31/10 y no está en la lista: no puede volver a entrar (sus respuestas siguen en la base; no borrar todavía).
 
+## Métodos Numéricos · 2.º parcial por celular con razonamiento (11/11/2026)
+
+Carpeta `numericos/parcial2/` (copia de `numericos/examen/`, independiente). Sesiones `mn-ex2` (oficial) y `mn-ex2-prueba` (ensayo); el canje del QR acepta `mn-ex%`. Tres problemas de aplicación, uno por método: bisección (diodo: `EX.FAM.bis`, Vs en 5 a 6 V), falsa posición (canal de Manning: `EX.FAM.fp`, Q en 2,5 a 4 m³/s) y Newton (catenaria: `EX.FAM.nr`, L en 104 a 107 m, a₀ = 90). Cada problema tiene dos preguntas de razonamiento (`EX.RAZON`: convergencia y significado de la solución), guardadas en `est[m].razon`.
+
+- Revisión (panel): en el detalle de cada estudiante, nota de razonamiento 0 a 100, feedback y observación por método. Se guardan en la fila `mn-ex2-notas` (`extra.revision[carnet]`).
+- Nota final por método = 50 % lo automático + 50 % el razonamiento (sobre el máximo del método). «Publicar notas» no publica si falta alguna revisión.
+- Códigos de 3 cifras: el panel detecta repetidos y asigna otro libre (`extra.codigos`); la página del estudiante lo lee. Pendiente para el integrador: una función en la base que asigne códigos al registrarse.
+- Pruebas: Node (`prueba-motor` sobre `parcial2`: 300 carnets con todo bien = 100) y navegador con base compartida (docente + 3 estudiantes, revisión, faltantes y publicación).
+
 ## Pendiente
 - Sesión 4, día 5: repaso limitado a "inicio" hasta la clase; al terminar, dejar el paso en "Cierre" (no en un reto) y "Abrir toda la sesión".
 - "Sesión 5, día 6" (miércoles 07/10, 20:00): publicada. Antes de la clase, limitar el repaso a "inicio"; al terminar, dejar el paso en "cierre" y abrir el examen desde `docente.html?s=ii-s6`.
