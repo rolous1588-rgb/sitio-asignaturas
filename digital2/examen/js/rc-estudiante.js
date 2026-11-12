@@ -13,8 +13,9 @@
 (function () {
   const $ = II.$;
   const $$ = II.$$;
-  const PRUEBA = /prueba/.test(II.params.get('s') || '');
-  const SID = PRUEBA ? 'd2-ex1-prueba' : 'd2-ex1';
+  const DEMO = II.params.get('demo') === '1'; // ensayo local: sin registro, sin docente, sin enviar nada a la base
+  const PRUEBA = DEMO || /prueba/.test(II.params.get('s') || '');
+  const SID = DEMO ? 'd2-ex1-demo' : PRUEBA ? 'd2-ex1-prueba' : 'd2-ex1';
   const SID_OBS = SID + '-obs';
   const TOKEN = II.params.get('t') || '';
   const K_AL = 'px-alumno-' + SID;
@@ -60,6 +61,7 @@
   // ---------------- fase ----------------
   const finGlobal = () => !!(ex.fin && ahora() >= Date.parse(ex.fin));
   function fase() {
+    if (DEMO && alumno) return est && est.terminoYo ? 'publicado' : 'curso';
     if (!alumno) return 'registro';
     if (!leida) return 'cargando';
     if (ex.publicado) return 'publicado';
@@ -564,6 +566,7 @@
 
   // ---------------- nota publicada ----------------
   async function vPublicado() {
+    if (DEMO && !notas) { const r = RC.nota(alumno.carnet, est); notas = { [alumno.reg]: { n: r.total, p: Object.fromEntries(RC.PROB.map((k) => [k, r.res[k].pts])), h: RC.firma(est) } }; }
     if (!notas) {
       if (vista !== 'pub-cargando') { vista = 'pub-cargando'; CONT(tarjeta('<p>Cargando tu nota…</p>')); }
       try {
@@ -663,6 +666,7 @@
   // página mide mucho más que la pantalla física. Con esa vista bloqueamos las preguntas (se ve un aviso en blanco) y
   // lo anotamos para el docente (sal.escr). Al desactivarla, las preguntas vuelven con lo que ya se había escrito.
   function esEscritorio() {
+    if (DEMO) return false;
     const ua = navigator.userAgent || '';
     const movil = /Android|iPhone|iPod|Mobile/i.test(ua);
     const uaEsc = /X11|Linux x86_64|Windows NT|Macintosh|CrOS/i.test(ua) && !movil;
@@ -818,6 +822,21 @@
 
   // ---------------- arranque ----------------
   II.alCambiarConexion((ok) => { const d = $('#e-con'); d.classList.toggle('on', ok); d.classList.toggle('off', !ok); });
+  if (DEMO) {
+    II.sb = null;
+    if (II.params.get('reset') === '1') { try { Object.keys(localStorage).filter((k) => k.indexOf(SID) >= 0).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* nada */ } alumno = null; }
+    if (!alumno) {
+      alumno = { nombre: 'DEMO, Estudiante', carnet: '2026-0001', reg: 'demo', info: { apellidos: 'DEMO', nombres: 'Estudiante', ci: '1234567', carrera: 'Ingeniería Electrónica', disp: DISP, tipo: tipoDisp, reg: 'demo' } };
+      II.guardar(K_AL, alumno);
+    }
+    ex = { asincrona: true, abre: new Date(Date.now() - 60000).toISOString() };
+    leida = true;
+    cargarEst();
+    if (est.terminoYo && II.params.get('reset') !== '1') { /* ya terminó: se ve su nota */ }
+    setInterval(barra, 500);
+    pintar();
+    return;
+  }
   if (!II.sb) {
     CONT(tarjeta('<h2>Sin conexión</h2><p>No se pudo cargar el examen. Revisa tus datos móviles y recarga la página.</p><button class="boton prim bloque" onclick="location.reload()">Recargar</button>'));
     return;
