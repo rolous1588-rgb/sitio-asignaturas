@@ -156,7 +156,7 @@
     titulo: 'Tabla de transición', max: 20, casillas: 24,
     enunciado: (d) => `<p>Diseña un contador <b>síncrono</b> con flip-flops <b>D</b> que cuente, en este orden, los estados (en decimal) y luego repita:</p><div class="ex-func">${secTex(d)}</div><p>Lo que completes aquí se copia solo al paso siguiente.</p>`,
     pasos: (d) => [{ t: 'Tabla de transición', nota: 'Escribe el estado siguiente de cada fila bit por bit.',
-      multi: { cols: ['Estado', 'Q<sub>2</sub><sup>+</sup>', 'Q<sub>1</sub><sup>+</sup>', 'Q<sub>0</sub><sup>+</sup>'] },
+      multi: { split3: true, grupo: 'Estado siguiente', cols: ['Q<sub>2</sub><sup>+</sup>', 'Q<sub>1</sub><sup>+</sup>', 'Q<sub>0</sub><sup>+</sup>'] },
       items: (() => { const o = []; for (let s = 0; s < 8; s++) for (let j = 0; j < 3; j++) o.push({ id: 't' + s + '_' + j, h: `Estado ${bin(s)}, Q<sub>${2 - j}</sub><sup>+</sup>`, tipo: 'bit', fila: s, col: j, bits: bin(s), sig: '', pts: d.d.usado(s) ? 1 : 1 / 3, x: true }); return o; })() }],
     esperado: (d, vals) => {
       const o = {};
@@ -177,7 +177,7 @@
   P.p3 = {
     titulo: 'Tabla de D por estado', max: 20, casillas: 24,
     enunciado: () => `<p>Aquí está <b>tu tabla de transición</b> del paso anterior (lo que dejaste en blanco sigue con «?»). Con la tabla de activación del D, completa D<sub>2</sub>, D<sub>1</sub> y D<sub>0</sub> en las 8 filas.</p>`,
-    pasos: (d, m) => [{ t: 'Tabla de D', multi: { cols: ['Estado → siguiente', 'D<sub>2</sub>', 'D<sub>1</sub>', 'D<sub>0</sub>'] },
+    pasos: (d, m) => [{ t: 'Tabla de D', multi: { split3: true, sigCol: true, grupo: 'Entradas D', cols: ['D<sub>2</sub>', 'D<sub>1</sub>', 'D<sub>0</sub>'] },
       items: (() => { const o = []; for (let s = 0; s < 8; s++) for (let e = 0; e < 3; e++) o.push({ id: 'd' + s + '_' + e, tipo: 'bit', fila: s, col: e, pts: d.d.usado(s) ? 1 : 1 / 3, x: true, h: `Estado ${bin(s)}, D<sub>${2 - e}</sub>`, bits: bin(s), sig: m.sigTxt[s] }); return o; })() }],
     esperado: (d, vals, m) => { const o = {}; for (let s = 0; s < 8; s++) for (let e = 0; e < 3; e++) o['d' + s + '_' + e] = celda(m.sig[s][e]); return o; },
     final: (d, m) => ['<p>Con D, la entrada de cada flip-flop es igual a su estado siguiente (D = Q<sup>+</sup>): la tabla de D es la columna de «siguiente» de tu tabla de transición. Un siguiente en X da D en X.</p>',

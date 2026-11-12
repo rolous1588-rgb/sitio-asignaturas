@@ -267,12 +267,22 @@
   function tablaMulti(p, ps) {
     const filas = [];
     ps.items.forEach((it) => { (filas[it.fila] = filas[it.fila] || []).push(it); });
+    const sp = ps.multi.split3; // estado presente en tres columnas Q2 Q1 Q0, centradas
     const cuerpo = filas.map((its) => {
       const f = its[0];
-      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2"> → ' + f.sig + '</span>' : ''}</td>` +
+      const est = sp
+        ? f.bits.split('').map((x) => `<td class="mono pd-b3">${x}</td>`).join('') + (f.sig ? `<td class="mono pd-sg">${f.sig}</td>` : '')
+        : `<td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2"> → ' + f.sig + '</span>' : ''}</td>`;
+      return `<tr class="${f.fijo ? 'pd-fijo' : ''}">${est}` +
         its.map((it) => `<td>${it.fijo ? '<span class="pd-fx">X</span>' : botonY(p, it, true)}</td>`).join('') + '</tr>';
     }).join('');
-    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi"><tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
+    let cab;
+    if (sp) {
+      const nx = ps.multi.cols.length;
+      cab = `<tr class="pd-g1"><th colspan="3" class="pd-gh">Estado presente</th>${ps.multi.sigCol ? '<th rowspan="2" class="pd-gh">Siguiente<br>(tu tabla)</th>' : ''}<th colspan="${nx}" class="pd-gh">${ps.multi.grupo}</th></tr>` +
+        `<tr class="pd-g2"><th>Q<sub>2</sub></th><th>Q<sub>1</sub></th><th>Q<sub>0</sub></th>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
+    } else cab = `<tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
+    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi${sp ? ' pd-sp' : ''}">${cab}${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
   }
   function tablaY(p, ps) {
     const ceros = `<button type="button" class="boton pd-ceros" data-ceros="${p}|${ps.items.map((it) => it.id).join(',')}">Poner 0 en las casillas vacías</button>`;

@@ -186,3 +186,13 @@ svg.ct-esq { width: 100%; min-width: 300px; display: block; }
 
 .kc.gx { fill: #e9ecef; stroke: #868e96; stroke-dasharray: 4 3; }
 .kg { fill-opacity: .13; stroke-width: 3; pointer-events: none; }
+
+/* Problema 2: estado presente en tres columnas centradas (Q2 Q1 Q0) con encabezado agrupado */
+.pd-sp th { text-align: center; font-size: 14px; padding: 4px 2px; }
+.pd-sp .pd-gh { border-bottom: 2px solid #1d4f86; color: #1d4f86; font-weight: 800; font-size: 13px; }
+.pd-sp td.pd-b3 { text-align: center; font-size: 20px; font-weight: 800; width: 13%; min-width: 0 !important; padding: 0 !important; }
+.pd-sp td.pd-sg { text-align: center; font-size: 16px; color: var(--muted); letter-spacing: .08em; }
+.pd-sp td { text-align: center; }
+.pd-sp tr.pd-g2 th { color: #1d4f86; }
+.pd-sp tr:nth-child(n+3) td.pd-b3:first-child { border-left: 0; }
+.pd-sp td.pd-b3:nth-child(3) { border-right: 2px solid #c9d3df !important; }
