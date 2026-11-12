@@ -1,0 +1,866 @@
+// ============================================================
+// Electrónica Digital 2 · parcial por celular (09/11/2026), copia del 2.º parcial de Medidas — celular del estudiante
+// Copia del 2.º parcial de Transformadas (transformadas/parcial2/, a su vez copia del recuperatorio de Laplace) con 7 problemas.
+// Observaciones: con las notas publicadas, el estudiante escribe una por pregunta (clave «p1.0», con su etiqueta en «etq») y las envía a la sesión «<sesión>-obs».
+// Entrada: QR proyectado en la TV (?t=código). Sirve para todos mientras el docente no lo cambie ni lo bloquee.
+// Fases (estado_sesion.extra):
+//   sin «abre» → espera · abre → en curso (también para los que llegan tarde)
+//   obs[reg] → examen observado (bloqueado) · fin alcanzado o «Terminar examen» → terminado
+//   reab[reg] mayor que lo visto → el docente lo reabrió · publicado → nota y solución
+// Cada registro (reg) recibe del panel un código de 3 cifras distinto: cod[reg]. ver[reg] = verificado en el aula.
+// Problemas: no se bloquean; «Enviar problema» envía todo; vale lo último enviado.
+// ============================================================
+(function () {
+  const $ = II.$;
+  const $$ = II.$$;
+  const DEMO = II.params.get('demo') === '1'; // ensayo local: sin registro, sin docente, sin enviar nada a la base
+  const PRUEBA = DEMO || /prueba/.test(II.params.get('s') || '');
+  const SID = DEMO ? 'd2-ex3-demo' : PRUEBA ? 'd2-ex3-prueba' : 'd2-ex3';
+  const SID_OBS = SID + '-obs';
+  const TOKEN = II.params.get('t') || '';
+  const K_AL = 'px-alumno-' + SID;
+  const K_PASE = 'px-pase-' + SID;
+  const K_COLA = 'pm-cola';
+  const CARRERAS = ['Ingeniería Electrónica', 'Ingeniería Mecatrónica', 'Otra carrera'];
+  const DISP = (() => { let d = II.leer('rc-disp', null); if (!d) { d = Math.random().toString(36).slice(2, 10); II.guardar('rc-disp', d); } return d; })();
+  const tipoDisp = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'iPhone' : /Android/.test(navigator.userAgent) ? 'Android' : 'otro';
+
+  let alumno = II.leer(K_AL, null);
+  let ex = {};
+  let leida = false;
+  let offset = 0;
+  const ahora = () => Date.now() + offset;
+  let vista = '';
+  let pestana = 'p1';
+  let notas = null;
+  let pubVisto;
+
+  const kEst = () => 'px-est-' + SID + '-' + alumno.reg;
+  const CAR = () => (alumno && alumno.info && alumno.info.carrera) || '';
+  const nuevaSal = () => ({ n: 0, seg: 0, max: 0, lista: [], abierta: null, foco: { n: 0, seg: 0 }, cambios: [], pantalla: '—', recargas: 0, disp: tipoDisp, escr: { n: 0, seg: 0, ini: null } });
+  const nuevoEst = () => ({ ...Object.fromEntries(RC.PROB.map((k) => [k, { vals: {} }])), sal: nuevaSal(), enviados: {}, final: false, terminoYo: false, reabVisto: 0, ultEnvio: null });
+  let est = null;
+  const cargarEst = () => { est = II.leer(kEst(), null) || nuevoEst(); est.sal = est.sal || nuevaSal(); est.enviados = est.enviados || {}; };
+  const guardarEst = () => II.guardar(kEst(), est);
+  const codigo = () => (alumno && ex.cod && ex.cod[alumno.reg]) || null;
+  const verificado = () => !!(alumno && ex.ver && ex.ver[alumno.reg]);
+  const observado = () => !!(alumno && ex.obs && ex.obs[alumno.reg]);
+
+  // ---------------- hora del servidor ----------------
+  async function sincronizarHora() {
+    if (!II.sb) return;
+    const t0 = Date.now();
+    try {
+      const { data, error } = await II.sb.rpc('estado_evaluacion', { p_sesion: SID, p_carnet: (alumno && alumno.carnet) || '---' });
+      if (error) throw error;
+      const d = data && data[0];
+      if (d && d.ahora) offset = Date.parse(d.ahora) - (t0 + Date.now()) / 2;
+    } catch (e) { /* se reintenta luego */ }
+  }
+
+  // ---------------- fase ----------------
+  const finGlobal = () => !!(ex.fin && ahora() >= Date.parse(ex.fin));
+  function fase() {
+    if (DEMO && alumno) return est && est.terminoYo ? 'publicado' : 'curso';
+    if (!alumno) return 'registro';
+    if (!leida) return 'cargando';
+    if (ex.publicado) return 'publicado';
+    if (observado()) return 'observado';
+    if (!ex.abre) return 'espera';
+    if (finGlobal()) return 'terminado';
+    if (est && est.terminoYo) {
+      const r = (ex.reab && ex.reab[alumno.reg]) || 0;
+      if (r > (est.reabVisto || 0)) { est.reabVisto = r; est.terminoYo = false; est.final = false; guardarEst(); enviarAvance('reabierto'); }
+      else return 'terminado';
+    }
+    return 'curso';
+  }
+  const restante = () => (ex.pausa ? Number(ex.pausa.rest) / 1000 : ex.fin ? (Date.parse(ex.fin) - ahora()) / 1000 : null);
+  const minDesdeInicio = () => (ex.abre ? Math.max(0, Math.round((ahora() - Date.parse(ex.abre)) / 60000)) : 0);
+  const mmss = (s) => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+  // ---------------- envíos (cola propia: relee la cola en cada paso) ----------------
+  let vaciando = false;
+  function encolar(registro) {
+    if (!II.sb) return;
+    const c = II.leer(K_COLA, []);
+    c.push(registro);
+    II.guardar(K_COLA, c.slice(-40));
+    vaciar();
+  }
+  async function vaciar() {
+    if (vaciando || !II.sb) return;
+    vaciando = true;
+    try {
+      for (;;) {
+        const c = II.leer(K_COLA, []);
+        if (!c.length) break;
+        const { error } = await II.sb.from('respuestas').insert(c[0]);
+        if (error) {
+          const rechazo = error.code === '42501' || /row-level security/i.test(error.message || '');
+          if (!rechazo) { II.marcarConexion(false); break; }
+          const r = II.leer('px-cola-rechazadas', []); r.push(c[0]); II.guardar('px-cola-rechazadas', r.slice(-20));
+        }
+        II.marcarConexion(true);
+        const resto = II.leer(K_COLA, []);
+        resto.shift();
+        II.guardar(K_COLA, resto);
+        if (!error && c[0].actividad === 'avance' && est) { est.ultEnvio = ahora(); guardarEst(); }
+      }
+    } catch (e) {
+      II.marcarConexion(false);
+    } finally {
+      vaciando = false;
+    }
+  }
+  setInterval(vaciar, 4000);
+
+  function resumenSal() {
+    const s = est.sal;
+    return { n: s.n, seg: s.seg, max: s.max, lista: s.lista.slice(-30), abierta: s.abierta, foco: s.foco, cambios: s.cambios.slice(-30), pantalla: s.pantalla, recargas: s.recargas, disp: s.disp, escr: s.escr };
+  }
+  function enviarAvance(motivo) {
+    if (!alumno || !est) return;
+    const copia = Object.fromEntries(RC.PROB.map((k) => [k, { vals: est[k].vals }]));
+    encolar({
+      sesion: SID, actividad: 'avance', carnet: alumno.carnet, nombre: alumno.nombre,
+      respuesta: { est: copia, sal: resumenSal(), motivo, disp: DISP, reg: alumno.reg, cod: codigo(), car: alumno.info.carrera, final: !!est.final, termino: !!est.terminoYo },
+      correcta: null, intento: 1, puntaje: 0
+    });
+  }
+  let tAvance = null;
+  let cambiosSinEnviar = false;
+  function programarAvance(ms = 20000) {
+    cambiosSinEnviar = true;
+    clearTimeout(tAvance);
+    tAvance = setTimeout(() => { if (cambiosSinEnviar && fase() === 'curso') { cambiosSinEnviar = false; enviarAvance('auto'); } }, ms);
+  }
+
+  // ---------------- piezas ----------------
+  const tarjeta = (h, cls = '') => `<div class="tarjeta ${cls}">${h}</div>`;
+  const neg = (s) => String(s).replace(/^-/, '−');
+
+  function barra() {
+    $('#e-nombre').textContent = alumno ? alumno.nombre + (PRUEBA ? '; ENSAYO' : '') : 'Examen de Electrónica Digital 2' + (PRUEBA ? '; ensayo' : '');
+    const r = $('#e-reloj');
+    const s = restante();
+    const f = fase();
+    if (f === 'curso' && s != null) {
+      r.textContent = (ex.pausa ? '⏸ ' : '⏱ ') + mmss(s);
+      r.classList.remove('oculto');
+      r.classList.toggle('urgente', !ex.pausa && s <= 120);
+    } else r.classList.add('oculto');
+  }
+
+  // franja con el nombre completo y el código (el docente la lee al recorrer el aula)
+  function franja() {
+    const c = codigo();
+    return `<div class="rc-id"><div class="rc-id-nom"><b>${II.esc(alumno.nombre)}</b><small>C.U. ${II.esc(alumno.carnet)}</small></div>
+      <div class="rc-id-cod">${c ? `<small>Código</small><b>${c}</b>` : '<small>Código</small><b class="espera">…</b>'}</div>
+      ${verificado() ? '<div class="rc-id-ver">✓ Verificado por el docente</div>' : ''}</div>`;
+  }
+
+  // ---------------- entrada con el QR ----------------
+  function vEntrada() {
+    const pase = II.leer(K_PASE, null);
+    if (pase && Date.now() - pase.en < 20 * 60000) return vRegistro();
+    if (!leida) { if (vista !== 'cargando') { vista = 'cargando'; CONT(tarjeta('<p>Verificando el código…</p>')); } return; }
+    const k = 'entrada' + (ex.qr ? 1 : 0) + (TOKEN && TOKEN === ex.token ? 1 : 0);
+    if (!TOKEN) { if (vista === k) return; vista = k; CONT(tarjeta('<span class="etq">Electrónica Digital 2; examen</span><h2>Escanea el QR de la pantalla</h2><p>Para entrar al examen, escanea el código que muestra el docente.</p>')); return; }
+    if (!ex.qr) { if (vista === k) return; vista = k; CONT(tarjeta('<span class="etq">Electrónica Digital 2; examen</span><h2>El ingreso está cerrado</h2><p>El docente bloqueó el QR. Si estás en el aula, pídele que lo habilite y vuelve a escanear.</p>')); return; }
+    if (TOKEN !== ex.token) { if (vista === k) return; vista = k; CONT(tarjeta('<span class="etq">Electrónica Digital 2; examen</span><h2>Este QR ya no sirve</h2><p>El docente cambió el código. Escanea el QR que te muestre ahora.</p>')); return; }
+    II.guardar(K_PASE, { t: TOKEN, en: Date.now() });
+    vRegistro();
+  }
+
+  function vRegistro() {
+    if (vista === 'registro') return;
+    vista = 'registro';
+    CONT(tarjeta(`<span class="etq">Electrónica Digital 2; examen</span>
+      <h2>Escribe tus datos</h2>
+      <form id="f-ingreso">
+        <label class="campo"><span>Apellidos</span><input name="apellidos" required minlength="2" maxlength="38" autocomplete="family-name"></label>
+        <label class="campo"><span>Nombres</span><input name="nombres" required minlength="2" maxlength="38" autocomplete="given-name"></label>
+        <label class="campo"><span>Número de carnet de identidad (C.I.)</span><input name="ci" required minlength="4" maxlength="15" autocomplete="off"></label>
+        <label class="campo"><span>Carnet universitario (C.U.)</span><input name="cu" required minlength="3" maxlength="20" inputmode="numeric" autocomplete="off"></label>
+        <label class="campo"><span>Carrera</span><select name="carrera" required><option value="" disabled selected>Elige tu carrera</option>${CARRERAS.map((c) => `<option>${c}</option>`).join('')}</select></label>
+        <div class="aviso mal oculto" id="f-error"></div>
+        <button class="boton prim bloque">Entrar al examen</button>
+      </form>`));
+    $('#f-ingreso').onsubmit = async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(ev.target);
+      const limpio = (k) => String(fd.get(k) || '').trim().replace(/\s+/g, ' ');
+      const reg = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      const info = { apellidos: limpio('apellidos').toUpperCase(), nombres: limpio('nombres'), ci: limpio('ci'), carrera: String(fd.get('carrera') || ''), disp: DISP, tipo: tipoDisp, reg };
+      const cu = limpio('cu').replace(/\s+/g, '');
+      if (!CARRERAS.includes(info.carrera)) { const e = $('#f-error'); e.textContent = 'Elige tu carrera.'; e.classList.remove('oculto'); return; }
+      ev.target.querySelector('button').disabled = true;
+      alumno = { nombre: info.apellidos + ', ' + info.nombres, carnet: cu, reg, info };
+      try { await II.sb.from('ingresos').insert({ sesion: SID, carnet: cu, nombre: alumno.nombre, info }); } catch (e) { /* la respuesta «ingreso» lo vuelve a registrar */ }
+      encolar({ sesion: SID, actividad: 'ingreso', carnet: cu, nombre: alumno.nombre, respuesta: info, correcta: true, intento: 1, puntaje: 0 });
+      II.guardar(K_AL, alumno);
+      II.guardar(K_PASE, null);
+      cargarEst();
+      vista = '';
+      pintar();
+    };
+  }
+
+  // ---------------- espera ----------------
+  function vEspera() {
+    const k = 'espera' + (codigo() || '') + verificado();
+    if (vista === k) return;
+    vista = k;
+    CONT(franja() + tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span>
+      <h2>Espera a que el docente inicie el examen</h2>
+      <ul class="ex-reglas">
+        <li>Un solo problema en 4 pasos con el sumador de 4 bits 74283, con números propios: 1 suma binaria; 2 resta con complemento a 2; 3 suma BCD: suma binaria; 4 suma BCD: corrección. Lo que respondes en el paso 3 se copia solo al paso 4. Puedes usar papel y lápiz como hoja auxiliar; no se entrega.</li>
+        <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque.</li>
+                <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
+        <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
+        <li><b>No salgas de esta página ni bloquees el celular:</b> cada salida queda registrada para el docente. Activa «No molestar».</li>
+      </ul>
+      <p class="mp-nota">Esta pantalla cambia sola cuando empiece el examen.</p>`));
+  }
+
+  // ---------------- examen ----------------
+  function vExamen() {
+    const k = 'curso-' + pestana + '-' + (codigo() || '') + verificado();
+    if (vista === k) { pintarGuardado(); return; }
+    vista = k;
+    document.body.classList.add('examen');
+    marcaDeAgua();
+    const tabs = RC.PROB.map((p) => `<button class="ex-tab ${p === pestana ? 'activa' : ''}" data-tab="${p}"><b>${RC.TITULO[p]}</b><small><span data-prog="${p}">${progreso(p)}</span></small></button>`).join('');
+    CONT(`${franja()}<div class="ex-tabs rc-tabs">${tabs}</div><div id="ex-met">${problemaHTML(pestana)}</div>
+      <div class="tarjeta rc-fin"><button class="boton bloque rc-terminar" id="b-terminar">Terminar examen</button>
+      <p class="mp-nota">Tus respuestas se guardan en tu celular y llegan al docente cuando tocas «Enviar problema» (y solas cada cierto tiempo). Vale lo último enviado.</p></div>`);
+    enlazar();
+    pintarGuardado();
+  }
+
+  function progreso(p) {
+    const n = Object.keys(est[p].vals).filter((id) => est[p].vals[id] !== '' && est[p].vals[id] != null).length;
+    return `${n}/${RC.casillas(p)}`;
+  }
+
+  function problemaHTML(p) {
+    const d = RC.datos(p, alumno.carnet, CAR(), est);
+    const P = RC.P[p];
+    let h = tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}</span><div class="ex-func">${P.enunciado(d)}</div>`);
+    P.pasos(d).forEach((ps) => {
+      const cuerpo = ps.grid ? tablaGrid(p, ps) : ps.mapas ? mapasHTML() : ps.multi ? tablaMulti(p, ps) : ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
+      h += tarjeta(`<h3 class="rc-paso">${II.esc(ps.t)}</h3>${ps.html ? `<div class="pd-enun">${ps.html}</div>` : ''}${ps.nota ? `<p class="mp-nota">${ps.nota}</p>` : ''}
+        ${ps.tex ? `<div class="ex-func rc-plantilla">\\[${ps.tex}\\]</div>` : ''}
+        ${cuerpo}`, 'rc-tpaso');
+    });
+    h += `<div class="mp-pie rc-pie"><button class="boton prim bloque" data-enviar="${p}">Enviar ${RC.TITULO[p]}</button><span class="mp-int" data-estado="${p}"></span></div>`;
+    return h;
+  }
+
+  // tabla de verdad completa o mapa de Karnaugh (Digital 2): se toca cada casilla: ? → 1 → 0 (→ X)
+  function botonY(p, it, x) {
+    const v = est[p].vals[it.id];
+    return `<button type="button" class="pd-y ${v ? 'v' + v : ''}" data-y="${p}|${it.id}" data-x="${x ? 1 : 0}">${v || '?'}</button>`;
+  }
+  // tabla de varias columnas por fila (Digital 2: J y K de cada estado); las filas sin usar vienen en X y no se tocan
+  function tablaMulti(p, ps) {
+    const filas = [];
+    ps.items.forEach((it) => { (filas[it.fila] = filas[it.fila] || []).push(it); });
+    const sp = ps.multi.split3; // estado presente en tres columnas Q2 Q1 Q0, centradas
+    const cuerpo = filas.map((its) => {
+      const f = its[0];
+      const est = sp
+        ? f.bits.split('').map((x) => `<td class="mono pd-b3">${x}</td>`).join('') + (f.sig ? f.sig.split('').map((x) => `<td class="mono pd-sg">${x}</td>`).join('') : '')
+        : `<td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2"> → ' + f.sig + '</span>' : ''}</td>`;
+      return `<tr class="${f.fijo ? 'pd-fijo' : ''}">${est}` +
+        its.map((it) => `<td>${it.fijo ? '<span class="pd-fx">X</span>' : botonY(p, it, true)}</td>`).join('') + '</tr>';
+    }).join('');
+    let cab;
+    if (sp) {
+      const nx = ps.multi.cols.length;
+      cab = `<tr class="pd-g1"><th colspan="3" class="pd-gh">Estado presente</th>${ps.multi.sigCol ? '<th colspan="3" class="pd-gh">Siguiente (tu tabla)</th>' : ''}<th colspan="${nx}" class="pd-gh">${ps.multi.grupo}</th></tr>` +
+        `<tr class="pd-g2"><th>Q<sub>2</sub></th><th>Q<sub>1</sub></th><th>Q<sub>0</sub></th>${ps.multi.sigCol ? '<th>Q<sub>2</sub><sup>+</sup></th><th>Q<sub>1</sub><sup>+</sup></th><th>Q<sub>0</sub><sup>+</sup></th>' : ''}${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
+    } else cab = `<tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
+    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi${sp ? ' pd-sp' : ''}">${cab}${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
+  }
+  // sumas en columnas (Digital 2, problema 3): filas con rótulo; cada celda es un texto fijo o una casilla que se toca (? → 1 → 0)
+  function tablaGrid(p, ps) {
+    const G = ps.grid;
+    const celda = (c) => (typeof c === 'string' ? `<td class="mono pd-gf">${c}</td>` : c && c.id ? `<td>${botonY(p, c, false)}</td>` : `<td class="pd-gn" colspan="${c.span || 1}">${c.t}</td>`);
+    const cuerpo = G.filas.map((f) => `<tr><th class="pd-gl">${f.etq}</th>${f.cel.map(celda).join('')}</tr>`).join('');
+    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-grid"><tr><th></th>${G.cab.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0.</p>`;
+  }
+  function tablaY(p, ps) {
+    const ceros = `<button type="button" class="boton pd-ceros" data-ceros="${p}|${ps.items.map((it) => it.id).join(',')}">Poner 0 en las casillas vacías</button>`;
+    if (ps.mapa) {
+      const G = [0, 1, 3, 2], b2 = (n) => n.toString(2).padStart(2, '0');
+      return `<div class="pd-tabla"><table class="pd-km"><tr><th class="pd-kh">AB \\ CD</th>${G.map((c) => `<th>${b2(c)}</th>`).join('')}</tr>` +
+        G.map((f) => `<tr><th>${b2(f)}</th>${G.map((c) => `<td>${botonY(p, ps.items[(f << 2) | c], false)}</td>`).join('')}</tr>`).join('') +
+        `</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0.</p>${ceros}`;
+    }
+    const T = ps.tabla;
+    return `<div class="pd-tabla"><table class="tt tight pd-tt"><tr>${T.cols.map((c) => `<th>${II.esc(c)}</th>`).join('')}<th>Y</th></tr>` +
+      ps.items.map((it) => `<tr>${it.bits.split('').map((x) => `<td>${x}</td>`).join('')}<td>${botonY(p, it, T.x)}</td></tr>`).join('') +
+      `</table></div><p class="mp-nota">Toca cada casilla de Y para cambiarla: ? → 1 → 0${T.x ? ' → X' : ''}.</p>${ceros}`;
+  }
+
+  // ---------------- mapas de Karnaugh (P3): se llena, se agrupa SIN restricciones y se escribe la ecuación ----------------
+  let mapaAct = 0, modoMapa = 'llenar', selMapa = [];
+  const GB = ['#1d4f86', '#c2570c', '#2b8a3e', '#a0328a', '#8a7400', '#0b7285'];
+  const decGr = (t) => (t ? String(t).split(';').filter(Boolean).map((x) => x.split(',').map(Number)) : []);
+  const encGr = (a) => a.map((g) => g.join(',')).join(';');
+  function mapasHTML() {
+    const v = est.p4.vals;
+    const tabs = RC.ENT.map((x, i) => `<button type="button" class="ct-tab-b${i === mapaAct ? ' sel' : ''}${v['m' + i] != null || v['q' + i] ? ' ok' : ''}" data-mt="${i}">${x.nom}</button>`).join('');
+    return `<div class="ct-tabs">${tabs}</div><div id="zona-mapa" class="pd-zona-mapa"></div>`;
+  }
+  function htmlExpr(ent, nom) {
+    const q = CT.nombres(3);
+    let h = `<div class="tarjeta"><p class="ct-tit">3. Escribe la ecuación de ${nom}</p>`;
+    if (ent.c === 0 || ent.c === 1) h += `<p>${nom} = <b>${ent.c}</b>.</p><button type="button" class="boton" data-cx="quitar">Quitar</button>`;
+    else {
+      h += ent.p.map((g, k) => `<div class="ct-and"><span class="ct-and-n">${ent.p.length > 1 || g.length > 1 ? 'Término ' + (k + 1) : 'Término'}</span><div class="ct-chips">` +
+        q.map((n, i) => [0, 1].map((ng) => { const c = 2 * i + ng; return `<button type="button" class="ct-chip${g.includes(c) ? ' on' : ''}" data-cx="chip" data-k="${k}" data-l="${c}">${ng ? '<span class="ov">' + n + '</span>' : n}</button>`; }).join('')).join('') +
+        `</div><button type="button" class="ct-x" data-cx="xg" data-k="${k}" aria-label="Quitar término">✕</button></div>`).join('<div style="height:6px"></div>');
+      h += '<div class="fila-bt" style="margin-top:8px"><button type="button" class="boton" data-cx="mas">+ Término (suma)</button><button type="button" class="boton" data-cx="c1">Es 1</button><button type="button" class="boton" data-cx="c0">Es 0</button></div>';
+    }
+    return h + `<p class="lbl" style="margin-top:8px">Tu ecuación: <b>${nom} = ${CT.htmlEnt(3, ent)}</b></p></div>`;
+  }
+  function pintarMapa() {
+    const z = $('#zona-mapa');
+    if (!z) return;
+    const i = mapaAct, x = RC.ENT[i], v = est.p4.vals;
+    const vals = RC.decMapa(v['m' + i]) || Array(8).fill(0), grupos = decGr(v['g' + i]);
+    const ent = RC.decEnt(v['q' + i]) || { c: null, p: [[]] };
+    const vg = RC.vistaGrupos(grupos), GCs = window.D2.k.GC;
+    const cls = (m) => (vg.some((g) => !g.cubo && g.cells.includes(m)) ? 'gx' : '') + (selMapa.includes(m) ? ' sel' : '');
+    const r = window.D2.k.svg(3, vals, { nombres: CT.nombres(3), cls, grupos: vg.filter((g) => g.cubo).map((g) => g.cubo) });
+    const b3 = (n) => n.toString(2).padStart(3, '0');
+    z.innerHTML = `<details class="ct-ayuda"><summary>¿Cómo se usa el mapa?</summary>
+        <p><b>1. Llenar:</b> toca cada celda para cambiarla: 0 → 1 → X → 0. Copia la columna ${x.nom} de tu tabla de J y K (el número pequeño de la esquina es el estado en decimal).</p>
+        <p><b>2. Agrupar:</b> toca las celdas que quieras juntar (se pintan de amarillo) y presiona «Marcar grupo». Para borrar un grupo, toca su etiqueta de abajo.</p>
+        <p><b>3. Ecuación:</b> escribe con los botones la ecuación que corresponde a tus marcas: un término por grupo.</p></details>
+      <div class="tarjeta"><p class="ct-tit">Mapa de ${x.nom}</p>
+      <div class="ked-modos"><button type="button" data-mm="llenar" class="${modoMapa === 'llenar' ? 'sel' : ''}">1. Llenar</button><button type="button" data-mm="agrupar" class="${modoMapa === 'agrupar' ? 'sel' : ''}">2. Agrupar</button></div>
+      <p class="ked-ayuda">${modoMapa === 'llenar' ? 'Toca cada celda para cambiarla: 0 → 1 → X → 0.' : 'Toca las celdas de un grupo y presiona «Marcar grupo».'}</p>
+      <svg class="ked-mapa" viewBox="${r.vb}">${r.html}</svg>
+      ${modoMapa === 'agrupar' ? `<div class="ked-sel"><span class="ked-msg">${selMapa.length ? 'Celdas elegidas: <b>' + selMapa.slice().sort((a, b) => a - b).map(b3).join(', ') + '</b>' : 'Ninguna celda elegida.'}</span><div class="ked-bts"><button type="button" class="boton prim" data-mg="formar"${selMapa.length ? '' : ' disabled'}>Marcar grupo</button><button type="button" class="boton" data-mg="soltar"${selMapa.length ? '' : ' disabled'}>Soltar</button></div></div>` : ''}
+      <div class="ked-grupos">${vg.map((g, k) => { const c = g.cubo ? GCs[g.vi % GCs.length] : '#868e96'; return `<button type="button" class="ked-chip" data-gq="${k}" style="border-color:${c};color:${c}">Grupo ${k + 1}: ${g.cells.slice().sort((a, b) => a - b).map(b3).join(', ')} <span>✕</span></button>`; }).join('')}</div></div>` + htmlExpr(ent, x.nom);
+  }
+  function salvarP3() {
+    anotarCambio('p4'); guardarEst(); pintarGuardado(); programarAvance();
+    const pr = $('[data-prog="p4"]'); if (pr) pr.textContent = progreso('p4');
+    const t = $(`[data-mt="${mapaAct}"]`); if (t) t.classList.add('ok');
+    pintarMapa();
+  }
+  function clickMapa(e) {
+    const i = mapaAct, v = est.p4.vals;
+    const c = e.target.closest('[data-m]');
+    if (c) {
+      const m = +c.dataset.m;
+      if (modoMapa === 'llenar') {
+        const vals = RC.decMapa(v['m' + i]) || Array(8).fill(0);
+        vals[m] = vals[m] === 0 ? 1 : vals[m] === 1 ? 2 : 0;
+        v['m' + i] = RC.encMapa(vals); salvarP3();
+      } else { const k = selMapa.indexOf(m); if (k >= 0) selMapa.splice(k, 1); else selMapa.push(m); pintarMapa(); }
+      return;
+    }
+    const mm = e.target.closest('[data-mm]');
+    if (mm) { modoMapa = mm.dataset.mm; selMapa = []; pintarMapa(); return; }
+    const mg = e.target.closest('[data-mg]');
+    if (mg) {
+      if (mg.dataset.mg === 'formar' && selMapa.length) { const g = decGr(v['g' + i]); g.push(selMapa.slice().sort((a, b) => a - b)); v['g' + i] = encGr(g); selMapa = []; salvarP3(); }
+      else { selMapa = []; pintarMapa(); }
+      return;
+    }
+    const gq = e.target.closest('[data-gq]');
+    if (gq) { const g = decGr(v['g' + i]); g.splice(+gq.dataset.gq, 1); v['g' + i] = encGr(g); salvarP3(); return; }
+    const b = e.target.closest('[data-cx]');
+    if (b) {
+      const x = b.dataset.cx;
+      let ent = RC.decEnt(v['q' + i]) || { c: null, p: [[]] };
+      if (x === 'chip') {
+        if (ent.c === 0 || ent.c === 1) return;
+        const g = ent.p[+b.dataset.k], l = +b.dataset.l, j = g.indexOf(l);
+        if (j >= 0) g.splice(j, 1); else { const o = g.findIndex((y) => y >> 1 === l >> 1); if (o >= 0) g.splice(o, 1); g.push(l); g.sort((p2, q2) => p2 - q2); }
+      } else if (x === 'xg') { ent.p.splice(+b.dataset.k, 1); if (!ent.p.length) ent.p = [[]]; }
+      else if (x === 'mas') ent.p.push([]);
+      else if (x === 'c1' || x === 'c0') ent = { c: x === 'c1' ? 1 : 0, p: [] };
+      else if (x === 'quitar') ent = { c: null, p: [[]] };
+      v['q' + i] = RC.encEnt(ent); salvarP3();
+    }
+  }
+  function montarEspeciales() {
+    $$('[data-mt]').forEach((b) => { b.onclick = () => { mapaAct = +b.dataset.mt; selMapa = []; $$('[data-mt]').forEach((x) => x.classList.toggle('sel', x === b)); pintarMapa(); }; });
+    
+  }
+
+  function itemHTML(p, d, it) {
+    const v = est[p].vals[it.id];
+    if (it.tipo === 'op') {
+      const ops = d.op[it.id].map((o, i) => `<button type="button" class="mp-op rc-op ${String(v) === String(i) ? 'elegida' : ''}" data-op="${p}|${it.id}" data-k="${i}">${RC.opTxt(o)}</button>`).join('');
+      return `<div class="rc-ops${it.fila ? ' rc-ops-fila' : ''}"><span class="et">${RC.etTxt(it)}</span>${ops}</div>`;
+    }
+    const id = p + '|' + it.id;
+    return `<label class="mp-celda"><span class="et">${RC.etTxt(it)}</span><span class="mp-num"><button type="button" class="mp-signo" data-signo="${id}" aria-label="Cambiar signo">±</button><input data-c="${id}" inputmode="decimal" autocomplete="off" value="${II.esc(v == null ? '' : v)}"></span></label>`;
+  }
+
+  const firmaProb = (p) => JSON.stringify(est[p].vals);
+  function pintarGuardado() {
+    $$('[data-estado]').forEach((el) => {
+      const p = el.dataset.estado;
+      const g = est.enviados[p];
+      const vacio = !Object.keys(est[p].vals).length;
+      if (g && g.f === firmaProb(p)) { el.textContent = 'Enviado ✓ ' + new Date(g.t).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }); el.className = 'mp-int ok'; }
+      else if (vacio) { el.textContent = ''; el.className = 'mp-int'; }
+      else { el.textContent = 'Cambios sin enviar'; el.className = 'mp-int mal'; }
+    });
+    RC.PROB.forEach((p) => { const x = $(`[data-prog="${p}"]`); if (x) x.textContent = progreso(p); });
+  }
+
+  function enlazar() {
+    $$('[data-tab]').forEach((b) => { b.onclick = () => { pestana = b.dataset.tab; vista = ''; vExamen(); window.scrollTo(0, 0); }; });
+    const cambiar = (inp) => {
+      const [p, id] = inp.dataset.c.split('|');
+      est[p].vals[id] = inp.value;
+      if (inp.value === '') delete est[p].vals[id];
+      anotarCambio(p);
+      guardarEst();
+      pintarGuardado();
+      programarAvance();
+    };
+    $$('[data-c]').forEach((inp) => inp.addEventListener('input', () => cambiar(inp)));
+    $$('[data-signo]').forEach((b) => {
+      b.onclick = () => {
+        const inp = $(`[data-c="${b.dataset.signo}"]`);
+        const t = inp.value.trim().replace(/^[−–]/, '-');
+        inp.value = t.startsWith('-') ? t.slice(1) : '-' + t;
+        cambiar(inp);
+      };
+    });
+    $$('[data-barra]').forEach((b) => {
+      b.onclick = () => {
+        const inp = $(`[data-c="${b.dataset.barra}"]`);
+        if (!inp.value.includes('/')) inp.value = inp.value + '/';
+        cambiar(inp);
+        inp.focus();
+      };
+    });
+    $$('[data-y]').forEach((b) => {
+      b.onclick = () => {
+        const [p, id] = b.dataset.y.split('|');
+        const ciclo = b.dataset.x === '1' ? ['1', '0', 'X'] : ['1', '0'];
+        const n = ciclo[(ciclo.indexOf(est[p].vals[id]) + 1) % ciclo.length];
+        est[p].vals[id] = n;
+        b.textContent = n;
+        b.className = 'pd-y v' + n;
+        anotarCambio(p);
+        guardarEst();
+        pintarGuardado();
+        programarAvance();
+      };
+    });
+    $$('[data-ceros]').forEach((b) => {
+      b.onclick = () => {
+        const [p, ids] = b.dataset.ceros.split('|');
+        ids.split(',').forEach((id) => {
+          if (est[p].vals[id]) return;
+          est[p].vals[id] = '0';
+          const y = document.querySelector(`[data-y="${p}|${id}"]`);
+          if (y) { y.textContent = '0'; y.className = 'pd-y v0'; }
+        });
+        anotarCambio(p);
+        guardarEst();
+        pintarGuardado();
+        programarAvance();
+      };
+    });
+    $$('[data-op]').forEach((b) => {
+      b.onclick = () => {
+        const [p, id] = b.dataset.op.split('|');
+        est[p].vals[id] = b.dataset.k;
+        $$(`[data-op="${p}|${id}"]`).forEach((x) => x.classList.toggle('elegida', x === b));
+        anotarCambio(p);
+        guardarEst();
+        pintarGuardado();
+        programarAvance();
+      };
+    });
+    $$('[data-enviar]').forEach((b) => {
+      b.onclick = () => {
+        const p = b.dataset.enviar;
+        est.enviados[p] = { f: firmaProb(p), t: ahora() };
+        guardarEst();
+        cambiosSinEnviar = false;
+        enviarAvance('envió ' + p);
+        pintarGuardado();
+      };
+    });
+    const bt = $('#b-terminar');
+    if (bt) bt.onclick = terminarYo;
+    montarEspeciales();
+  }
+
+  async function terminarYo() {
+    const sin = RC.PROB.filter((p) => Object.keys(est[p].vals).length && !(est.enviados[p] && est.enviados[p].f === firmaProb(p))).map((p) => RC.TITULO[p]);
+    const vacios = RC.PROB.filter((p) => !Object.keys(est[p].vals).length).map((p) => RC.TITULO[p]);
+    const extra = (sin.length ? `<br>Tienes cambios sin enviar en ${sin.join(', ')}: se enviarán al terminar.` : '') + (vacios.length ? `<br>Sin responder: ${vacios.join(', ')}.` : '');
+    const ok = await confirmar('¿Terminar el examen?', `Ya no podrás cambiar tus respuestas. Recuerda entregar al docente tu circuito dibujado a mano en papel.${extra}`, 'Cancelar y seguir trabajando', 'Sí, terminar');
+    if (!ok) return;
+    RC.PROB.forEach((p) => { est.enviados[p] = { f: firmaProb(p), t: ahora() }; });
+    est.final = true;
+    est.terminoYo = true;
+    guardarEst();
+    enviarAvance('terminó');
+    vista = '';
+    pintar();
+  }
+
+  function confirmar(titulo, texto, no = 'Cancelar', si = 'Sí') {
+    return new Promise((res) => {
+      const capa = II.html(`<div class="capa"><div class="dialogo"><h2>${titulo}</h2><p>${texto}</p>
+        <div class="fila-bt rc-fila-bt"><button class="boton" data-r="0">${no}</button><button class="boton prim" data-r="1">${si}</button></div></div></div>`);
+      document.body.appendChild(capa);
+      capa.onclick = (e) => {
+        const b = e.target.closest('[data-r]');
+        if (!b && e.target !== capa) return;
+        capa.remove();
+        res(!!(b && b.dataset.r === '1'));
+      };
+    });
+  }
+
+  function marcaDeAgua() {
+    const t = (alumno.nombre + '; C.U. ' + alumno.carnet).replace(/[<&>"]/g, '');
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='180'><text x='10' y='100' transform='rotate(-20 180 90)' font-family='sans-serif' font-size='15' fill='rgba(29,95,180,0.07)'>${t}</text></svg>`;
+    document.body.style.backgroundImage = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  }
+  function sinMarca() { document.body.classList.remove('examen'); document.body.style.backgroundImage = ''; }
+
+  // ---------------- observado ----------------
+  function vObservado() {
+    if (!est.obsVisto) { est.obsVisto = true; est.final = true; guardarEst(); }
+    if (vista === 'observado') return;
+    vista = 'observado';
+    sinMarca();
+    soltarPantalla();
+    CONT(franja() + tarjeta(`<span class="etq">Examen observado</span><h2>El docente observó tu examen</h2>
+      <div class="aviso mal">Ya no puedes continuar.</div><p>Lo que enviaste hasta ahora quedó guardado. Habla con el docente.</p>`));
+  }
+
+  // ---------------- terminado ----------------
+  function vTerminado() {
+    if (!est.final) {
+      est.final = true;
+      guardarEst();
+      enviarAvance('final');
+    }
+    const pend = II.leer(K_COLA, []).length;
+    const clave = 'terminado' + (pend ? 'p' : '') + verificado();
+    if (vista === clave) return;
+    vista = clave;
+    sinMarca();
+    soltarPantalla();
+    CONT(franja() + tarjeta(`<span class="etq">Examen terminado</span><h2>Listo, ${II.esc(alumno.info.nombres.split(' ')[0])}</h2>
+      ${pend ? '<div class="aviso duda">Enviando tus últimas respuestas… no cierres esta página hasta que desaparezca este aviso.</div>' : '<div class="aviso ok">Tus respuestas llegaron al docente.</div>'}
+      <p>El docente publicará las notas. Cuando lo haga, aquí verás tu nota, el detalle de cada casilla y la solución.</p>`));
+  }
+
+  // ---------------- nota publicada ----------------
+  async function vPublicado() {
+    if (DEMO && !notas) { const r = RC.nota(alumno.carnet, est); notas = { [alumno.reg]: { n: Math.round(r.total / RC.PROB.reduce((s, k) => s + RC.MAX[k], 0) * 10000) / 100, p: Object.fromEntries(RC.PROB.map((k) => [k, r.res[k].pts])), h: RC.firma(est) } }; }
+    if (!notas) {
+      if (vista !== 'pub-cargando') { vista = 'pub-cargando'; CONT(tarjeta('<p>Cargando tu nota…</p>')); }
+      try {
+        const { data } = await II.sb.from('estado_sesion').select('extra').eq('sesion', SID + '-notas').maybeSingle();
+        notas = (data && data.extra && data.extra.notas) || {};
+      } catch (e) { return; }
+    }
+    if (vista === 'publicado') return;
+    vista = 'publicado';
+    sinMarca();
+    soltarPantalla();
+    const mia = notas[alumno.reg];
+    if (!mia) { CONT(tarjeta('<h2>Notas publicadas</h2><p>No se encontró una nota para este registro. Habla con el docente.</p>')); return; }
+    if (mia.obs) { CONT(tarjeta('<span class="etq">Parcial; nota publicada</span><h2>Examen observado</h2><p>Habla con el docente.</p>')); return; }
+    const local = RC.nota(alumno.carnet, est, CAR());
+    const igual = mia.h === RC.firma(est);
+    let h = tarjeta(`<span class="etq">Parcial; nota publicada</span>
+      <div class="mp-res"><div class="grande">${II.fmt(mia.n, 2)}<small> / 100</small></div></div>
+      <div class="mp-tabla-scroll"><table class="mp-tabla rc-resumen"><tr><th>Problema</th><th>Puntos</th></tr>${RC.PROB.map((p) => `<tr><td>${RC.TITULO[p]}; ${RC.NOMBRE[p]}</td><td>${II.fmt(mia.p ? mia.p[p] : local.res[p].pts, 2)} / ${RC.MAX[p]}</td></tr>`).join('')}</table></div>
+      ${igual ? '' : '<div class="aviso duda">Tu nota se calculó con lo último que llegó al docente. El detalle de abajo es lo que quedó en tu celular y puede no coincidir.</div>'}
+      <p class="mp-nota">✓ completo; ✗ o vacía, 0. Si crees que algo está mal calificado, escribe una <b>observación</b> debajo de esa pregunta y envíalas todas juntas al final.</p>`);
+    RC.PROB.forEach((p) => { h += detalleProblema(p, local.res[p]); });
+    h += tarjeta(`<span class="etq">Observaciones</span><p>Revisa tu detalle. Si tienes observaciones, escríbelas arriba, debajo de cada pregunta, y envíalas juntas. Puedes volver a enviarlas: vale lo último. El docente las revisará y volverá a publicar las notas si corresponde.</p>
+      <button class="boton prim bloque" id="b-obs">Enviar mis observaciones</button><div id="obs-estado" class="mp-nota">${est.obsEnv ? 'Enviadas ✓ ' + new Date(est.obsEnv).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : ''}</div>`);
+    CONT(h);
+    $$('[data-obs-p]').forEach((ta) => ta.addEventListener('input', () => { est.obs = est.obs || {}; est.obs[ta.dataset.obsP] = ta.value; guardarEst(); }));
+    $('#b-obs').onclick = enviarObs;
+  }
+
+  // Preguntas de un problema (una observación por pregunta): cada paso es una pregunta; un paso con varias
+  // casillas «a)», «b)», «c)» se parte en una pregunta por casilla. Clave = «p1.0», «p1.1», …
+  function preguntas(p, d) {
+    const g = [];
+    RC.P[p].pasos(d).forEach((ps) => {
+      const its = ps.items.filter((it) => !it.fijo);
+      const partir = its.length > 1 && its.every((it) => it.tipo !== 'bit' && /^[a-z]\)/.test(it.h || ''));
+      if (partir) its.forEach((it) => g.push({ t: it.h, items: [it] }));
+      else g.push({ t: ps.t, items: its, html: ps.html || '', tex: ps.tex || '' });
+    });
+    return g.map((x, i) => ({ ...x, clave: p + '.' + i, etq: RC.TITULO[p] + ' ' + x.t }));
+  }
+  const gruposObs = () => RC.PROB.reduce((a, p) => a.concat(preguntas(p, RC.datos(p, alumno.carnet, CAR(), est))), []);
+
+  function detalleProblema(p, res) {
+    const d = RC.datos(p, alumno.carnet, CAR(), est);
+    const P = RC.P[p];
+    const vals = est[p].vals;
+    const fila = (it) => {
+      const c = res.cel[it.id];
+      const tuya = it.mostrar ? it.mostrar(vals) : it.tipo === 'op' ? (vals[it.id] == null ? '—' : RC.opTxt(d.op[it.id][Number(vals[it.id])])) : vals[it.id] ? II.esc(neg(vals[it.id])) : '—';
+      const espT = it.tipo === 'op' ? RC.opTxt(d.op[it.id][c.exp]) : it.mostrar ? it.txt : it.txt != null ? '<span class="mono">' + it.txt + '</span>' : `\\(${RC.tex(c.exp)}\\)`;
+      return `<tr class="${c.r === 'ok' ? 'ok' : 'mal'}"><td>${RC.etTxt(it)}${c.anulada ? ' <small>(anulada)</small>' : ''}</td><td class="mono">${tuya}</td><td>${c.r === 'ok' ? '✓' : '✗ ' + espT}</td><td>${II.fmt(c.pts, 2)}/${II.fmt(c.max, 2)}</td></tr>`;
+    };
+    // explicación de una pregunta anulada, solo para quien la tuvo mal o vacía
+    const explica = (q) => q.items.filter((it) => it.anulada && it.explica && res.cel[it.id].r !== 'ok').map((it) => `<div class="aviso duda rc-explica">${it.explica}</div>`).join('');
+    const bloques = preguntas(p, d).map((q) => {
+      const ptsQ = q.items.reduce((s, it) => s + res.cel[it.id].pts, 0), maxQ = q.items.reduce((s, it) => s + it.pts, 0);
+      const t = (est.obs && est.obs[q.clave]) || '';
+      return `<div class="rc-preg"><p class="rc-preg-t"><b>${II.esc(q.t)}</b><span>${II.fmt(Math.round(ptsQ * 100) / 100, 2)} / ${II.fmt(maxQ, 2)}</span></p>
+        ${q.html ? `<div class="pd-enun">${q.html}</div>` : ''}${q.tex ? `<div class="ex-func rc-plantilla">\\[${q.tex}\\]</div>` : ''}
+        <div class="mp-tabla-scroll"><table class="mp-tabla ex-det">${q.items.map(fila).join('')}</table></div>${explica(q)}
+        <label class="campo rc-obs-caja"><span>Observación sobre esta pregunta (opcional)</span><textarea data-obs-p="${q.clave}" rows="2" maxlength="800" placeholder="Escribe qué crees que está mal calificado y por qué">${II.esc(t)}</textarea></label></div>`;
+    }).join('');
+    return tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}; ${II.fmt(res.pts, 2)} / ${RC.MAX[p]}</span>
+      <div class="ex-func">${P.enunciado(d)}</div>
+      <p class="mp-nota">Tus respuestas, pregunta por pregunta. Si una casilla está mal, al lado va el valor correcto.</p>
+      ${bloques}
+      <p class="mp-nota">Solución:</p><div class="ex-func">${[].concat(P.final(d)).map((l) => (l.charAt(0) === '<' ? l : '\\[' + l + '\\]')).join('')}</div>`);
+  }
+
+  async function enviarObs() {
+    const b = $('#b-obs');
+    const box = $('#obs-estado');
+    const textos = {};
+    const etq = {};
+    gruposObs().forEach((q) => { const t = String((est.obs && est.obs[q.clave]) || '').trim(); if (t) { textos[q.clave] = t.slice(0, 800); etq[q.clave] = q.etq; } });
+    if (!Object.keys(textos).length) { box.textContent = 'Escribe al menos una observación antes de enviar.'; return; }
+    b.disabled = true;
+    box.textContent = 'Enviando…';
+    const mia = notas && notas[alumno.reg];
+    const { error } = await II.sb.from('respuestas').insert({
+      sesion: SID_OBS, actividad: 'obs', carnet: alumno.carnet, nombre: alumno.nombre,
+      respuesta: { reg: alumno.reg, cod: codigo(), car: CAR(), textos, etq, nota: mia ? mia.n : null },
+      correcta: null, intento: 1, puntaje: 0
+    });
+    b.disabled = false;
+    if (error) { box.textContent = 'No se pudo enviar. Revisa tu conexión e inténtalo de nuevo.'; return; }
+    est.obsEnv = Date.now();
+    guardarEst();
+    box.textContent = 'Enviadas ✓ ' + new Date(est.obsEnv).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ---------------- pintar ----------------
+  function CONT(html) { $('#cont').innerHTML = html; }
+  // ---------------- vista de escritorio: las preguntas desaparecen mientras esté activa ----------------
+  // El examen es para celular. Un navegador de celular con «Sitio de escritorio» dice ser Linux, Windows o Mac, y la
+  // página mide mucho más que la pantalla física. Con esa vista bloqueamos las preguntas (se ve un aviso en blanco) y
+  // lo anotamos para el docente (sal.escr). Al desactivarla, las preguntas vuelven con lo que ya se había escrito.
+  function esEscritorio() {
+    if (DEMO) return false;
+    const ua = navigator.userAgent || '';
+    const movil = /Android|iPhone|iPod|Mobile/i.test(ua);
+    const uaEsc = /X11|Linux x86_64|Windows NT|Macintosh|CrOS/i.test(ua) && !movil;
+    const pantalla = Math.min(screen.width || 0, screen.height || 0);
+    const ancho = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+    const tactil = (navigator.maxTouchPoints || 0) > 0;
+    const forzado = tactil && pantalla > 0 && pantalla < 700 && ancho > pantalla * 1.6;
+    const uad = navigator.userAgentData;
+    const uadEsc = !!(uad && uad.mobile === false && tactil && pantalla < 700);
+    return uaEsc || forzado || uadEsc;
+  }
+  let escrAntes = false;
+  function anotarEscritorio(ahoraEsc) {
+    if (!est) return;
+    est.sal.escr = est.sal.escr || { n: 0, seg: 0, ini: null };
+    const e = est.sal.escr;
+    if (ahoraEsc && !e.ini) { e.n++; e.ini = Date.now(); guardarEst(); enviarAvance('escritorio'); }
+    else if (!ahoraEsc && e.ini) { e.seg += Math.round((Date.now() - e.ini) / 1000); e.ini = null; guardarEst(); enviarAvance('escritorio fin'); }
+  }
+  function vBloqueoEscritorio() {
+    if (vista === 'bloqueo-esc') return;
+    vista = 'bloqueo-esc';
+    document.body.classList.remove('examen');
+    CONT(tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span><h2>Vista de escritorio activada</h2>
+      <p>Este examen solo se puede resolver en la vista de celular. Las preguntas están ocultas.</p>
+      <p><b>Desactiva «Sitio de escritorio»</b> en el menú del navegador (los tres puntos) y las preguntas vuelven solas, con lo que ya escribiste. Este intento queda registrado para el docente y el reloj sigue corriendo.</p>`));
+  }
+  setInterval(() => { if (alumno && est && fase() === 'curso' && esEscritorio() !== escrAntes) pintar(); }, 1500);
+  window.addEventListener('resize', () => { if (alumno && est && fase() === 'curso' && esEscritorio() !== escrAntes) pintar(); });
+
+  function pintar() {
+    barra();
+    const f = fase();
+    if (alumno && est && f === 'curso') {
+      const esc = esEscritorio();
+      anotarEscritorio(esc);
+      if (esc !== escrAntes) { escrAntes = esc; vista = ''; }
+      if (esc) return vBloqueoEscritorio();
+    } else if (alumno && est && est.sal && est.sal.escr && est.sal.escr.ini) anotarEscritorio(false);
+    if (f === 'registro') return vEntrada();
+    if (f === 'cargando') { if (vista !== 'cargando') { vista = 'cargando'; CONT(tarjeta('<p>Conectando con el examen…</p>')); } return; }
+    if (f === 'espera') return vEspera();
+    if (f === 'observado') return vObservado();
+    if (f === 'curso') { if (est.final && !est.terminoYo) { est.final = false; guardarEst(); } pedirPantalla(); return vExamen(); }
+    if (f === 'terminado') return vTerminado();
+    if (f === 'publicado') return vPublicado();
+  }
+
+  // ---------------- registro de salidas ----------------
+  const vigilando = () => !!(alumno && est && !est.final && fase() === 'curso');
+  let volvio = 0, probTrasVolver = new Set(), blurT0 = 0, ultimoHidden = 0, salidaCerradaEn = 0;
+  function cerrarSalidaAbierta() {
+    const a = est.sal.abierta;
+    if (!a) return 0;
+    const seg = Math.max(0, Math.round((ahora() - a.t0) / 1000));
+    est.sal.n += 1;
+    est.sal.seg += seg;
+    est.sal.max = Math.max(est.sal.max, seg);
+    est.sal.lista.push({ min: a.min, seg, met: a.met });
+    est.sal.abierta = null;
+    return seg;
+  }
+  function anotarCambio(p) {
+    if (!volvio || ahora() - volvio > 30000) return;
+    if (probTrasVolver.has(p)) return;
+    probTrasVolver.add(p);
+    est.sal.cambios.push({ f: RC.TITULO[p], s: Math.round((ahora() - volvio) / 1000), min: minDesdeInicio() });
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      ultimoHidden = Date.now();
+      if (!vigilando()) return;
+      if (!est.sal.abierta) { est.sal.abierta = { t0: ahora(), min: minDesdeInicio(), met: pestana }; guardarEst(); }
+      enviarAvance('salida');
+      return;
+    }
+    sincronizarHora();
+    leerEstado();
+    if (est && est.sal && est.sal.abierta && !est.final) {
+      const seg = cerrarSalidaAbierta();
+      guardarEst();
+      salidaCerradaEn = Date.now();
+      if (fase() === 'curso') {
+        volvio = ahora(); probTrasVolver = new Set();
+        avisoVuelta(est.sal.n, seg);
+        pedirPantalla();
+        enviarAvance('volvió');
+      }
+    }
+  });
+  window.addEventListener('blur', (e) => { if (e.target === window && !document.hidden && vigilando()) blurT0 = Date.now(); });
+  window.addEventListener('focus', (e) => {
+    if (e.target !== window || !blurT0) return;
+    const d = Date.now() - blurT0;
+    const ocultaEnMedio = ultimoHidden >= blurT0 || Date.now() - salidaCerradaEn < 3000;
+    blurT0 = 0;
+    if (ocultaEnMedio || d < 1500 || !vigilando()) return;
+    est.sal.foco.n += 1;
+    est.sal.foco.seg += Math.round(d / 1000);
+    guardarEst();
+    programarAvance(1000);
+  });
+  let tVuelta = null;
+  function avisoVuelta(n, seg) {
+    let a = $('#aviso-vuelta');
+    if (!a) { a = document.createElement('div'); a.id = 'aviso-vuelta'; a.className = 'aviso duda aviso-vuelta'; document.body.appendChild(a); }
+    a.innerHTML = `⚠ Saliste de la página (${n}.ª vez); ${seg} s fuera. <b>Queda registrado para el docente.</b>`;
+    a.classList.remove('oculto');
+    clearTimeout(tVuelta);
+    tVuelta = setTimeout(() => a.classList.add('oculto'), 6000);
+  }
+  let bloqueo = null;
+  async function pedirPantalla() {
+    if (!vigilando() || document.hidden) return;
+    if (!('wakeLock' in navigator)) {
+      if (est.sal.pantalla !== 'no compatible') { est.sal.pantalla = 'no compatible'; guardarEst(); avisoPantalla(); }
+      return;
+    }
+    if (bloqueo) return;
+    try {
+      bloqueo = await navigator.wakeLock.request('screen');
+      bloqueo.addEventListener('release', () => { bloqueo = null; });
+      if (est.sal.pantalla !== 'sí') { est.sal.pantalla = 'sí'; guardarEst(); }
+    } catch (e) {
+      if (est.sal.pantalla !== 'sí') { est.sal.pantalla = 'falló'; guardarEst(); }
+    }
+  }
+  function avisoPantalla() {
+    const a = document.createElement('div');
+    a.className = 'aviso duda aviso-vuelta';
+    a.innerHTML = 'Tu celular no puede mantener la pantalla encendida solo. <b>Sube el tiempo de bloqueo de pantalla</b> en Ajustes: si se apaga, cuenta como salida.';
+    document.body.appendChild(a);
+    setTimeout(() => a.remove(), 12000);
+  }
+  function soltarPantalla() { try { if (bloqueo) bloqueo.release(); } catch (e) { /* nada */ } bloqueo = null; }
+  document.addEventListener('click', () => { if (!bloqueo) pedirPantalla(); }, true);
+
+  // ---------------- estado del examen (cada 4 s) ----------------
+  async function leerEstado() {
+    if (!II.sb) return;
+    try {
+      const { data, error } = await II.sb.from('estado_sesion').select('extra').eq('sesion', SID).maybeSingle();
+      if (error) throw error;
+      II.marcarConexion(true);
+      const antes = JSON.stringify(ex);
+      ex = (data && data.extra) || {};
+      leida = true;
+      if (!ex.publicado) notas = null;
+      if (ex.pub !== pubVisto) { pubVisto = ex.pub; notas = null; if (vista === 'publicado') vista = ''; }
+      if (JSON.stringify(ex) !== antes || vista === 'cargando' || vista === '') { if (fase() !== 'curso') vista = vista.startsWith('curso') ? '' : vista; pintar(); }
+    } catch (e) { II.marcarConexion(false); }
+  }
+
+  // ---------------- arranque ----------------
+  II.alCambiarConexion((ok) => { const d = $('#e-con'); d.classList.toggle('on', ok); d.classList.toggle('off', !ok); });
+  if (DEMO) {
+    II.sb = null;
+    if (II.params.get('reset') === '1') { try { Object.keys(localStorage).filter((k) => k.indexOf(SID) >= 0).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* nada */ } alumno = null; }
+    if (!alumno) {
+      alumno = { nombre: 'DEMO, Estudiante', carnet: '2026-0001', reg: 'demo', info: { apellidos: 'DEMO', nombres: 'Estudiante', ci: '1234567', carrera: 'Ingeniería Electrónica', disp: DISP, tipo: tipoDisp, reg: 'demo' } };
+      II.guardar(K_AL, alumno);
+    }
+    ex = { asincrona: true, abre: new Date(Date.now() - 60000).toISOString() };
+    leida = true;
+    cargarEst();
+    if (est.terminoYo && II.params.get('reset') !== '1') { /* ya terminó: se ve su nota */ }
+    setInterval(barra, 500);
+    pintar();
+    return;
+  }
+  if (!II.sb) {
+    CONT(tarjeta('<h2>Sin conexión</h2><p>No se pudo cargar el examen. Revisa tus datos móviles y recarga la página.</p><button class="boton prim bloque" onclick="location.reload()">Recargar</button>'));
+    return;
+  }
+  if (alumno) {
+    cargarEst();
+    if (est && !est.final) {
+      est.sal.recargas += 1;
+      if (est.sal.abierta) cerrarSalidaAbierta();
+      guardarEst();
+    }
+  }
+  sincronizarHora().then(() => { leerEstado(); pintar(); });
+  setInterval(leerEstado, 4000);
+  // reloj y cierre automático
+  setInterval(() => {
+    barra();
+    const f = fase();
+    if (alumno && est && f === 'terminado' && !est.final) pintar();
+    if (f === 'terminado' && vista.startsWith('terminadop') && !II.leer(K_COLA, []).length) { vista = ''; pintar(); }
+  }, 500);
+  // copia automática si hay cambios
+  setInterval(() => { if (cambiosSinEnviar && fase() === 'curso') { cambiosSinEnviar = false; enviarAvance('auto'); } }, 30000);
+})();
