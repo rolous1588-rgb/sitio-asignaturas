@@ -547,13 +547,14 @@
       return `<div class="mpp-det"><b>${RC.TITULO[p]} ${RC.NOMBRE[p]}: ${pts(r.pts)}/${RC.MAX[p]}</b><div class="mpp-dfila">${cel}</div></div>`;
     }).join('');
     const salidas = (s.lista || []).map((x) => `<span class="mpp-cel mal">min ${x.min}: ${x.seg} s${x.met ? ' (' + esc(RC.TITULO[x.met] || x.met) + ')' : ''}</span>`).join('') || '<span class="mp-nota">Ninguna.</span>';
+    const escr = s.escr && (s.escr.n || s.escr.ini) ? `<span class="mpp-cel mal">Vista de escritorio: ${s.escr.n} vez/veces, ${s.escr.seg} s${s.escr.ini ? ' (activa al último envío)' : ''}</span>` : '';
     const cambios = (s.cambios || []).map((x) => `<span class="mpp-cel red">${esc(x.f)}: ${x.s} s después de volver</span>`).join('');
     const capa = II.html(`<div class="capa"><div class="dialogo ancho mpp-dialogo">
       <h2>${esc(a.nombre)}</h2>
       <p class="mp-nota">C.U. ${esc(a.carnet)}; C.I. ${esc(a.info.ci || '—')}; ${esc(a.info.carrera || '')}<br>
         Código ${esc(a.cod || '—')}; ${a.ver ? 'verificado ' + hora(a.ver) : 'sin verificar'}${a.obs ? '; <b>observado ' + hora(a.obs) + '</b>' : ''}<br>
         ${a.ndisp} celular${a.ndisp === 1 ? '' : 'es'} (${esc(s.disp || a.info.tipo || '—')}); entró ${hora(a.primero)}; último envío ${hora(a.ultT)} (${a.nsnap} envíos); avance ${a.av}%</p>
-      <div class="mpp-det"><b>Salidas de la página: ${s.n || 0} (${s.seg || 0} s en total; la más larga ${s.max || 0} s)</b><div class="mpp-dfila">${salidas}</div>
+      <div class="mpp-det"><b>Salidas de la página: ${s.n || 0} (${s.seg || 0} s en total; la más larga ${s.max || 0} s)</b><div class="mpp-dfila">${salidas}${escr}</div>
         <p class="mp-nota">Pérdidas de foco sin salir: ${(s.foco && s.foco.n) || 0} (${(s.foco && s.foco.seg) || 0} s); recargas: ${s.recargas || 0}; pantalla encendida: ${esc(s.pantalla || '—')}${s.abierta ? '; <b>fuera de la página ahora</b>' : ''}</p>
         ${cambios ? `<p class="mp-nota">Cambió respuestas poco después de volver:</p><div class="mpp-dfila">${cambios}</div>` : ''}</div>
       <div class="mpp-det"><b>Respuestas (calificadas con sus números): ${pts(a.cal.total)}/100</b></div>${probs}
