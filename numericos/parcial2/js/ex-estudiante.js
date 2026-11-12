@@ -449,10 +449,15 @@
       return;
     }
     const igual = mia.h === EX.firma(est);
+    // aporte al total: solución 70 % y razonamiento 30 % (ver NOTA_FINAL del panel)
+    const pSol = (m) => (mia.p ? mia.p[m] : local.res[m].pts);
+    const aSol = (m) => 0.7 * pSol(m);
+    const pRaz = (m) => (mia.rz ? 0.3 * EX.MAX[m] * (mia.rz[m] || 0) / 100 : 0);
     let h = tarjeta(`<span class="etq">2.º parcial; nota publicada</span>
       <div class="mp-res"><div class="grande">${II.fmt(mia.n, 2)}<small> / 100</small></div></div>
-      <table class="mp-tabla"><tr><th>Método</th><th>Puntos</th></tr>${EX.MET.map((m) => `<tr><td>${EX.TITULO[m]}</td><td>${II.fmt(mia.p ? mia.p[m] : local.res[m].pts, 2)} / ${EX.MAX[m]}</td></tr>`).join('')}</table>
-      ${mia.rz ? `<table class="mp-tabla"><tr><th>Razonamiento</th><th>Nota /100</th></tr>${EX.MET.map((m) => `<tr><td>${EX.TITULO[m]}</td><td>${II.fmt(mia.rz[m] || 0, 0)}</td></tr>`).join('')}</table>` : ''}
+      <table class="mp-tabla"><tr><th>Solución (70 %)</th><th>Puntos</th><th>Aporta</th></tr>${EX.MET.map((m) => `<tr><td>${EX.TITULO[m]}</td><td>${II.fmt(pSol(m), 2)} / ${EX.MAX[m]}</td><td>${II.fmt(aSol(m), 2)} / ${II.fmt(0.7 * EX.MAX[m], 2)}</td></tr>`).join('')}</table>
+      ${mia.rz ? `<table class="mp-tabla"><tr><th>Razonamiento (30 %)</th><th>Nota /100</th><th>Aporta</th></tr>${EX.MET.map((m) => `<tr><td>${EX.TITULO[m]}</td><td>${II.fmt(mia.rz[m] || 0, 0)}</td><td>${II.fmt(pRaz(m), 2)} / ${II.fmt(0.3 * EX.MAX[m], 2)}</td></tr>`).join('')}</table>` : ''}
+      <p class="mp-nota"><b>Suma por método:</b> ${EX.MET.map((m) => II.fmt(aSol(m) + pRaz(m), 2)).join(' + ')} = <b>${II.fmt(mia.n, 2)} / 100</b></p>
       ${EX.MET.filter((m) => mia.fb && mia.fb[m]).map((m) => `<div class="aviso info"><b>${EX.TITULO[m]}; comentario del docente:</b><br>${II.esc(mia.fb[m])}</div>`).join('')}
       ${igual ? '' : '<div class="aviso duda">Tu nota se calculó con lo último que llegó al docente. El detalle de abajo es lo que quedó en tu celular y puede no coincidir.</div>'}
       <p class="mp-nota">Cada casilla se califica con <b>tus propios números</b>: ✓ completo; ≈ error de redondeo, mitad; ✗ o vacía, 0.</p>`);
