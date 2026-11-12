@@ -160,3 +160,20 @@ svg.ct-esq { width: 100%; min-width: 300px; display: block; }
 .pd-e2 { display: block; font-size: 15px; letter-spacing: .1em; color: var(--muted); }
 .pd-act { margin: 4px auto; font-size: 17px; } .pd-act td, .pd-act th { text-align: center; padding: 3px 14px; border: 1px solid var(--line); }
 .pd-zona-mapa { margin-top: 8px; }
+
+.kc { fill: #fff; stroke: #ced4da; stroke-width: 1.5; cursor: pointer; }
+.kc.g0 { fill: #cfe0f7; } .kc.g1 { fill: #ffd9bf; } .kc.g2 { fill: #cdeed3; } .kc.g3 { fill: #f3cfe9; } .kc.g4 { fill: #f4ecb0; } .kc.g5 { fill: #c7e6ec; }
+.kc.gm { stroke: #1f2633; stroke-width: 3; }
+.kc.sel { fill: #ffe066 !important; }
+.kv { font-size: 21px; font-weight: 800; text-anchor: middle; pointer-events: none; }
+.kv.v1 { fill: var(--on); } .kv.v0 { fill: #ced4da; font-weight: 600; } .kv.vx { fill: var(--q); }
+.km { font-size: 9px; fill: #adb5bd; pointer-events: none; }
+.kh { font-size: 13px; font-weight: 700; fill: var(--muted); }
+.kh.kvar { fill: var(--pri); font-size: 14px; }
+.ct-ayuda { background: var(--pri2); border-radius: 10px; padding: 8px 10px; font-size: 14px; margin-bottom: 8px; }
+.ct-ayuda summary { font-weight: 800; color: var(--pri); }
+/* paso 2: el bloque de J y K se encoge para que el estado presente y siguiente quepan sin superponerse */
+.tt.tight.pd-multi td, .tt.tight.pd-multi th { padding: 1px 1px; }
+.pd-multi .pd-y { min-width: 30px !important; width: 100%; max-width: 34px !important; height: 40px; font-size: 16px; margin: 1px 0; }
+.pd-multi td.pd-est { min-width: 82px; width: 82px; padding-right: 8px !important; }
+.pd-multi .pd-e1 { font-size: 17px; letter-spacing: .12em; } .pd-multi .pd-e2 { font-size: 14px; letter-spacing: .06em; }

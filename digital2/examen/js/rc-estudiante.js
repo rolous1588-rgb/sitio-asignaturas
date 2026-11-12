@@ -215,7 +215,7 @@
     CONT(franja() + tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span>
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
-        <li>4 problemas (100 puntos) sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 tabla de transición (20); P2 tabla de J y K (25); P3 mapas de Karnaugh (30); P4 circuito y simulación (25). <b>Tú armas todo</b>: lo que respondes en un paso se copia solo al siguiente y se califica con tus propios números. Puedes usar papel y lápiz como hoja auxiliar (cuentas); no se entrega.</li>
+        <li>3 problemas sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 tabla de transición; P2 tabla de J y K; P3 mapas de Karnaugh. <b>Tú armas todo</b>: lo que respondes en un paso se copia solo al siguiente. En los mapas tú marcas tus grupos y escribes tus ecuaciones: la plataforma no los corrige. <b>Al terminar, dibuja a mano alzada en papel el circuito del contador (flip-flops JK y compuertas, según tus ecuaciones) y entrégalo al docente.</b> Puedes usar papel y lápiz como hoja auxiliar; no se entrega, salvo el circuito.</li>
         <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque.</li>
                 <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
         <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
@@ -231,7 +231,7 @@
     vista = k;
     document.body.classList.add('examen');
     marcaDeAgua();
-    const tabs = RC.PROB.map((p) => `<button class="ex-tab ${p === pestana ? 'activa' : ''}" data-tab="${p}"><b>${RC.TITULO[p]}</b><small>${RC.MAX[p]} pts; <span data-prog="${p}">${progreso(p)}</span></small></button>`).join('');
+    const tabs = RC.PROB.map((p) => `<button class="ex-tab ${p === pestana ? 'activa' : ''}" data-tab="${p}"><b>${RC.TITULO[p]}</b><small><span data-prog="${p}">${progreso(p)}</span></small></button>`).join('');
     CONT(`${franja()}<div class="ex-tabs rc-tabs">${tabs}</div><div id="ex-met">${problemaHTML(pestana)}</div>
       <div class="tarjeta rc-fin"><button class="boton bloque rc-terminar" id="b-terminar">Terminar examen</button>
       <p class="mp-nota">Tus respuestas se guardan en tu celular y llegan al docente cuando tocas «Enviar problema» (y solas cada cierto tiempo). Vale lo último enviado.</p></div>`);
@@ -247,9 +247,9 @@
   function problemaHTML(p) {
     const d = RC.datos(p, alumno.carnet, CAR(), est);
     const P = RC.P[p];
-    let h = tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}; ${RC.MAX[p]} puntos</span><div class="ex-func">${P.enunciado(d)}</div>`);
+    let h = tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}</span><div class="ex-func">${P.enunciado(d)}</div>`);
     P.pasos(d).forEach((ps) => {
-      const cuerpo = ps.mapas ? mapasHTML() : ps.circuito ? '<div id="zona-circ"></div>' : ps.simulacion ? '<div id="zona-sim"></div>' + `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>` : ps.multi ? tablaMulti(p, ps) : ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
+      const cuerpo = ps.mapas ? mapasHTML() : ps.multi ? tablaMulti(p, ps) : ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
       h += tarjeta(`<h3 class="rc-paso">${II.esc(ps.t)}</h3>${ps.html ? `<div class="pd-enun">${ps.html}</div>` : ''}${ps.nota ? `<p class="mp-nota">${ps.nota}</p>` : ''}
         ${ps.tex ? `<div class="ex-func rc-plantilla">\\[${ps.tex}\\]</div>` : ''}
         ${cuerpo}`, 'rc-tpaso');
@@ -288,109 +288,94 @@
       `</table></div><p class="mp-nota">Toca cada casilla de Y para cambiarla: ? → 1 → 0${T.x ? ' → X' : ''}.</p>${ceros}`;
   }
 
-  // ---------------- mapas de Karnaugh, circuito y simulación (P3 y P4) ----------------
-  let mapaAct = 0, entAct = 0, simE = null, simH = [];
-  const entVista = (e) => e || { c: null, p: [[]] };
-  const entsP4 = () => CT.entradas(3).map((x, i) => RC.decEnt(est.p4.vals['c' + i]));
+  // ---------------- mapas de Karnaugh (P3): se llena, se agrupa SIN restricciones y se escribe la ecuación ----------------
+  let mapaAct = 0, modoMapa = 'llenar', selMapa = [];
+  const GB = ['#1d4f86', '#c2570c', '#2b8a3e', '#a0328a', '#8a7400', '#0b7285'];
+  const decGr = (t) => (t ? String(t).split(';').filter(Boolean).map((x) => x.split(',').map(Number)) : []);
+  const encGr = (a) => a.map((g) => g.join(',')).join(';');
   function mapasHTML() {
     const v = est.p3.vals;
-    const tabs = CT.entradas(3).map((x, i) => `<button type="button" class="ct-tab-b${i === mapaAct ? ' sel' : ''}${v['m' + i] != null ? ' ok' : ''}" data-mt="${i}">${x.nom}</button>`).join('');
-    return `<div class="ct-tabs">${tabs}</div><div id="zona-mapa" class="pd-zona-mapa"></div><p class="mp-nota">Primero «1. Llenar» con la columna de tu tabla de J y K; luego «2. Agrupar». Cada mapa se guarda solo.</p>`;
+    const tabs = CT.entradas(3).map((x, i) => `<button type="button" class="ct-tab-b${i === mapaAct ? ' sel' : ''}${v['m' + i] != null || v['q' + i] ? ' ok' : ''}" data-mt="${i}">${x.nom}</button>`).join('');
+    return `<div class="ct-tabs">${tabs}</div><div id="zona-mapa" class="pd-zona-mapa"></div>`;
   }
-  function montarMapa() {
+  function htmlExpr(ent, nom) {
+    const q = CT.nombres(3);
+    let h = `<div class="tarjeta"><p class="ct-tit">3. Escribe la ecuación de ${nom}</p>`;
+    if (ent.c === 0 || ent.c === 1) h += `<p>${nom} = <b>${ent.c}</b>.</p><button type="button" class="boton" data-cx="quitar">Quitar</button>`;
+    else {
+      h += ent.p.map((g, k) => `<div class="ct-and"><span class="ct-and-n">${ent.p.length > 1 || g.length > 1 ? 'Término ' + (k + 1) : 'Término'}</span><div class="ct-chips">` +
+        q.map((n, i) => [0, 1].map((ng) => { const c = 2 * i + ng; return `<button type="button" class="ct-chip${g.includes(c) ? ' on' : ''}" data-cx="chip" data-k="${k}" data-l="${c}">${ng ? '<span class="ov">' + n + '</span>' : n}</button>`; }).join('')).join('') +
+        `</div><button type="button" class="ct-x" data-cx="xg" data-k="${k}" aria-label="Quitar término">✕</button></div>`).join('<div style="height:6px"></div>');
+      h += '<div class="fila-bt" style="margin-top:8px"><button type="button" class="boton" data-cx="mas">+ Término (suma)</button><button type="button" class="boton" data-cx="c1">Es 1</button><button type="button" class="boton" data-cx="c0">Es 0</button></div>';
+    }
+    return h + `<p class="lbl" style="margin-top:8px">Tu ecuación: <b>${nom} = ${CT.htmlEnt(3, ent)}</b></p></div>`;
+  }
+  function pintarMapa() {
     const z = $('#zona-mapa');
     if (!z) return;
-    z.innerHTML = '';
     const i = mapaAct, x = CT.entradas(3)[i], v = est.p3.vals;
-    const ed = window.D2.k.editor(z, { nv: 3, nombres: CT.nombres(3), conX: true, vals: RC.decMapa(v['m' + i]) || undefined, fijo: false, salida: x.nom });
-    if (v['g' + i]) ed.fijar({ grupos: RC.decG(v['g' + i]) });
-    ed.alCambiar((st) => {
-      v['m' + i] = RC.encMapa(st.vals); v['g' + i] = RC.encG(st.grupos);
-      const t = $(`[data-mt="${i}"]`); if (t) t.classList.add('ok');
-      anotarCambio('p3'); guardarEst(); pintarGuardado(); programarAvance();
-      const pr = $('[data-prog="p3"]'); if (pr) pr.textContent = progreso('p3');
-    });
+    const vals = RC.decMapa(v['m' + i]) || Array(8).fill(0), grupos = decGr(v['g' + i]);
+    const ent = RC.decEnt(v['q' + i]) || { c: null, p: [[]] };
+    const cls = (m) => { const gs = grupos.map((g, k) => (g.includes(m) ? k : -1)).filter((k) => k >= 0); return (gs.length ? 'g' + (gs[gs.length - 1] % 6) + (gs.length > 1 ? ' gm' : '') : '') + (selMapa.includes(m) ? ' sel' : ''); };
+    const r = window.D2.k.svg(3, vals, { nombres: CT.nombres(3), cls });
+    const b3 = (n) => n.toString(2).padStart(3, '0');
+    z.innerHTML = `<details class="ct-ayuda"><summary>¿Cómo se usa el mapa?</summary>
+        <p><b>1. Llenar:</b> toca cada celda para cambiarla: 0 → 1 → X → 0. Copia la columna ${x.nom} de tu tabla de J y K (el número pequeño de la esquina es el estado en decimal).</p>
+        <p><b>2. Agrupar:</b> toca las celdas que quieras juntar (se pintan de amarillo) y presiona «Marcar grupo». Puedes marcar los grupos que tú creas que van: la plataforma no los corrige ni los rechaza. Para borrar un grupo, toca su etiqueta de abajo.</p>
+        <p><b>3. Ecuación:</b> escribe con los botones la ecuación que corresponde a tus marcas: un término por grupo.</p></details>
+      <div class="tarjeta"><p class="ct-tit">Mapa de ${x.nom}</p>
+      <div class="ked-modos"><button type="button" data-mm="llenar" class="${modoMapa === 'llenar' ? 'sel' : ''}">1. Llenar</button><button type="button" data-mm="agrupar" class="${modoMapa === 'agrupar' ? 'sel' : ''}">2. Agrupar</button></div>
+      <p class="ked-ayuda">${modoMapa === 'llenar' ? 'Toca cada celda para cambiarla: 0 → 1 → X → 0.' : 'Toca las celdas de un grupo y presiona «Marcar grupo».'}</p>
+      <svg class="ked-mapa" viewBox="${r.vb}">${r.html}</svg>
+      ${modoMapa === 'agrupar' ? `<div class="ked-sel"><span class="ked-msg">${selMapa.length ? 'Celdas elegidas: <b>' + selMapa.slice().sort((a, b) => a - b).map(b3).join(', ') + '</b>' : 'Ninguna celda elegida.'}</span><div class="ked-bts"><button type="button" class="boton prim" data-mg="formar"${selMapa.length ? '' : ' disabled'}>Marcar grupo</button><button type="button" class="boton" data-mg="soltar"${selMapa.length ? '' : ' disabled'}>Soltar</button></div></div>` : ''}
+      <div class="ked-grupos">${grupos.map((g, k) => `<button type="button" class="ked-chip" data-gq="${k}" style="border-color:${GB[k % 6]};color:${GB[k % 6]}">Grupo ${k + 1}: ${g.slice().sort((a, b) => a - b).map(b3).join(', ')} <span>✕</span></button>`).join('')}</div></div>` + htmlExpr(ent, x.nom);
   }
-  function pintarCirc() {
-    const z = $('#zona-circ');
-    if (!z) return;
-    const v = est.p4.vals, en = CT.entradas(3), nom = CT.nombres(3), a = entAct;
-    const ents = entsP4().map(entVista), x = ents[a];
-    let h = `<div class="ct-esq-w">${CT.svgContador(3, ents, { activo: a })}</div><div class="ct-tabs">` +
-      en.map((y, i) => `<button type="button" class="ct-tab-b${i === a ? ' sel' : ''}${v['c' + i] ? ' ok' : ''}" data-et="${i}">${y.nom}</button>`).join('') + '</div>' +
-      `<div class="tarjeta"><p class="ct-tit">Arma la entrada ${en[a].nom}</p>`;
-    if (x.c === 0 || x.c === 1) h += `<p>${en[a].nom} está conectada a <b>${x.c}</b>.</p><button type="button" class="boton" data-cx="quitar">Quitar la conexión</button>`;
-    else {
-      h += x.p.map((g, k) => `<div class="ct-and"><span class="ct-and-n">${x.p.length > 1 || g.length > 1 ? 'AND ' + (k + 1) : 'Término'}</span><div class="ct-chips">` +
-        nom.map((q, i) => [0, 1].map((ng) => { const c = 2 * i + ng; return `<button type="button" class="ct-chip${g.includes(c) ? ' on' : ''}" data-cx="chip" data-k="${k}" data-l="${c}">${ng ? '<span class="ov">' + q + '</span>' : q}</button>`; }).join('')).join('') +
-        `</div><button type="button" class="ct-x" data-cx="xg" data-k="${k}" aria-label="Quitar compuerta">✕</button></div>`).join('<div style="height:6px"></div>');
-      h += '<div class="fila-bt" style="margin-top:8px"><button type="button" class="boton" data-cx="mas">+ Compuerta AND</button><button type="button" class="boton" data-cx="c1">Conectar a 1</button><button type="button" class="boton" data-cx="c0">Conectar a 0</button></div>';
+  function salvarP3() {
+    anotarCambio('p3'); guardarEst(); pintarGuardado(); programarAvance();
+    const pr = $('[data-prog="p3"]'); if (pr) pr.textContent = progreso('p3');
+    const t = $(`[data-mt="${mapaAct}"]`); if (t) t.classList.add('ok');
+    pintarMapa();
+  }
+  function clickMapa(e) {
+    const i = mapaAct, v = est.p3.vals;
+    const c = e.target.closest('[data-m]');
+    if (c) {
+      const m = +c.dataset.m;
+      if (modoMapa === 'llenar') {
+        const vals = RC.decMapa(v['m' + i]) || Array(8).fill(0);
+        vals[m] = vals[m] === 0 ? 1 : vals[m] === 1 ? 2 : 0;
+        v['m' + i] = RC.encMapa(vals); salvarP3();
+      } else { const k = selMapa.indexOf(m); if (k >= 0) selMapa.splice(k, 1); else selMapa.push(m); pintarMapa(); }
+      return;
     }
-    h += `<p class="lbl" style="margin-top:8px">Tu entrada: <b>${en[a].nom} = ${CT.htmlEnt(3, x)}</b></p></div>`;
-    z.innerHTML = h;
-    if (window.renderMathInElement) { /* sin LaTeX en esta zona */ }
-  }
-  function guardarEnt(ent) {
-    est.p4.vals['c' + entAct] = RC.encEnt(ent);
-    anotarCambio('p4'); guardarEst(); pintarGuardado(); programarAvance();
-    const pr = $('[data-prog="p4"]'); if (pr) pr.textContent = progreso('p4');
-    pintarCirc(); pintarSim();
-  }
-  function accionCirc(b) {
-    const x = b.dataset.cx;
-    let ent = RC.decEnt(est.p4.vals['c' + entAct]) || { c: null, p: [[]] };
-    if (x === 'chip') {
-      if (ent.c === 0 || ent.c === 1) return;
-      const g = ent.p[+b.dataset.k], c = +b.dataset.l, i = g.indexOf(c);
-      if (i >= 0) g.splice(i, 1); else { const j = g.findIndex((y) => y >> 1 === c >> 1); if (j >= 0) g.splice(j, 1); g.push(c); g.sort((p, q) => p - q); }
-    } else if (x === 'xg') { ent.p.splice(+b.dataset.k, 1); if (!ent.p.length) ent.p = [[]]; }
-    else if (x === 'mas') ent.p.push([]);
-    else if (x === 'c1' || x === 'c0') ent = { c: x === 'c1' ? 1 : 0, p: [] };
-    else if (x === 'quitar') ent = { c: null, p: [[]] };
-    guardarEnt(ent);
-  }
-  function pintarSim() {
-    const z = $('#zona-sim');
-    if (!z) return;
-    const d = RC.datos('p4', alumno.carnet, CAR(), est), seq = d.seq;
-    const ents = entsP4().map((e) => e || { c: 0, p: [] });
-    if (simE == null) { simE = seq[0]; simH = [simE]; }
-    const nx = CT.siguiente(3, ents, simE), b3 = (n) => n.toString(2).padStart(3, '0');
-    let tab = '<table class="ct-tab pd-simtab"><tr><th>FF</th><th>Q</th><th>J</th><th>K</th><th>Q<sup>+</sup></th></tr>';
-    for (let j = 0; j < 3; j++) {
-      const bb = 2 - j, q = (simE >> bb) & 1, J = CT.evalEnt(3, ents[2 * j], simE), Kk = CT.evalEnt(3, ents[2 * j + 1], simE);
-      tab += `<tr><td>FF${CT.sub(bb)}</td><td>${q}</td><td>${J}</td><td>${Kk}</td><td><b>${(nx >> bb) & 1}</b></td></tr>`;
+    const mm = e.target.closest('[data-mm]');
+    if (mm) { modoMapa = mm.dataset.mm; selMapa = []; pintarMapa(); return; }
+    const mg = e.target.closest('[data-mg]');
+    if (mg) {
+      if (mg.dataset.mg === 'formar' && selMapa.length) { const g = decGr(v['g' + i]); g.push(selMapa.slice().sort((a, b) => a - b)); v['g' + i] = encGr(g); selMapa = []; salvarP3(); }
+      else { selMapa = []; pintarMapa(); }
+      return;
     }
-    tab += '</table>';
-    z.innerHTML = `<div class="tarjeta idea"><p class="ct-tit">Simula tu circuito</p>
-      <p class="lbl">Secuencia que te tocó: <b>${seq.join(' → ')} → ${seq[0]}</b>. Toca un estado para encender ahí y da pulsos de reloj.</p>
-      <div class="ct-estados">${Array.from({ length: 8 }, (_, s) => `<button type="button" class="ct-estado${s === simE ? ' on' : ''}" data-ss="${s}"><b>${s}</b><small>${b3(s)}</small></button>`).join('')}</div>
-      <p class="ct-tit" style="margin-top:8px">Estado actual: ${simE} (${b3(simE)}); con el próximo pulso pasa a ${nx} (${b3(nx)})</p>${tab}
-      <div class="fila-bt"><button type="button" class="boton prim" data-sa="pulso">Dar un pulso de reloj</button><button type="button" class="boton" data-sa="ini">Volver al ${seq[0]}</button></div>
-      <p class="lbl" style="margin-top:6px">Recorrido: ${simH.map((s) => '<b>' + s + '</b>').join(' → ')}</p></div>`;
+    const gq = e.target.closest('[data-gq]');
+    if (gq) { const g = decGr(v['g' + i]); g.splice(+gq.dataset.gq, 1); v['g' + i] = encGr(g); salvarP3(); return; }
+    const b = e.target.closest('[data-cx]');
+    if (b) {
+      const x = b.dataset.cx;
+      let ent = RC.decEnt(v['q' + i]) || { c: null, p: [[]] };
+      if (x === 'chip') {
+        if (ent.c === 0 || ent.c === 1) return;
+        const g = ent.p[+b.dataset.k], l = +b.dataset.l, j = g.indexOf(l);
+        if (j >= 0) g.splice(j, 1); else { const o = g.findIndex((y) => y >> 1 === l >> 1); if (o >= 0) g.splice(o, 1); g.push(l); g.sort((p2, q2) => p2 - q2); }
+      } else if (x === 'xg') { ent.p.splice(+b.dataset.k, 1); if (!ent.p.length) ent.p = [[]]; }
+      else if (x === 'mas') ent.p.push([]);
+      else if (x === 'c1' || x === 'c0') ent = { c: x === 'c1' ? 1 : 0, p: [] };
+      else if (x === 'quitar') ent = { c: null, p: [[]] };
+      v['q' + i] = RC.encEnt(ent); salvarP3();
+    }
   }
   function montarEspeciales() {
-    $$('[data-mt]').forEach((b) => { b.onclick = () => { mapaAct = +b.dataset.mt; $$('[data-mt]').forEach((x) => x.classList.toggle('sel', x === b)); montarMapa(); }; });
-    if (pestana === 'p3') montarMapa();
-    if (pestana === 'p4') {
-      pintarCirc(); pintarSim();
-      const zc = $('#zona-circ'), zs = $('#zona-sim');
-      zc.onclick = (e) => {
-        const t = e.target.closest('[data-et]');
-        if (t) { entAct = +t.dataset.et; pintarCirc(); return; }
-        const b = e.target.closest('[data-cx]');
-        if (b) accionCirc(b);
-      };
-      zs.onclick = (e) => {
-        const t = e.target.closest('[data-ss]'), a = e.target.closest('[data-sa]');
-        const d = RC.datos('p4', alumno.carnet, CAR(), est);
-        if (t) { simE = +t.dataset.ss; simH = [simE]; }
-        else if (a && a.dataset.sa === 'pulso') { simE = CT.siguiente(3, entsP4().map((x) => x || { c: 0, p: [] }), simE); simH.push(simE); if (simH.length > 14) simH.shift(); }
-        else if (a) { simE = d.seq[0]; simH = [simE]; }
-        else return;
-        pintarSim();
-      };
-    }
+    $$('[data-mt]').forEach((b) => { b.onclick = () => { mapaAct = +b.dataset.mt; selMapa = []; $$('[data-mt]').forEach((x) => x.classList.toggle('sel', x === b)); pintarMapa(); }; });
+    if (pestana === 'p3') { const z = $('#zona-mapa'); pintarMapa(); z.onclick = clickMapa; }
   }
 
   function itemHTML(p, d, it) {
@@ -503,7 +488,7 @@
     const sin = RC.PROB.filter((p) => Object.keys(est[p].vals).length && !(est.enviados[p] && est.enviados[p].f === firmaProb(p))).map((p) => RC.TITULO[p]);
     const vacios = RC.PROB.filter((p) => !Object.keys(est[p].vals).length).map((p) => RC.TITULO[p]);
     const extra = (sin.length ? `<br>Tienes cambios sin enviar en ${sin.join(', ')}: se enviarán al terminar.` : '') + (vacios.length ? `<br>Sin responder: ${vacios.join(', ')}.` : '');
-    const ok = await confirmar('¿Terminar el examen?', `Ya no podrás cambiar tus respuestas.${extra}`, 'Cancelar y seguir trabajando', 'Sí, terminar');
+    const ok = await confirmar('¿Terminar el examen?', `Ya no podrás cambiar tus respuestas. Recuerda entregar al docente tu circuito dibujado a mano en papel.${extra}`, 'Cancelar y seguir trabajando', 'Sí, terminar');
     if (!ok) return;
     RC.PROB.forEach((p) => { est.enviados[p] = { f: firmaProb(p), t: ahora() }; });
     est.final = true;

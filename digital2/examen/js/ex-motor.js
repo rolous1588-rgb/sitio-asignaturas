@@ -4,7 +4,7 @@
 // con 4 problemas sobre UN contador por carnet (3 bits, 5 estados, 3 sin usar), 100 pts. REDISEÑO 12/11: cada
 // problema parte de LO QUE EL ESTUDIANTE RESPONDIÓ en el anterior (se copia solo) y se califica con sus números:
 //   P1 tabla de transición (20); P2 tabla de J y K a partir de SU tabla (25); P3 seis mapas de Karnaugh en blanco: llenar,
-//   agrupar y obtener la mínima (30); P4 armar el circuito con flip-flops JK y compuertas, y simularlo (25)
+//   agrupar sin restricciones y escribir la ecuación (30). El circuito se dibuja a mano en papel (sin paso en la plataforma)
 // Lo que deja en blanco NO se completa: se queda con «?»; para los cálculos se usa lo correcto o X, pero no suma puntos.
 // Usa CT (../contadores/js/ct-motor.js: secuencias, excitación, simulación) y D2.k (../base/kmap.js: mínima).
 // Casillas: 'bit' (se toca: ? → 1 → 0 → X), 'op' (opciones, la correcta va primero y se mezcla) o numéricas.
@@ -91,7 +91,7 @@
     return (bases[carnet] = { n: 3, seq, d, sigOk: Array.from({ length: 8 }, (_, s) => (d.usado(s) ? CT.bits(d.sig[s], 3) : [2, 2, 2])) });
   }
 
-  // ---------- lo que sale de las respuestas del propio estudiante (cadena P1 → P2 → P3 → P4) ----------
+  // ---------- lo que sale de las respuestas del propio estudiante (cadena P1 → P2 → P3) ----------
   const vv = (est, k) => (est && est[k] && est[k].vals) || {};
   // grupos de un mapa «mask:val,mask:val» y entradas del circuito «k0», «k1» o «2.5|0» (términos con literales 2·i + negada)
   RC.decG = (s) => (s ? String(s).split(',').filter(Boolean).map((x) => { const [a, b] = x.split(':'); return { mask: +a, val: +b }; }) : []);
@@ -102,8 +102,8 @@
   RC.encEnt = (e) => (e.c === 0 ? 'k0' : e.c === 1 ? 'k1' : e.p.length ? e.p.map((g) => g.join('.')).join('|') : '-');
   const memo = {};
   function derivar(carnet, est) {
-    const b = baseDe(carnet), v1 = vv(est, 'p1'), v2 = vv(est, 'p2'), v3 = vv(est, 'p3'), v4 = vv(est, 'p4');
-    const llave = carnet + '|' + JSON.stringify([v1, v2, v3, v4]);
+    const b = baseDe(carnet), v1 = vv(est, 'p1'), v2 = vv(est, 'p2'), v3 = vv(est, 'p3');
+    const llave = carnet + '|' + JSON.stringify([v1, v2, v3]);
     if (memo[llave]) return memo[llave];
     const m = {};
     // P1 → su tabla de transición (en blanco se muestra «?»; para seguir calculando se usa lo correcto)
@@ -125,13 +125,8 @@
     m.mapas = CT.entradas(3).map((x) => CT.columna(m.filas, x.e));
     m.min3 = m.mapas.map((col) => K.resolver(3, col));
     m.ok3 = m.min3.map((r) => CT.deCubos(3, r.cubos));
-    // P3 → expresiones que obtuvo (sin responder: la correcta, solo para mostrar)
-    m.entsP3 = CT.entradas(3).map((x, i) => (v3['g' + i] != null && v3['m' + i] != null ? CT.deCubos(3, RC.decG(v3['g' + i])) : m.ok3[i]));
-    // P4 → su circuito
-    m.entsP4 = CT.entradas(3).map((x, i) => RC.decEnt(v4['c' + i]));
-    const sim = CT.simular(3, m.entsP4.map((e) => e || { c: 0, p: [] }), b.seq);
-    m.sim = sim;
-    m.cicloOK = sim.cicloOK;
+    // P3 → la ecuación que escribió el estudiante en cada mapa (null = sin escribir)
+    m.entsP3 = CT.entradas(3).map((x, i) => RC.decEnt(v3['q' + i]));
     if (Object.keys(memo).length > 200) for (const k in memo) delete memo[k];
     return (memo[llave] = m);
   }
@@ -194,42 +189,27 @@
       tablaTuya(Object.assign({}, m, { filasTxt: m.filasOk.map((f) => f.map(celda)) }), true, true)]
   };
 
-  // ===== P3: seis mapas de Karnaugh (30) =====
+  // ===== P3: seis mapas de Karnaugh (30). Agrupa libremente (sin restricciones) y escribe la ecuación =====
   const PM = [1.25, 2.5, 1.25];
   P.p3 = {
-    titulo: 'Mapas de Karnaugh', max: 30, casillas: 12,
+    titulo: 'Mapas de Karnaugh', max: 30, casillas: 18,
     enunciado: (d, m) => `<p>Esta es <b>tu tabla de J y K</b> del paso anterior (lo que dejaste en blanco sigue con «?»; en el mapa cuenta como X):</p><div class="pd-tabla">${tablaTuya(m, true, true)}</div>
-      <p>Para cada entrada (J<sub>2</sub>, K<sub>2</sub>, J<sub>1</sub>, K<sub>1</sub>, J<sub>0</sub>, K<sub>0</sub>) llena su mapa de Karnaugh de 3 variables con su columna, forma los grupos y obtén la <b>expresión mínima</b>.</p>`,
+      <p>Para cada entrada (J<sub>2</sub>, K<sub>2</sub>, J<sub>1</sub>, K<sub>1</sub>, J<sub>0</sub>, K<sub>0</sub>): <b>1)</b> llena su mapa de Karnaugh con su columna; <b>2)</b> marca tus grupos; <b>3)</b> escribe la ecuación lógica que corresponde a tus marcas. La plataforma no corrige tus grupos: marca lo que tú crees que va.</p>
+      <p><b>Al terminar el examen:</b> dibuja a mano alzada, en papel, el circuito del contador con flip-flops JK y compuertas lógicas, según tus ecuaciones, y entrégalo al docente.</p>`,
     pasos: (d, m) => [{ t: 'Mapas de J y K', mapas: true,
       items: [].concat(...CT.entradas(3).map((x, i) => ['L', 'E', 'M'].map((q, k) => ({
-        id: q + i, tipo: 'mapa', sub: q, i, pts: PM[k], h: `${x.nom}: ${q === 'L' ? 'mapa lleno' : q === 'E' ? 'expresión correcta' : 'expresión mínima'}`,
+        id: q + i, tipo: 'mapa', sub: q, i, pts: PM[k], h: `${x.nom}: ${q === 'L' ? 'mapa lleno' : q === 'E' ? 'ecuación correcta' : 'ecuación mínima'}`,
         txt: q === 'L' ? m.mapas[i].map(celda).join('') : M(x.tex + ' = ' + CT.texEnt(3, m.ok3[i])),
-        mostrar: (v) => (q === 'L' ? (v['m' + i] || '—') : v['g' + i] != null ? M(x.tex + ' = ' + CT.texEnt(3, CT.deCubos(3, RC.decG(v['g' + i])))) : '—')
+        mostrar: (v) => (q === 'L' ? (v['m' + i] || '—') : v['q' + i] ? M(x.tex + ' = ' + CT.texEnt(3, RC.decEnt(v['q' + i]))) : '—')
       })))) }],
     esperado: () => ({}),
     final: (d, m) => [`<p>Se llena cada mapa con su columna; se agrupan los 1 (y las X solo si agrandan un grupo) en rectángulos de 1, 2, 4 u 8 celdas, y cada grupo es el producto de las variables que no cambian dentro de él. Con tu tabla:</p>`].concat(CT.entradas(3).map((x, i) => '<p class="mono">' + M(x.tex + ' = ' + CT.texEnt(3, m.ok3[i])) + '</p>'))
   };
 
-  // ===== P4: circuito con flip-flops JK y simulación (25) =====
-  P.p4 = {
-    titulo: 'Circuito y simulación', max: 25, casillas: 8,
-    enunciado: (d, m) => `<p>Estas son <b>tus expresiones</b> del paso anterior:</p><div class="pd-fig">${eqLineas(m.entsP3).map((l) => `<div>${l}</div>`).join('')}</div>
-      <p>Arma el contador con <b>flip-flops JK</b> y compuertas lógicas: elige el tipo de flip-flop (flanco de subida o de bajada) y conecta cada entrada J y K. Después simula el circuito y comprueba si cuenta la secuencia ${secTex(d)}.</p>`,
-    pasos: (d, m) => [
-      { t: 'Flip-flops', items: [{ id: 'flanco', h: 'Flip-flop que usarás', pts: 2, tipo: 'op', libre: true, ordenFijo: true }] },
-      { t: 'Compuertas de cada entrada', circuito: true, items: CT.entradas(3).map((x, i) => ({ id: 'c' + i, tipo: 'ent', i, pts: 3.5, h: x.nom, txt: CT.texEnt(3, m.ok3[i]), mostrar: (v) => (v['c' + i] ? CT.texEnt(3, RC.decEnt(v['c' + i])) : '—') })) },
-      { t: 'Simulación', simulacion: true, items: [{ id: 'ver', h: '¿La secuencia de tu circuito coincide con la que te tocó?', pts: 2, tipo: 'op', ordenFijo: true }] }
-    ],
-    opsDe: (d, id) => (id === 'flanco' ? [{ h: 'Flanco de subida' }, { h: 'Flanco de bajada' }] : [{ h: 'Sí, coincide' }, { h: 'No coincide' }]),
-    esperado: () => ({}),
-    final: (d, m) => [`<p>Cada término con 2 o más variables lleva una compuerta AND y varios términos se unen en una OR. Un inversor por cada variable negada. Con tu tabla de J y K:</p>`].concat(eqLineas(m.ok3).map((l) => `<p>${l}</p>`)).concat([
-      `<p>Con lo que armaste: ${m.cicloOK ? 'el contador cumple la secuencia.' : 'el contador <b>no</b> cumple la secuencia; revisa las compuertas.'}</p>`])
-  };
-
   Object.keys(P).forEach((k) => ['pasos', 'enunciado', 'final'].forEach((f) => { const g = P[k][f]; P[k][f] = (d, m) => g(d, m || d.mio); }));
 
   RC.P = P;
-  RC.PROB = ['p1', 'p2', 'p3', 'p4'];
+  RC.PROB = ['p1', 'p2', 'p3'];
   RC.MAX = Object.fromEntries(RC.PROB.map((k) => [k, P[k].max]));
   RC.TITULO = Object.fromEntries(RC.PROB.map((k, i) => [k, 'P' + (i + 1)]));
   RC.NOMBRE = Object.fromEntries(RC.PROB.map((k) => [k, P[k].titulo]));
@@ -239,7 +219,7 @@
     const d = Object.assign({}, b, { prob: k, mio: m, op: {} });
     P[k].pasos(d, m).forEach((ps) => ps.items.forEach((it) => {
       if (it.tipo !== 'op') return;
-      d.op[it.id] = P[k].opsDe(d, it.id).map((o, i) => ({ ...o, ok: o.ok != null ? o.ok : i === (it.id === 'ver' ? (m.cicloOK ? 0 : 1) : 0) }));
+      d.op[it.id] = P[k].opsDe(d, it.id).map((o, i) => ({ ...o, ok: o.ok != null ? o.ok : i === 0 }));
     }));
     return d;
   };
@@ -259,20 +239,15 @@
         r = vacio ? 'vacio' : it.libre ? 'ok' : Number(v) === exp ? 'ok' : 'mal';
         if (it.libre) exp = vacio ? 0 : Number(v);
       } else if (it.tipo === 'mapa') {
-        const mv = vals['m' + it.i], gv = vals['g' + it.i], col = m.mapas[it.i];
+        const mv = vals['m' + it.i], qv = vals['q' + it.i], col = m.mapas[it.i], e = RC.decEnt(qv);
         exp = it.txt;
-        if (mv == null && gv == null) r = 'vacio';
-        else if (it.sub === 'L') r = RC.decMapa(mv) && RC.decMapa(mv).every((x, s) => x === col[s]) ? 'ok' : 'mal';
-        else {
-          const g = RC.decG(gv), mn = m.min3[it.i];
-          const unos = col.some((x) => x === 1);
-          const correcto = g.length ? K.equivale(3, g, col) : !unos;
-          r = it.sub === 'E' ? (correcto ? 'ok' : 'mal') : (correcto && g.length === mn.cubos.length && K.lits(g) === mn.lits ? 'ok' : 'mal');
-        }
-      } else if (it.tipo === 'ent') {
-        const e = m.entsP4[it.i];
-        exp = it.txt;
-        r = !e || CT.entVacia(e) && vacio ? 'vacio' : CT.entCumple(3, e, m.mapas[it.i]) ? 'ok' : 'mal';
+        const tam = (x) => (x.c === 0 || x.c === 1 ? [0, x.c] : [x.p.filter((g) => g.length).length, x.p.reduce((a, g) => a + g.length, 0)]);
+        const mn = tam(m.ok3[it.i]);
+        if (it.sub === 'L') r = mv == null ? 'vacio' : RC.decMapa(mv).every((x, s2) => x === col[s2]) ? 'ok' : 'mal';
+        else if (!e) r = 'vacio';
+        else if (!CT.entCumple(3, e, col)) r = 'mal';
+        else if (it.sub === 'E') r = 'ok';
+        else { const t = tam(e); r = t[0] === mn[0] && t[1] === mn[1] ? 'ok' : 'mal'; }
       } else if (it.tipo === 'bit') {
         const eo = esp[it.id], s = vacio ? '' : String(v).trim().toUpperCase();
         if (eo && typeof eo === 'object') { exp = eo.txt; r = vacio ? 'vacio' : eo.ok() ? 'ok' : 'mal'; }

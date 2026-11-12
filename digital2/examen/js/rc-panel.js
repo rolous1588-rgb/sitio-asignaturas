@@ -544,7 +544,17 @@
         const v = it.mostrar ? '' : it.tipo === 'op' ? (vals[it.id] == null ? '—' : 'opción ' + (Number(vals[it.id]) + 1)) : vals[it.id] || '—';
         return `<span class="mpp-cel ${c.r === 'vacio' ? '' : c.r}">${RC.etTxt(it)}${c.anulada ? ' (anulada, vale para todos)' : ''} <b>${esc(String(v).replace(/^-/, '−'))}</b> ${c.r === 'ok' ? '✓' : c.r === 'vacio' ? '—' : '✗'}</span>`;
       }).join('');
-      return `<div class="mpp-det"><b>${RC.TITULO[p]} ${RC.NOMBRE[p]}: ${pts(r.pts)}/${RC.MAX[p]}</b><div class="mpp-dfila">${cel}</div></div>`;
+      let mapas = '';
+      if (p === 'p3') {
+        const dec = (t) => (t ? String(t).split(';').filter(Boolean).map((x) => x.split(',').map(Number)) : []);
+        mapas = '<div class="mpp-mapas" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px">' + CT.entradas(3).map((x, i) => {
+          const vv2 = RC.decMapa(vals['m' + i]) || Array(8).fill(0), gr = dec(vals['g' + i]);
+          const cls = (m) => { const g = gr.map((c, k) => (c.includes(m) ? k : -1)).filter((k) => k >= 0); return g.length ? 'g' + (g[g.length - 1] % 6) + (g.length > 1 ? ' gm' : '') : ''; };
+          const e = RC.decEnt(vals['q' + i]);
+          return `<div style="border:1px solid #dcdfe5;border-radius:8px;padding:4px;font-size:13px"><b>${x.nom} = ${e ? CT.htmlEnt(3, e) : '—'}</b><svg class="kmapa" viewBox="${window.D2.k.svg(3, vv2, { nombres: CT.nombres(3), cls }).vb}">${window.D2.k.svg(3, vv2, { nombres: CT.nombres(3), cls }).html}</svg><small>${gr.length} grupo(s) marcado(s)</small></div>`;
+        }).join('') + '</div>';
+      }
+      return `<div class="mpp-det"><b>${RC.TITULO[p]} ${RC.NOMBRE[p]}: ${pts(r.pts)}/${RC.MAX[p]}</b><div class="mpp-dfila">${cel}</div>${mapas}</div>`;
     }).join('');
     const salidas = (s.lista || []).map((x) => `<span class="mpp-cel mal">min ${x.min}: ${x.seg} s${x.met ? ' (' + esc(RC.TITULO[x.met] || x.met) + ')' : ''}</span>`).join('') || '<span class="mp-nota">Ninguna.</span>';
     const escr = s.escr && (s.escr.n || s.escr.ini) ? `<span class="mpp-cel mal">Vista de escritorio: ${s.escr.n} vez/veces, ${s.escr.seg} s${s.escr.ini ? ' (activa al último envío)' : ''}</span>` : '';
