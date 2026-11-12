@@ -541,7 +541,7 @@
       const vals = (a.est[p] && a.est[p].vals) || {};
       const cel = RC.items(p, d).filter((it) => !it.fijo).map((it) => {
         const c = r.cel[it.id];
-        const v = it.tipo === 'op' ? (vals[it.id] == null ? '—' : 'opción ' + (Number(vals[it.id]) + 1)) : vals[it.id] || '—';
+        const v = it.mostrar ? '' : it.tipo === 'op' ? (vals[it.id] == null ? '—' : 'opción ' + (Number(vals[it.id]) + 1)) : vals[it.id] || '—';
         return `<span class="mpp-cel ${c.r === 'vacio' ? '' : c.r}">${RC.etTxt(it)}${c.anulada ? ' (anulada, vale para todos)' : ''} <b>${esc(String(v).replace(/^-/, '−'))}</b> ${c.r === 'ok' ? '✓' : c.r === 'vacio' ? '—' : '✗'}</span>`;
       }).join('');
       return `<div class="mpp-det"><b>${RC.TITULO[p]} ${RC.NOMBRE[p]}: ${pts(r.pts)}/${RC.MAX[p]}</b><div class="mpp-dfila">${cel}</div></div>`;

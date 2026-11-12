@@ -213,8 +213,8 @@
     CONT(franja() + tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span>
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
-        <li>5 problemas (100 puntos) sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 datos, método para los estados sin usar y tabla de transición (20); P2 tabla de J y K (25); P3 expresiones mínimas (25); P4 circuito (15); P5 estados sin usar (15). <b>Tú armas todo</b>: lo que respondes en un problema se copia solo al siguiente y se califica con tus propios números. Tú eliges el método para los estados sin usar (X o forzar); los dos son válidos. Puedes usar papel y lápiz como hoja auxiliar (mapas de Karnaugh, cuentas); no se entrega.</li>
-        <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque. Los números en binario se escriben tal cual (por ejemplo, 101), y las cantidades, con enteros.</li>
+        <li>4 problemas (100 puntos) sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 tabla de transición (20); P2 tabla de J y K (25); P3 mapas de Karnaugh (30); P4 circuito y simulación (25). <b>Tú armas todo</b>: lo que respondes en un paso se copia solo al siguiente y se califica con tus propios números. Puedes usar papel y lápiz como hoja auxiliar (cuentas); no se entrega.</li>
+        <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque.</li>
                 <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
         <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
         <li><b>No salgas de esta página ni bloquees el celular:</b> cada salida queda registrada para el docente. Activa «No molestar».</li>
@@ -247,7 +247,7 @@
     const P = RC.P[p];
     let h = tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}; ${RC.MAX[p]} puntos</span><div class="ex-func">${P.enunciado(d)}</div>`);
     P.pasos(d).forEach((ps) => {
-      const cuerpo = ps.multi ? tablaMulti(p, ps) : ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
+      const cuerpo = ps.mapas ? mapasHTML() : ps.circuito ? '<div id="zona-circ"></div>' : ps.simulacion ? '<div id="zona-sim"></div>' + `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>` : ps.multi ? tablaMulti(p, ps) : ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
       h += tarjeta(`<h3 class="rc-paso">${II.esc(ps.t)}</h3>${ps.html ? `<div class="pd-enun">${ps.html}</div>` : ''}${ps.nota ? `<p class="mp-nota">${ps.nota}</p>` : ''}
         ${ps.tex ? `<div class="ex-func rc-plantilla">\\[${ps.tex}\\]</div>` : ''}
         ${cuerpo}`, 'rc-tpaso');
@@ -267,7 +267,7 @@
     ps.items.forEach((it) => { (filas[it.fila] = filas[it.fila] || []).push(it); });
     const cuerpo = filas.map((its) => {
       const f = its[0];
-      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est">${f.bits}${f.sig ? '→' + f.sig : ''}</td>` +
+      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2">→ ' + f.sig + '</span>' : ''}</td>` +
         its.map((it) => `<td>${it.fijo ? '<span class="pd-fx">X</span>' : botonY(p, it, true)}</td>`).join('') + '</tr>';
     }).join('');
     return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi"><tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
@@ -284,6 +284,111 @@
     return `<div class="pd-tabla"><table class="tt tight pd-tt"><tr>${T.cols.map((c) => `<th>${II.esc(c)}</th>`).join('')}<th>Y</th></tr>` +
       ps.items.map((it) => `<tr>${it.bits.split('').map((x) => `<td>${x}</td>`).join('')}<td>${botonY(p, it, T.x)}</td></tr>`).join('') +
       `</table></div><p class="mp-nota">Toca cada casilla de Y para cambiarla: ? → 1 → 0${T.x ? ' → X' : ''}.</p>${ceros}`;
+  }
+
+  // ---------------- mapas de Karnaugh, circuito y simulación (P3 y P4) ----------------
+  let mapaAct = 0, entAct = 0, simE = null, simH = [];
+  const entVista = (e) => e || { c: null, p: [[]] };
+  const entsP4 = () => CT.entradas(3).map((x, i) => RC.decEnt(est.p4.vals['c' + i]));
+  function mapasHTML() {
+    const v = est.p3.vals;
+    const tabs = CT.entradas(3).map((x, i) => `<button type="button" class="ct-tab-b${i === mapaAct ? ' sel' : ''}${v['m' + i] != null ? ' ok' : ''}" data-mt="${i}">${x.nom}</button>`).join('');
+    return `<div class="ct-tabs">${tabs}</div><div id="zona-mapa" class="pd-zona-mapa"></div><p class="mp-nota">Primero «1. Llenar» con la columna de tu tabla de J y K; luego «2. Agrupar». Cada mapa se guarda solo.</p>`;
+  }
+  function montarMapa() {
+    const z = $('#zona-mapa');
+    if (!z) return;
+    z.innerHTML = '';
+    const i = mapaAct, x = CT.entradas(3)[i], v = est.p3.vals;
+    const ed = window.D2.k.editor(z, { nv: 3, nombres: CT.nombres(3), conX: true, vals: RC.decMapa(v['m' + i]) || undefined, fijo: false, salida: x.nom });
+    if (v['g' + i]) ed.fijar({ grupos: RC.decG(v['g' + i]) });
+    ed.alCambiar((st) => {
+      v['m' + i] = RC.encMapa(st.vals); v['g' + i] = RC.encG(st.grupos);
+      const t = $(`[data-mt="${i}"]`); if (t) t.classList.add('ok');
+      anotarCambio('p3'); guardarEst(); pintarGuardado(); programarAvance();
+      const pr = $('[data-prog="p3"]'); if (pr) pr.textContent = progreso('p3');
+    });
+  }
+  function pintarCirc() {
+    const z = $('#zona-circ');
+    if (!z) return;
+    const v = est.p4.vals, en = CT.entradas(3), nom = CT.nombres(3), a = entAct;
+    const ents = entsP4().map(entVista), x = ents[a];
+    let h = `<div class="ct-esq-w">${CT.svgContador(3, ents, { activo: a })}</div><div class="ct-tabs">` +
+      en.map((y, i) => `<button type="button" class="ct-tab-b${i === a ? ' sel' : ''}${v['c' + i] ? ' ok' : ''}" data-et="${i}">${y.nom}</button>`).join('') + '</div>' +
+      `<div class="tarjeta"><p class="ct-tit">Arma la entrada ${en[a].nom}</p>`;
+    if (x.c === 0 || x.c === 1) h += `<p>${en[a].nom} está conectada a <b>${x.c}</b>.</p><button type="button" class="boton" data-cx="quitar">Quitar la conexión</button>`;
+    else {
+      h += x.p.map((g, k) => `<div class="ct-and"><span class="ct-and-n">${x.p.length > 1 || g.length > 1 ? 'AND ' + (k + 1) : 'Término'}</span><div class="ct-chips">` +
+        nom.map((q, i) => [0, 1].map((ng) => { const c = 2 * i + ng; return `<button type="button" class="ct-chip${g.includes(c) ? ' on' : ''}" data-cx="chip" data-k="${k}" data-l="${c}">${ng ? '<span class="ov">' + q + '</span>' : q}</button>`; }).join('')).join('') +
+        `</div><button type="button" class="ct-x" data-cx="xg" data-k="${k}" aria-label="Quitar compuerta">✕</button></div>`).join('<div style="height:6px"></div>');
+      h += '<div class="fila-bt" style="margin-top:8px"><button type="button" class="boton" data-cx="mas">+ Compuerta AND</button><button type="button" class="boton" data-cx="c1">Conectar a 1</button><button type="button" class="boton" data-cx="c0">Conectar a 0</button></div>';
+    }
+    h += `<p class="lbl" style="margin-top:8px">Tu entrada: <b>${en[a].nom} = ${CT.htmlEnt(3, x)}</b></p></div>`;
+    z.innerHTML = h;
+    if (window.renderMathInElement) { /* sin LaTeX en esta zona */ }
+  }
+  function guardarEnt(ent) {
+    est.p4.vals['c' + entAct] = RC.encEnt(ent);
+    anotarCambio('p4'); guardarEst(); pintarGuardado(); programarAvance();
+    const pr = $('[data-prog="p4"]'); if (pr) pr.textContent = progreso('p4');
+    pintarCirc(); pintarSim();
+  }
+  function accionCirc(b) {
+    const x = b.dataset.cx;
+    let ent = RC.decEnt(est.p4.vals['c' + entAct]) || { c: null, p: [[]] };
+    if (x === 'chip') {
+      if (ent.c === 0 || ent.c === 1) return;
+      const g = ent.p[+b.dataset.k], c = +b.dataset.l, i = g.indexOf(c);
+      if (i >= 0) g.splice(i, 1); else { const j = g.findIndex((y) => y >> 1 === c >> 1); if (j >= 0) g.splice(j, 1); g.push(c); g.sort((p, q) => p - q); }
+    } else if (x === 'xg') { ent.p.splice(+b.dataset.k, 1); if (!ent.p.length) ent.p = [[]]; }
+    else if (x === 'mas') ent.p.push([]);
+    else if (x === 'c1' || x === 'c0') ent = { c: x === 'c1' ? 1 : 0, p: [] };
+    else if (x === 'quitar') ent = { c: null, p: [[]] };
+    guardarEnt(ent);
+  }
+  function pintarSim() {
+    const z = $('#zona-sim');
+    if (!z) return;
+    const d = RC.datos('p4', alumno.carnet, CAR(), est), seq = d.seq;
+    const ents = entsP4().map((e) => e || { c: 0, p: [] });
+    if (simE == null) { simE = seq[0]; simH = [simE]; }
+    const nx = CT.siguiente(3, ents, simE), b3 = (n) => n.toString(2).padStart(3, '0');
+    let tab = '<table class="ct-tab pd-simtab"><tr><th>FF</th><th>Q</th><th>J</th><th>K</th><th>Q<sup>+</sup></th></tr>';
+    for (let j = 0; j < 3; j++) {
+      const bb = 2 - j, q = (simE >> bb) & 1, J = CT.evalEnt(3, ents[2 * j], simE), Kk = CT.evalEnt(3, ents[2 * j + 1], simE);
+      tab += `<tr><td>FF${CT.sub(bb)}</td><td>${q}</td><td>${J}</td><td>${Kk}</td><td><b>${(nx >> bb) & 1}</b></td></tr>`;
+    }
+    tab += '</table>';
+    z.innerHTML = `<div class="tarjeta idea"><p class="ct-tit">Simula tu circuito</p>
+      <p class="lbl">Secuencia que te tocó: <b>${seq.join(' → ')} → ${seq[0]}</b>. Toca un estado para encender ahí y da pulsos de reloj.</p>
+      <div class="ct-estados">${Array.from({ length: 8 }, (_, s) => `<button type="button" class="ct-estado${s === simE ? ' on' : ''}" data-ss="${s}"><b>${s}</b><small>${b3(s)}</small></button>`).join('')}</div>
+      <p class="ct-tit" style="margin-top:8px">Estado actual: ${simE} (${b3(simE)}); con el próximo pulso pasa a ${nx} (${b3(nx)})</p>${tab}
+      <div class="fila-bt"><button type="button" class="boton prim" data-sa="pulso">Dar un pulso de reloj</button><button type="button" class="boton" data-sa="ini">Volver al ${seq[0]}</button></div>
+      <p class="lbl" style="margin-top:6px">Recorrido: ${simH.map((s) => '<b>' + s + '</b>').join(' → ')}</p></div>`;
+  }
+  function montarEspeciales() {
+    $$('[data-mt]').forEach((b) => { b.onclick = () => { mapaAct = +b.dataset.mt; $$('[data-mt]').forEach((x) => x.classList.toggle('sel', x === b)); montarMapa(); }; });
+    if (pestana === 'p3') montarMapa();
+    if (pestana === 'p4') {
+      pintarCirc(); pintarSim();
+      const zc = $('#zona-circ'), zs = $('#zona-sim');
+      zc.onclick = (e) => {
+        const t = e.target.closest('[data-et]');
+        if (t) { entAct = +t.dataset.et; pintarCirc(); return; }
+        const b = e.target.closest('[data-cx]');
+        if (b) accionCirc(b);
+      };
+      zs.onclick = (e) => {
+        const t = e.target.closest('[data-ss]'), a = e.target.closest('[data-sa]');
+        const d = RC.datos('p4', alumno.carnet, CAR(), est);
+        if (t) { simE = +t.dataset.ss; simH = [simE]; }
+        else if (a && a.dataset.sa === 'pulso') { simE = CT.siguiente(3, entsP4().map((x) => x || { c: 0, p: [] }), simE); simH.push(simE); if (simH.length > 14) simH.shift(); }
+        else if (a) { simE = d.seq[0]; simH = [simE]; }
+        else return;
+        pintarSim();
+      };
+    }
   }
 
   function itemHTML(p, d, it) {
@@ -389,6 +494,7 @@
     });
     const bt = $('#b-terminar');
     if (bt) bt.onclick = terminarYo;
+    montarEspeciales();
   }
 
   async function terminarYo() {
@@ -507,8 +613,8 @@
     const vals = est[p].vals;
     const fila = (it) => {
       const c = res.cel[it.id];
-      const tuya = it.tipo === 'op' ? (vals[it.id] == null ? '—' : RC.opTxt(d.op[it.id][Number(vals[it.id])])) : vals[it.id] ? II.esc(neg(vals[it.id])) : '—';
-      const espT = it.tipo === 'op' ? RC.opTxt(d.op[it.id][c.exp]) : it.txt != null ? '<span class="mono">' + it.txt + '</span>' : `\\(${RC.tex(c.exp)}\\)`;
+      const tuya = it.mostrar ? it.mostrar(vals) : it.tipo === 'op' ? (vals[it.id] == null ? '—' : RC.opTxt(d.op[it.id][Number(vals[it.id])])) : vals[it.id] ? II.esc(neg(vals[it.id])) : '—';
+      const espT = it.tipo === 'op' ? RC.opTxt(d.op[it.id][c.exp]) : it.mostrar ? it.txt : it.txt != null ? '<span class="mono">' + it.txt + '</span>' : `\\(${RC.tex(c.exp)}\\)`;
       return `<tr class="${c.r === 'ok' ? 'ok' : 'mal'}"><td>${RC.etTxt(it)}${c.anulada ? ' <small>(anulada)</small>' : ''}</td><td class="mono">${tuya}</td><td>${c.r === 'ok' ? '✓' : '✗ ' + espT}</td><td>${II.fmt(c.pts, 2)}/${II.fmt(c.max, 2)}</td></tr>`;
     };
     // explicación de una pregunta anulada, solo para quien la tuvo mal o vacía
