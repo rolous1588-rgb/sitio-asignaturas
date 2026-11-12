@@ -215,7 +215,7 @@
     CONT(franja() + tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span>
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
-        <li>3 problemas sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 tabla de transición; P2 tabla de J y K; P3 mapas de Karnaugh. <b>Tú armas todo</b>: lo que respondes en un paso se copia solo al siguiente. En los mapas tú marcas tus grupos y escribes tus ecuaciones: la plataforma no los corrige. <b>Al terminar, dibuja a mano alzada en papel el circuito del contador (flip-flops JK y compuertas, según tus ecuaciones) y entrégalo al docente.</b> Puedes usar papel y lápiz como hoja auxiliar; no se entrega, salvo el circuito.</li>
+        <li>3 problemas sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 tabla de transición; P2 tabla de J y K; P3 mapas de Karnaugh. <b>Tú armas todo</b>: lo que respondes en un paso se copia solo al siguiente. <b>Al terminar, dibuja a mano alzada en papel el circuito del contador (flip-flops JK y compuertas, según tus ecuaciones) y entrégalo al docente.</b> Puedes usar papel y lápiz como hoja auxiliar; no se entrega, salvo el circuito.</li>
         <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque.</li>
                 <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
         <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
@@ -269,7 +269,7 @@
     ps.items.forEach((it) => { (filas[it.fila] = filas[it.fila] || []).push(it); });
     const cuerpo = filas.map((its) => {
       const f = its[0];
-      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2">→ ' + f.sig + '</span>' : ''}</td>` +
+      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2"> → ' + f.sig + '</span>' : ''}</td>` +
         its.map((it) => `<td>${it.fijo ? '<span class="pd-fx">X</span>' : botonY(p, it, true)}</td>`).join('') + '</tr>';
     }).join('');
     return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi"><tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
@@ -321,7 +321,7 @@
     const b3 = (n) => n.toString(2).padStart(3, '0');
     z.innerHTML = `<details class="ct-ayuda"><summary>¿Cómo se usa el mapa?</summary>
         <p><b>1. Llenar:</b> toca cada celda para cambiarla: 0 → 1 → X → 0. Copia la columna ${x.nom} de tu tabla de J y K (el número pequeño de la esquina es el estado en decimal).</p>
-        <p><b>2. Agrupar:</b> toca las celdas que quieras juntar (se pintan de amarillo) y presiona «Marcar grupo». Puedes marcar los grupos que tú creas que van: la plataforma no los corrige ni los rechaza. Para borrar un grupo, toca su etiqueta de abajo.</p>
+        <p><b>2. Agrupar:</b> toca las celdas que quieras juntar (se pintan de amarillo) y presiona «Marcar grupo». Para borrar un grupo, toca su etiqueta de abajo.</p>
         <p><b>3. Ecuación:</b> escribe con los botones la ecuación que corresponde a tus marcas: un término por grupo.</p></details>
       <div class="tarjeta"><p class="ct-tit">Mapa de ${x.nom}</p>
       <div class="ked-modos"><button type="button" data-mm="llenar" class="${modoMapa === 'llenar' ? 'sel' : ''}">1. Llenar</button><button type="button" data-mm="agrupar" class="${modoMapa === 'agrupar' ? 'sel' : ''}">2. Agrupar</button></div>

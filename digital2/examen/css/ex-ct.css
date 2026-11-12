@@ -177,3 +177,9 @@ svg.ct-esq { width: 100%; min-width: 300px; display: block; }
 .pd-multi .pd-y { min-width: 30px !important; width: 100%; max-width: 34px !important; height: 40px; font-size: 16px; margin: 1px 0; }
 .pd-multi td.pd-est { min-width: 82px; width: 82px; padding-right: 8px !important; }
 .pd-multi .pd-e1 { font-size: 17px; letter-spacing: .12em; } .pd-multi .pd-e2 { font-size: 14px; letter-spacing: .06em; }
+
+/* v3: estado y siguiente en una sola fila; botones de J y K un poco más angostos */
+.pd-multi td.pd-est { min-width: 104px; width: 104px; white-space: nowrap; padding-right: 4px !important; }
+.pd-multi .pd-e1, .pd-multi .pd-e2 { display: inline !important; font-size: 15px !important; letter-spacing: .03em !important; }
+.pd-multi .pd-e1 { font-weight: 800; } .pd-multi .pd-e2 { color: var(--muted); }
+.pd-multi .pd-y { min-width: 26px !important; max-width: 29px !important; font-size: 15px; }

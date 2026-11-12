@@ -194,7 +194,7 @@
   P.p3 = {
     titulo: 'Mapas de Karnaugh', max: 30, casillas: 18,
     enunciado: (d, m) => `<p>Esta es <b>tu tabla de J y K</b> del paso anterior (lo que dejaste en blanco sigue con «?»; en el mapa cuenta como X):</p><div class="pd-tabla">${tablaTuya(m, true, true)}</div>
-      <p>Para cada entrada (J<sub>2</sub>, K<sub>2</sub>, J<sub>1</sub>, K<sub>1</sub>, J<sub>0</sub>, K<sub>0</sub>): <b>1)</b> llena su mapa de Karnaugh con su columna; <b>2)</b> marca tus grupos; <b>3)</b> escribe la ecuación lógica que corresponde a tus marcas. La plataforma no corrige tus grupos: marca lo que tú crees que va.</p>
+      <p>Para cada entrada (J<sub>2</sub>, K<sub>2</sub>, J<sub>1</sub>, K<sub>1</sub>, J<sub>0</sub>, K<sub>0</sub>): <b>1)</b> llena su mapa de Karnaugh con su columna; <b>2)</b> marca tus grupos; <b>3)</b> escribe la ecuación lógica que corresponde a tus marcas.</p>
       <p><b>Al terminar el examen:</b> dibuja a mano alzada, en papel, el circuito del contador con flip-flops JK y compuertas lógicas, según tus ecuaciones, y entrégalo al docente.</p>`,
     pasos: (d, m) => [{ t: 'Mapas de J y K', mapas: true,
       items: [].concat(...CT.entradas(3).map((x, i) => ['L', 'E', 'M'].map((q, k) => ({
