@@ -213,7 +213,7 @@
     CONT(franja() + tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span>
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
-        <li>5 problemas (100 puntos) sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 datos y transición (15); P2 tabla de J y K (25); P3 expresiones mínimas (25); P4 circuito (15); P5 estados sin usar (20). Cada problema trae los datos correctos del anterior: un error tuyo no se arrastra. Puedes usar papel y lápiz como hoja auxiliar (mapas de Karnaugh, cuentas); no se entrega.</li>
+        <li>5 problemas (100 puntos) sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 datos, método para los estados sin usar y tabla de transición (20); P2 tabla de J y K (25); P3 expresiones mínimas (25); P4 circuito (15); P5 estados sin usar (15). <b>Tú armas todo</b>: lo que respondes en un problema se copia solo al siguiente y se califica con tus propios números. Tú eliges el método para los estados sin usar (X o forzar); los dos son válidos. Puedes usar papel y lápiz como hoja auxiliar (mapas de Karnaugh, cuentas); no se entrega.</li>
         <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque. Los números en binario se escriben tal cual (por ejemplo, 101), y las cantidades, con enteros.</li>
                 <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
         <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
@@ -243,7 +243,7 @@
   }
 
   function problemaHTML(p) {
-    const d = RC.datos(p, alumno.carnet, CAR());
+    const d = RC.datos(p, alumno.carnet, CAR(), est);
     const P = RC.P[p];
     let h = tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}; ${RC.MAX[p]} puntos</span><div class="ex-func">${P.enunciado(d)}</div>`);
     P.pasos(d).forEach((ps) => {
@@ -267,10 +267,10 @@
     ps.items.forEach((it) => { (filas[it.fila] = filas[it.fila] || []).push(it); });
     const cuerpo = filas.map((its) => {
       const f = its[0];
-      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est">${f.bits}→${f.sig}</td>` +
+      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est">${f.bits}${f.sig ? '→' + f.sig : ''}</td>` +
         its.map((it) => `<td>${it.fijo ? '<span class="pd-fx">X</span>' : botonY(p, it, true)}</td>`).join('') + '</tr>';
     }).join('');
-    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi"><tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X. Las filas sin usar ya están en X.</p>`;
+    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi"><tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
   }
   function tablaY(p, ps) {
     const ceros = `<button type="button" class="boton pd-ceros" data-ceros="${p}|${ps.items.map((it) => it.id).join(',')}">Poner 0 en las casillas vacías</button>`;
@@ -499,10 +499,10 @@
     });
     return g.map((x, i) => ({ ...x, clave: p + '.' + i, etq: RC.TITULO[p] + ' ' + x.t }));
   }
-  const gruposObs = () => RC.PROB.reduce((a, p) => a.concat(preguntas(p, RC.datos(p, alumno.carnet, CAR()))), []);
+  const gruposObs = () => RC.PROB.reduce((a, p) => a.concat(preguntas(p, RC.datos(p, alumno.carnet, CAR(), est))), []);
 
   function detalleProblema(p, res) {
-    const d = RC.datos(p, alumno.carnet, CAR());
+    const d = RC.datos(p, alumno.carnet, CAR(), est);
     const P = RC.P[p];
     const vals = est[p].vals;
     const fila = (it) => {

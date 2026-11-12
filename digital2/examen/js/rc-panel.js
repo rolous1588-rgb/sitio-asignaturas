@@ -537,7 +537,7 @@
     const s = a.sal || {};
     const probs = RC.PROB.map((p) => {
       const r = a.cal.res[p];
-      const d = RC.datos(p, a.carnet, a.car);
+      const d = RC.datos(p, a.carnet, a.car, a.est);
       const vals = (a.est[p] && a.est[p].vals) || {};
       const cel = RC.items(p, d).filter((it) => !it.fijo).map((it) => {
         const c = r.cel[it.id];
