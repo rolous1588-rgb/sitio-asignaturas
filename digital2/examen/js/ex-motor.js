@@ -100,6 +100,17 @@
   RC.encMapa = (v) => v.map((x) => (x === 1 ? '1' : x === 2 ? 'X' : '0')).join('');
   RC.decEnt = (s) => (s == null || s === '' ? null : s === 'k0' ? { c: 0, p: [] } : s === 'k1' ? { c: 1, p: [] } : { c: null, p: s === '-' ? [[]] : String(s).split('|').map((t) => (t === '' ? [] : t.split('.').map(Number))) });
   RC.encEnt = (e) => (e.c === 0 ? 'k0' : e.c === 1 ? 'k1' : e.p.length ? e.p.map((g) => g.join('.')).join('|') : '-');
+  // grupos que marcó el estudiante (listas de celdas): los que forman un rectángulo válido se dibujan con su contorno
+  RC.cuboDe = (cells) => {
+    const n = cells.length;
+    if (!n || (n & (n - 1))) return null;
+    let y = 7, o = 0;
+    cells.forEach((m) => { y &= m; o |= m; });
+    const mask = 7 & ~(y ^ o), val = y & mask;
+    const pc = (mask & 1) + ((mask >> 1) & 1) + ((mask >> 2) & 1);
+    return 1 << (3 - pc) === n ? { mask, val } : null;
+  };
+  RC.vistaGrupos = (grupos) => { let vi = 0; return grupos.map((c) => { const cubo = RC.cuboDe(c); return { cells: c, cubo, vi: cubo ? vi++ : -1 }; }); };
   const memo = {};
   function derivar(carnet, est) {
     const b = baseDe(carnet), v1 = vv(est, 'p1'), v2 = vv(est, 'p2'), v3 = vv(est, 'p3');
@@ -194,7 +205,8 @@
   P.p3 = {
     titulo: 'Mapas de Karnaugh', max: 30, casillas: 18,
     enunciado: (d, m) => `<p>Esta es <b>tu tabla de J y K</b> del paso anterior (lo que dejaste en blanco sigue con «?»; en el mapa cuenta como X):</p><div class="pd-tabla">${tablaTuya(m, true, true)}</div>
-      <p>Para cada entrada (J<sub>2</sub>, K<sub>2</sub>, J<sub>1</sub>, K<sub>1</sub>, J<sub>0</sub>, K<sub>0</sub>): <b>1)</b> llena su mapa de Karnaugh con su columna; <b>2)</b> marca tus grupos; <b>3)</b> escribe la ecuación lógica que corresponde a tus marcas.</p>
+      <p>Para cada entrada (J<sub>2</sub>, K<sub>2</sub>, J<sub>1</sub>, K<sub>1</sub>, J<sub>0</sub>, K<sub>0</sub>):</p>
+      <p>1) llena su mapa de Karnaugh con su columna;<br>2) marca tus grupos;<br>3) escribe la ecuación lógica que corresponde a tus marcas.</p>
       <p><b>Al terminar el examen:</b> dibuja a mano alzada, en papel, el circuito del contador con flip-flops JK y compuertas lógicas, según tus ecuaciones, y entrégalo al docente.</p>`,
     pasos: (d, m) => [{ t: 'Mapas de J y K', mapas: true,
       items: [].concat(...CT.entradas(3).map((x, i) => ['L', 'E', 'M'].map((q, k) => ({

@@ -316,8 +316,9 @@
     const i = mapaAct, x = CT.entradas(3)[i], v = est.p3.vals;
     const vals = RC.decMapa(v['m' + i]) || Array(8).fill(0), grupos = decGr(v['g' + i]);
     const ent = RC.decEnt(v['q' + i]) || { c: null, p: [[]] };
-    const cls = (m) => { const gs = grupos.map((g, k) => (g.includes(m) ? k : -1)).filter((k) => k >= 0); return (gs.length ? 'g' + (gs[gs.length - 1] % 6) + (gs.length > 1 ? ' gm' : '') : '') + (selMapa.includes(m) ? ' sel' : ''); };
-    const r = window.D2.k.svg(3, vals, { nombres: CT.nombres(3), cls });
+    const vg = RC.vistaGrupos(grupos), GCs = window.D2.k.GC;
+    const cls = (m) => (vg.some((g) => !g.cubo && g.cells.includes(m)) ? 'gx' : '') + (selMapa.includes(m) ? ' sel' : '');
+    const r = window.D2.k.svg(3, vals, { nombres: CT.nombres(3), cls, grupos: vg.filter((g) => g.cubo).map((g) => g.cubo) });
     const b3 = (n) => n.toString(2).padStart(3, '0');
     z.innerHTML = `<details class="ct-ayuda"><summary>¿Cómo se usa el mapa?</summary>
         <p><b>1. Llenar:</b> toca cada celda para cambiarla: 0 → 1 → X → 0. Copia la columna ${x.nom} de tu tabla de J y K (el número pequeño de la esquina es el estado en decimal).</p>
@@ -328,7 +329,7 @@
       <p class="ked-ayuda">${modoMapa === 'llenar' ? 'Toca cada celda para cambiarla: 0 → 1 → X → 0.' : 'Toca las celdas de un grupo y presiona «Marcar grupo».'}</p>
       <svg class="ked-mapa" viewBox="${r.vb}">${r.html}</svg>
       ${modoMapa === 'agrupar' ? `<div class="ked-sel"><span class="ked-msg">${selMapa.length ? 'Celdas elegidas: <b>' + selMapa.slice().sort((a, b) => a - b).map(b3).join(', ') + '</b>' : 'Ninguna celda elegida.'}</span><div class="ked-bts"><button type="button" class="boton prim" data-mg="formar"${selMapa.length ? '' : ' disabled'}>Marcar grupo</button><button type="button" class="boton" data-mg="soltar"${selMapa.length ? '' : ' disabled'}>Soltar</button></div></div>` : ''}
-      <div class="ked-grupos">${grupos.map((g, k) => `<button type="button" class="ked-chip" data-gq="${k}" style="border-color:${GB[k % 6]};color:${GB[k % 6]}">Grupo ${k + 1}: ${g.slice().sort((a, b) => a - b).map(b3).join(', ')} <span>✕</span></button>`).join('')}</div></div>` + htmlExpr(ent, x.nom);
+      <div class="ked-grupos">${vg.map((g, k) => { const c = g.cubo ? GCs[g.vi % GCs.length] : '#868e96'; return `<button type="button" class="ked-chip" data-gq="${k}" style="border-color:${c};color:${c}">Grupo ${k + 1}: ${g.cells.slice().sort((a, b) => a - b).map(b3).join(', ')} <span>✕</span></button>`; }).join('')}</div></div>` + htmlExpr(ent, x.nom);
   }
   function salvarP3() {
     anotarCambio('p3'); guardarEst(); pintarGuardado(); programarAvance();

@@ -183,3 +183,6 @@ svg.ct-esq { width: 100%; min-width: 300px; display: block; }
 .pd-multi .pd-e1, .pd-multi .pd-e2 { display: inline !important; font-size: 15px !important; letter-spacing: .03em !important; }
 .pd-multi .pd-e1 { font-weight: 800; } .pd-multi .pd-e2 { color: var(--muted); }
 .pd-multi .pd-y { min-width: 26px !important; max-width: 29px !important; font-size: 15px; }
+
+.kc.gx { fill: #e9ecef; stroke: #868e96; stroke-dasharray: 4 3; }
+.kg { fill-opacity: .13; stroke-width: 3; pointer-events: none; }
