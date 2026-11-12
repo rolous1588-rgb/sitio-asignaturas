@@ -196,3 +196,6 @@ svg.ct-esq { width: 100%; min-width: 300px; display: block; }
 .pd-sp tr.pd-g2 th { color: #1d4f86; }
 .pd-sp tr:nth-child(n+3) td.pd-b3:first-child { border-left: 0; }
 .pd-sp td.pd-b3:nth-child(3) { border-right: 2px solid #c9d3df !important; }
+.pd-sp td.pd-sg { font-size: 19px; font-weight: 800; color: #4b5b6e; letter-spacing: 0; width: 9%; padding: 0 !important; }
+.pd-sp .pd-gh { font-size: 12px; line-height: 1.1; }
+.pd-sp td.pd-sg:nth-child(6) { border-right: 2px solid #c9d3df !important; }

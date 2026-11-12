@@ -271,7 +271,7 @@
     const cuerpo = filas.map((its) => {
       const f = its[0];
       const est = sp
-        ? f.bits.split('').map((x) => `<td class="mono pd-b3">${x}</td>`).join('') + (f.sig ? `<td class="mono pd-sg">${f.sig}</td>` : '')
+        ? f.bits.split('').map((x) => `<td class="mono pd-b3">${x}</td>`).join('') + (f.sig ? f.sig.split('').map((x) => `<td class="mono pd-sg">${x}</td>`).join('') : '')
         : `<td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2"> → ' + f.sig + '</span>' : ''}</td>`;
       return `<tr class="${f.fijo ? 'pd-fijo' : ''}">${est}` +
         its.map((it) => `<td>${it.fijo ? '<span class="pd-fx">X</span>' : botonY(p, it, true)}</td>`).join('') + '</tr>';
@@ -279,8 +279,8 @@
     let cab;
     if (sp) {
       const nx = ps.multi.cols.length;
-      cab = `<tr class="pd-g1"><th colspan="3" class="pd-gh">Estado presente</th>${ps.multi.sigCol ? '<th rowspan="2" class="pd-gh">Siguiente<br>(tu tabla)</th>' : ''}<th colspan="${nx}" class="pd-gh">${ps.multi.grupo}</th></tr>` +
-        `<tr class="pd-g2"><th>Q<sub>2</sub></th><th>Q<sub>1</sub></th><th>Q<sub>0</sub></th>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
+      cab = `<tr class="pd-g1"><th colspan="3" class="pd-gh">Estado presente</th>${ps.multi.sigCol ? '<th colspan="3" class="pd-gh">Siguiente (tu tabla)</th>' : ''}<th colspan="${nx}" class="pd-gh">${ps.multi.grupo}</th></tr>` +
+        `<tr class="pd-g2"><th>Q<sub>2</sub></th><th>Q<sub>1</sub></th><th>Q<sub>0</sub></th>${ps.multi.sigCol ? '<th>Q<sub>2</sub><sup>+</sup></th><th>Q<sub>1</sub><sup>+</sup></th><th>Q<sub>0</sub><sup>+</sup></th>' : ''}${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
     } else cab = `<tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
     return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi${sp ? ' pd-sp' : ''}">${cab}${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
   }
