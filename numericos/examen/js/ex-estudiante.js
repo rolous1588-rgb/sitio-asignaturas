@@ -32,7 +32,7 @@
   let notas = null;
 
   const kEst = () => 'mx-est-' + SID + '-' + alumno.carnet;
-  const nuevaSal = () => ({ n: 0, seg: 0, max: 0, lista: [], abierta: null, foco: { n: 0, seg: 0 }, cambios: [], pantalla: '—', recargas: 0, disp: tipoDisp });
+  const nuevaSal = () => ({ n: 0, seg: 0, max: 0, lista: [], abierta: null, foco: { n: 0, seg: 0 }, cambios: [], pantalla: '—', recargas: 0, disp: tipoDisp, escr: { n: 0, seg: 0, ini: null } });
   const nuevoEst = () => ({ bis: { filas: [{ vals: {} }, { vals: {} }, { vals: {} }] }, fp: { filas: [{ vals: {} }, { vals: {} }, { vals: {} }] }, nr: { filas: [{ vals: {} }, { vals: {} }, { vals: {} }], der: null }, sal: nuevaSal(), guardadas: {}, final: false, ultEnvio: null });
   let est = null;
   const cargarEst = () => { est = II.leer(kEst(), null) || nuevoEst(); est.sal = est.sal || nuevaSal(); est.guardadas = est.guardadas || {}; };
@@ -105,7 +105,7 @@
 
   function resumenSal() {
     const s = est.sal;
-    return { n: s.n, seg: s.seg, max: s.max, lista: s.lista.slice(-30), abierta: s.abierta, foco: s.foco, cambios: s.cambios.slice(-30), pantalla: s.pantalla, recargas: s.recargas, disp: s.disp };
+    return { n: s.n, seg: s.seg, max: s.max, lista: s.lista.slice(-30), abierta: s.abierta, foco: s.foco, cambios: s.cambios.slice(-30), pantalla: s.pantalla, recargas: s.recargas, disp: s.disp, escr: s.escr };
   }
   function enviarAvance(motivo) {
     if (!alumno || !est) return;
@@ -457,9 +457,51 @@
 
   // ---------------- pintar ----------------
   function CONT(html) { $('#cont').innerHTML = html; }
+  // ---------------- vista de escritorio: las preguntas desaparecen mientras esté activa ----------------
+  // El examen es para celular. Un navegador de celular con «Sitio de escritorio» dice ser Linux, Windows o Mac, y la
+  // página mide mucho más que la pantalla física. Con esa vista bloqueamos las preguntas (se ve un aviso en blanco) y
+  // lo anotamos para el docente (sal.escr). Al desactivarla, las preguntas vuelven con lo que ya se había escrito.
+  // (Pieza copiada de digital2/examen/js/rc-estudiante.js, 12/11/2026.)
+  function esEscritorio() {
+    const ua = navigator.userAgent || '';
+    const movil = /Android|iPhone|iPod|Mobile/i.test(ua);
+    const uaEsc = /X11|Linux x86_64|Windows NT|Macintosh|CrOS/i.test(ua) && !movil;
+    const pantalla = Math.min(screen.width || 0, screen.height || 0);
+    const ancho = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+    const tactil = (navigator.maxTouchPoints || 0) > 0;
+    const forzado = tactil && pantalla > 0 && pantalla < 700 && ancho > pantalla * 1.6;
+    const uad = navigator.userAgentData;
+    const uadEsc = !!(uad && uad.mobile === false && tactil && pantalla < 700);
+    return uaEsc || forzado || uadEsc;
+  }
+  let escrAntes = false;
+  function anotarEscritorio(ahoraEsc) {
+    if (!est) return;
+    est.sal.escr = est.sal.escr || { n: 0, seg: 0, ini: null };
+    const e = est.sal.escr;
+    if (ahoraEsc && !e.ini) { e.n++; e.ini = Date.now(); guardarEst(); enviarAvance('escritorio'); }
+    else if (!ahoraEsc && e.ini) { e.seg += Math.round((Date.now() - e.ini) / 1000); e.ini = null; guardarEst(); enviarAvance('escritorio fin'); }
+  }
+  function vBloqueoEscritorio() {
+    if (vista === 'bloqueo-esc') return;
+    vista = 'bloqueo-esc';
+    document.body.classList.remove('examen');
+    CONT(tarjeta(`<span class="etq">Examen</span><h2>Vista de escritorio activada</h2>
+      <p>Este examen solo se puede resolver en la vista de celular. Las preguntas están ocultas.</p>
+      <p><b>Desactiva «Sitio de escritorio»</b> en el menú del navegador (los tres puntos) y las preguntas vuelven solas, con lo que ya escribiste. Este intento queda registrado para el docente y el reloj sigue corriendo.</p>`));
+  }
+  setInterval(() => { if (alumno && est && fase() === 'curso' && esEscritorio() !== escrAntes) pintar(); }, 1500);
+  window.addEventListener('resize', () => { if (alumno && est && fase() === 'curso' && esEscritorio() !== escrAntes) pintar(); });
+
   function pintar() {
     barra();
     const f = fase();
+    if (alumno && est && f === 'curso') {
+      const esc = esEscritorio();
+      anotarEscritorio(esc);
+      if (esc !== escrAntes) { escrAntes = esc; vista = ''; }
+      if (esc) return vBloqueoEscritorio();
+    } else if (alumno && est && est.sal && est.sal.escr && est.sal.escr.ini) anotarEscritorio(false);
     if (f === 'registro') return vEntrada();
     if (f === 'cargando') { if (vista !== 'cargando') { vista = 'cargando'; CONT(tarjeta('<p>Conectando con el examen…</p>')); } return; }
     if (f === 'espera') return vEspera(false);
