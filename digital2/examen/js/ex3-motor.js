@@ -1,8 +1,8 @@
 // ============================================================
-// Electrónica Digital 2 · examen por celular · PROBLEMA 3 (12/11/2026): sumador de 4 bits (74283), resta y suma BCD
+// Electrónica Digital 2 · examen por celular · PROBLEMA 3 (12/11/2026): diseño de un sumador/restador de 4 bits con el 74283
 // Pieza aparte (se une a los problemas 1 y 2 más adelante). Mismo espacio RC; números propios por carnet.
-//   1 suma binaria; 2 resta con complemento a 2; 3 suma BCD: suma binaria y ¿necesita corrección?; 4 suma BCD: corrección.
-// El paso 4 parte de lo que el estudiante respondió en el 3 (en blanco: se usa lo correcto). Puntajes provisionales.
+//   1 la XOR como inversor controlado por M; 2 conexión del 74283 (opciones); 3 comprobación restando con sus números (M = 1);
+//   4 los mismos números sumando (M = 0), ¿negativo? y qué indica el acarreo. El circuito se dibuja a mano. Puntajes provisionales.
 // ============================================================
 (function () {
   const RC = (window.RC = window.RC || {});
@@ -21,106 +21,88 @@
   const b4 = (n) => (n & 15).toString(2).padStart(4, '0');
   const bits = (s) => '<b class="mono pd-bits">' + s + '</b>';
   const vv = (est, k) => (est && est[k] && est[k].vals) || {};
-  const bitDe = (s) => (s === '1' ? 1 : s === '0' ? 0 : -1);
+  
 
-  // ---------- los números de cada carnet ----------
+  // ---------- los números y las opciones de cada carnet ----------
   const bases = {};
   function baseDe(carnet) {
     if (bases[carnet]) return bases[carnet];
     const r = RC.rng(String(carnet) + '|' + SID + '|c');
-    let A, B, A2, B2, a, b;
-    const carry = r() < 0.6;
-    do { A = ent(r, 3, 15); B = ent(r, 3, 15); } while (A === B || (A + B > 15) !== carry);
     const neg = r() < 0.5;
-    do { A2 = ent(r, 2, 15); B2 = ent(r, 2, 15); } while (A2 === B2 || (A2 < B2) !== neg);
-    const c = r(), lo = c < 0.25 ? 4 : c < 0.6 ? 10 : 16, hi = c < 0.25 ? 9 : c < 0.6 ? 15 : 18;
-    do { a = ent(r, 2, 9); b = ent(r, 2, 9); } while (a + b < lo || a + b > hi);
-    return (bases[carnet] = { A, B, A2, B2, a, b });
-  }
-  // lo que sale de lo que el estudiante respondió en el paso 3
-  const memo = {};
-  function derivar(carnet, est) {
-    const b = baseDe(carnet), v3 = vv(est, 'p3');
-    const llave = carnet + '|' + JSON.stringify(v3);
-    if (memo[llave]) return memo[llave];
-    const t = b.a + b.b, ok = { c: t >> 4, S: t & 15 };
-    const x = (id, e) => { const q = bitDe(String(v3[id] || '')); return q < 0 ? { t: '?', v: e } : { t: String(q), v: q }; };
-    const c = x('c', ok.c);
-    const s = [3, 2, 1, 0].map((i) => x('s' + i, (ok.S >> i) & 1));
-    const S = s.reduce((acc, q) => acc * 2 + q.v, 0);
-    const need = c.v === 1 || S > 9;
-    const tot = S + (need ? 6 : 0);
-    const m = { cTxt: c.t, sTxt: s.map((q) => q.t).join(''), need, corr: need ? 6 : 0, res: tot & 15, dec: c.v === 1 || tot > 15 ? 1 : 0 };
-    if (Object.keys(memo).length > 200) for (const k in memo) delete memo[k];
-    return (memo[llave] = m);
+    let A, B;
+    do { A = ent(r, 2, 15); B = ent(r, 2, 15); } while (A === B || (A < B) !== neg);
+    // preguntas de opción: la correcta va primero y se mezcla por carnet; el valor guardado es la posición elegida
+    const op = {}, ex = {};
+    const Q = {
+      qa: ['A<sub>3</sub>…A<sub>0</sub> directamente', ['A<sub>3</sub>…A<sub>0</sub> pasando por una XOR con M', 'A<sub>3</sub>…A<sub>0</sub> invertidas', 'B<sub>3</sub>…B<sub>0</sub>']],
+      qb: ['B<sub>3</sub>…B<sub>0</sub> a través de una XOR con M (B ⊕ M)', ['B<sub>3</sub>…B<sub>0</sub> directamente', 'B<sub>3</sub>…B<sub>0</sub> invertidas siempre, con inversores', 'A<sub>3</sub>…A<sub>0</sub>']],
+      qc: ['la línea M', ['0 (a tierra) siempre', '1 (a +5 V) siempre', 'el acarreo de salida Cout']],
+      qm: ['A − B', ['B − A', 'A + B', 'A + B + 1']],
+      qz: ['A ≥ B: el resultado no es negativo', ['A &lt; B: el resultado es negativo', 'hubo desborde y el resultado es incorrecto', 'B vale cero']]
+    };
+    Object.keys(Q).forEach((id) => {
+      const l = RC.mezclar(r, [0, 1, 2, 3]), todas = [Q[id][0]].concat(Q[id][1]);
+      op[id] = l.map((i) => ({ h: todas[i] }));
+      ex[id] = l.indexOf(0);
+    });
+    return (bases[carnet] = { A, B, op, ex });
   }
 
   const P = {};
-  const itB = (id, h, pts, extra) => Object.assign({ id, h, tipo: 'bit', pts, x: false }, extra || {});
-  const fila4 = (n) => b4(n).split('');
+  const itB = (id, h, pts) => ({ id, h, tipo: 'bit', pts, x: false });
+  const itO = (id, h, pts) => ({ id, h, tipo: 'op', pts });
+  const fijo = (etq, n) => ({ etq, cel: [''].concat(b4(n).split('')) });
   const CAB = ['Acarreo', 'Bit\u00a03', 'Bit\u00a02', 'Bit\u00a01', 'Bit\u00a00'];
-  const fijo = (etq, n) => ({ etq, cel: [''].concat(fila4(n)) });
-  const sal = (pref, h, pts) => [3, 2, 1, 0].map((i) => itB(pref + i, `${h} ${i}`, pts));
+  const bs = (pref, h, pts) => [3, 2, 1, 0].map((i) => itB(pref + i, `${h}, bit ${i}`, pts));
 
-  // ===== Paso 1: suma binaria =====
+  // ===== Paso 1: la XOR como inversor controlado por M =====
+  const XR = [[0, 0], [0, 1], [1, 0], [1, 1]];
   P.p1 = {
-    titulo: 'Suma binaria', max: 15, casillas: 5,
-    enunciado: (d) => `<p>Un sumador binario de 4 bits (74283) recibe los números sin signo <b>A</b> y <b>B</b> de la tabla, con acarreo de entrada Cin = 0.</p><p>Completa la suma S = A + B y el acarreo de salida.</p>`,
-    pasos: (d) => {
-      const s = sal('s', 'Bit', 2.5), c = itB('c', 'Acarreo de salida', 5);
-      s.forEach((it, i) => { it.h = `S, bit ${3 - i}`; });
-      return [{ t: 'Suma binaria', grid: { cab: CAB, filas: [fijo('A', d.b.A), fijo('B', d.b.B), { etq: 'S = A + B', cel: [c].concat(s) }] }, items: [c].concat(s) }];
+    titulo: 'La XOR y la línea de control M', max: 12, casillas: 4,
+    enunciado: () => `<p>Vas a diseñar un <b>sumador/restador de 4 bits</b> con un 74283 (sumador de 4 bits con acarreo de entrada Cin). Para restar se usa A − B = A + B̄ + 1: hay que invertir B. Para poder elegir, cada bit de B pasa por una compuerta <b>XOR</b> con una línea de control <b>M</b>.</p><p>La XOR vale 1 cuando sus dos entradas son distintas. Completa su salida B ⊕ M.</p>`,
+    pasos: () => {
+      const its = XR.map((x, i) => itB('x' + i, `B = ${x[0]}, M = ${x[1]}: B ⊕ M`, 3));
+      return [{ t: 'Tabla de la XOR', grid: { sinEtq: true, cab: ['B', 'M', 'B ⊕ M'], filas: XR.map((x, i) => ({ cel: [String(x[0]), String(x[1]), its[i]] })) }, items: its }];
     },
-    esperado: (d) => { const t = d.b.A + d.b.B, o = { c: String(t >> 4) }; [3, 2, 1, 0].forEach((i) => { o['s' + i] = String((t >> i) & 1); }); return o; },
-    final: (d) => { const t = d.b.A + d.b.B; return [`<p>Se suma bit a bit desde el bit 0, llevando el acarreo: ${bits(b4(d.b.A))} + ${bits(b4(d.b.B))} = ${bits(b4(t))} con acarreo de salida ${t >> 4}. ${t > 15 ? 'El resultado no cabe en 4 bits: el acarreo de salida es el quinto bit.' : 'El resultado cabe en 4 bits: el acarreo de salida es 0.'}</p>`]; }
+    esperado: () => Object.fromEntries(XR.map((x, i) => ['x' + i, String(x[0] ^ x[1])])),
+    final: () => ['<p>Con M = 0 la XOR deja pasar B sin cambio (B ⊕ 0 = B). Con M = 1 la XOR invierte B (B ⊕ 1 = B̄). M decide si el circuito suma o resta.</p>']
   };
 
-  // ===== Paso 2: resta con complemento a 2 =====
+  // ===== Paso 2: conexión del 74283 =====
   P.p2 = {
-    titulo: 'Resta con complemento a 2', max: 25, casillas: 11,
-    enunciado: () => `<p>Con el mismo 74283 se resta A − B así: se <b>invierte cada bit de B</b> y se pone <b>Cin = 1</b> (A + B̄ + 1 = A − B en complemento a 2).</p><p>Completa la tabla. Si el acarreo de salida es 1, A ≥ B; si es 0, A &lt; B y el resultado es negativo (queda en complemento a 2).</p>`,
+    titulo: 'Conexión del 74283', max: 24, casillas: 4,
+    enunciado: () => `<p>Ahora conecta el 74283: sus entradas A₃…A₀, B₃…B₀ y Cin, y la línea de control M. Elige en cada caso la conexión correcta para que el circuito <b>reste cuando M = 1</b> y <b>sume cuando M = 0</b>.</p>`,
+    pasos: () => [{ t: 'Entradas del 74283', items: [itO('qa', 'Las entradas A₃…A₀ del 74283 reciben', 6), itO('qb', 'Las entradas B₃…B₀ del 74283 reciben', 6), itO('qc', 'La entrada Cin del 74283 se conecta a', 6), itO('qm', 'Con M = 1 el circuito calcula', 6)] }],
+    esperado: (d) => Object.fromEntries(['qa', 'qb', 'qc', 'qm'].map((k) => [k, d.b.ex[k]])),
+    final: () => ['<p>A entra directo a las entradas A. B pasa por cuatro XOR con M, y M también va a Cin: con M = 0 el sumador calcula A + B + 0; con M = 1 calcula A + B̄ + 1 = A − B.</p>']
+  };
+
+  // ===== Paso 3: comprobación restando (M = 1) =====
+  P.p3 = {
+    titulo: 'Comprobación restando (M = 1)', max: 20, casillas: 10,
+    enunciado: (d) => `<p>Pon M = 1 y prueba tu circuito con los números sin signo A = ${d.b.A} y B = ${d.b.B} (aparecen en binario en la tabla).</p><p>Completa lo que sale de las XOR, el Cin y el resultado del 74283.</p>`,
     pasos: (d) => {
-      const bn = [3, 2, 1, 0].map((i) => itB('n' + i, `B invertido, bit ${i}`, 1.5));
-      const cin = itB('ci', 'Cin', 3), co = itB('co', 'Acarreo de salida', 3), ng = itB('ng', '¿El resultado es negativo? (1 = sí, 0 = no)', 5);
-      const s = [3, 2, 1, 0].map((i) => itB('s' + i, `S, bit ${i}`, 2));
-      return [{ t: 'Resta A − B', grid: { cab: CAB, filas: [fijo('A', d.b.A2), fijo('B', d.b.B2), { etq: 'B invertido', cel: [''].concat(bn) }, { etq: 'Cin', cel: [cin, { t: 'para restar', span: 4 }] }, { etq: 'S = A + B̄ + Cin', cel: [co].concat(s) }, { etq: '¿Negativo?', cel: [ng, { t: '1 = sí; 0 = no', span: 4 }] }] }, items: bn.concat([cin, co]).concat(s).concat([ng]) }];
+      const n = bs('n', 'B ⊕ M', 1.5), ci = itB('ci', 'Cin', 3), co = itB('co', 'Acarreo de salida', 3), s = bs('s', 'S', 2);
+      return [{ t: 'Resta A − B con M = 1', grid: { cab: CAB, filas: [fijo('A = ' + d.b.A, d.b.A), fijo('B = ' + d.b.B, d.b.B), { etq: 'B ⊕ M', cel: [''].concat(n) }, { etq: 'Cin', cel: [ci, { t: 'conectado a M', span: 4 }] }, { etq: 'S', cel: [co].concat(s) }] }, items: n.concat([ci, co]).concat(s) }];
     },
     esperado: (d) => {
-      const { A2, B2 } = d.b, bn = ~B2 & 15, t = A2 + bn + 1, o = { ci: '1', co: String(t >> 4), ng: A2 < B2 ? '1' : '0' };
+      const { A, B } = d.b, bn = ~B & 15, t = A + bn + 1, o = { ci: '1', co: String(t >> 4) };
       [3, 2, 1, 0].forEach((i) => { o['n' + i] = String((bn >> i) & 1); o['s' + i] = String(((t & 15) >> i) & 1); });
       return o;
     },
-    final: (d) => {
-      const { A2, B2 } = d.b, bn = ~B2 & 15, t = A2 + bn + 1;
-      return [`<p>B = ${bits(b4(B2))} invertido es ${bits(b4(bn))}; Cin = 1. Suma: ${bits(b4(A2))} + ${bits(b4(bn))} + 1 = ${bits(b4(t))} con acarreo de salida ${t >> 4}.</p>`,
-        `<p>${A2 < B2 ? `El acarreo de salida es 0: A &lt; B, el resultado es negativo y ${bits(b4(t))} es −${B2 - A2} en complemento a 2.` : `El acarreo de salida es 1: A ≥ B y el resultado es ${A2 - B2}.`}</p>`];
-    }
+    final: (d) => { const { A, B } = d.b, bn = ~B & 15, t = A + bn + 1; return [`<p>Con M = 1: B = ${bits(b4(B))} sale de las XOR como ${bits(b4(bn))} y Cin = 1. Suma: ${bits(b4(A))} + ${bits(b4(bn))} + 1 = ${bits(b4(t))} con acarreo de salida ${t >> 4}.</p>`]; }
   };
 
-  // ===== Paso 3: suma BCD, parte 1 (suma binaria) =====
-  P.p3 = {
-    titulo: 'Suma BCD: suma binaria', max: 20, casillas: 6,
-    enunciado: (d) => `<p>Se suman dos dígitos decimales en código <b>BCD</b>: A = ${d.b.a} y B = ${d.b.b}. Primero un 74283 los suma como si fueran binarios (Cin = 0).</p><p>Completa la suma binaria y marca si el resultado <b>necesita corrección</b> (cuando es mayor que 9 o hay acarreo de salida).</p>`,
-    pasos: (d) => {
-      const c = itB('c', 'Acarreo de salida', 4), s = [3, 2, 1, 0].map((i) => itB('s' + i, `S, bit ${i}`, 2)), f = itB('f', '¿Necesita corrección? (1 = sí, 0 = no)', 8);
-      return [{ t: 'Suma binaria de los dos dígitos BCD', grid: { cab: CAB, filas: [fijo('A = ' + d.b.a, d.b.a), fijo('B = ' + d.b.b, d.b.b), { etq: 'A + B', cel: [c].concat(s) }, { etq: '¿Corrección?', cel: [f, { t: '1 = sí; 0 = no', span: 4 }] }] }, items: [c].concat(s).concat([f]) }];
-    },
-    esperado: (d) => { const t = d.b.a + d.b.b, o = { c: String(t >> 4), f: t > 9 ? '1' : '0' }; [3, 2, 1, 0].forEach((i) => { o['s' + i] = String(((t & 15) >> i) & 1); }); return o; },
-    final: (d) => { const t = d.b.a + d.b.b; return [`<p>${bits(b4(d.b.a))} + ${bits(b4(d.b.b))} = ${bits(b4(t))} con acarreo de salida ${t >> 4} (suma ${t}).</p>`, `<p>${t > 9 ? `Como ${t > 15 ? 'hay acarreo de salida' : 'el resultado es mayor que 9'}, no es un dígito BCD válido: hay que corregir sumando 0110.` : 'El resultado es 9 o menos y no hay acarreo: ya es un dígito BCD y no necesita corrección.'}</p>`]; }
-  };
-
-  // ===== Paso 4: suma BCD, parte 2 (corrección), a partir de SU paso 3 =====
+  // ===== Paso 4: los mismos números sumando (M = 0), ¿negativo? y qué indica el acarreo =====
   P.p4 = {
-    titulo: 'Suma BCD: corrección', max: 20, casillas: 9,
-    enunciado: (d, m) => `<p>Aquí está <b>tu suma binaria</b> del paso anterior (lo que dejaste en blanco sigue con «?»). Un segundo 74283 le suma la corrección: <b>0110</b> si hace falta y <b>0000</b> si no.</p><p>Completa el sumando de corrección y el resultado BCD final: el dígito de las unidades y el de las decenas (0 o 1).</p>`,
-    pasos: (d, m) => {
-      const co = [3, 2, 1, 0].map((i) => itB('k' + i, `Corrección, bit ${i}`, 1.5));
-      const re = [3, 2, 1, 0].map((i) => itB('r' + i, `Unidades, bit ${i}`, 2.5));
-      const de = itB('d', 'Decenas (0 o 1)', 4);
-      return [{ t: 'Corrección y resultado', grid: { cab: CAB, filas: [{ etq: 'Tu suma', cel: [m.cTxt].concat(m.sTxt.split('')) }, { etq: 'Corrección', cel: [''].concat(co) }, { etq: 'Resultado', cel: [de].concat(re) }] }, items: co.concat(re).concat([de]) }];
+    titulo: 'Suma, signo y acarreo', max: 20, casillas: 7,
+    enunciado: (d) => `<p>Ahora el mismo circuito con M = 0 y los mismos números (A = ${d.b.A} y B = ${d.b.B}). Completa la suma.</p><p>Después, marca si la <b>resta</b> A − B del paso anterior dio un resultado negativo y elige qué indica el acarreo de salida en la resta.</p>`,
+    pasos: (d) => {
+      const s = bs('s', 'S', 2), co = itB('co', 'Acarreo de salida', 2), ng = itB('ng', '¿A − B es negativo? (1 = sí, 0 = no)', 5);
+      return [{ t: 'Suma con M = 0 y lectura de la resta', grid: { cab: CAB, filas: [fijo('A = ' + d.b.A, d.b.A), fijo('B ⊕ M = B', d.b.B), { etq: 'A + B', cel: [co].concat(s) }, { etq: '¿A − B negativo?', cel: [ng, { t: '1 = sí; 0 = no', span: 4 }] }] }, items: s.concat([co, ng, itO('qz', 'En la resta, un acarreo de salida igual a 1 indica', 5)]) }];
     },
-    esperado: (d, vals, m) => { const o = { d: String(m.dec) }; [3, 2, 1, 0].forEach((i) => { o['k' + i] = String((m.corr >> i) & 1); o['r' + i] = String((m.res >> i) & 1); }); return o; },
-    final: (d, m) => { const t = d.b.a + d.b.b, n = t > 9, tot = t + (n ? 6 : 0); return [`<p>${n ? 'Se suma 0110' : 'Se suma 0000'} a la suma binaria: ${bits(b4(t))} + ${bits(n ? '0110' : '0000')} = ${bits(b4(tot))}${tot > 15 ? ' (y el acarreo pasa a las decenas)' : ''}.</p>`, `<p>Resultado BCD: decenas = ${tot > 15 || t > 15 ? 1 : 0}, unidades = ${bits(b4(tot))} (${d.b.a} + ${d.b.b} = ${t}).</p>`]; }
+    esperado: (d) => { const { A, B } = d.b, t = A + B, o = { co: String(t >> 4), ng: A < B ? '1' : '0', qz: d.b.ex.qz }; [3, 2, 1, 0].forEach((i) => { o['s' + i] = String(((t & 15) >> i) & 1); }); return o; },
+    final: (d) => { const { A, B } = d.b, t = A + B; return [`<p>Con M = 0 las XOR dejan pasar B y Cin = 0: ${bits(b4(A))} + ${bits(b4(B))} = ${bits(b4(t))} con acarreo de salida ${t >> 4}${t > 15 ? ' (la suma no cabe en 4 bits)' : ''}.</p>`, `<p>${A < B ? `A &lt; B: la resta da negativo (acarreo de salida 0 y resultado en complemento a 2).` : `A ≥ B: la resta da ${A - B} (acarreo de salida 1).`} En la resta, un acarreo de salida igual a 1 significa A ≥ B (no hay préstamo); igual a 0 significa A &lt; B.</p>`]; }
   };
 
   Object.keys(P).forEach((k) => ['pasos', 'enunciado', 'final'].forEach((f) => { const g = P[k][f]; P[k][f] = (d, m) => g(d, m || d.mio); }));
@@ -131,7 +113,7 @@
   RC.NOMBRE = Object.fromEntries(RC.PROB.map((k) => [k, P[k].titulo]));
   RC.ENT = [];
 
-  RC.datos = (k, carnet, car, est) => ({ b: baseDe(carnet), prob: k, mio: derivar(carnet, est), op: {} });
+  RC.datos = (k, carnet, car, est) => { const b = baseDe(carnet); return { b, prob: k, mio: {}, op: b.op }; };
   RC.items = (k, d) => P[k].pasos(d, d.mio).reduce((a, ps) => a.concat(ps.items), []);
   RC.casillas = (k) => P[k].casillas;
   RC.TOTAL_CASILLAS = RC.PROB.reduce((s, k) => s + RC.casillas(k), 0);

@@ -215,7 +215,7 @@
     CONT(franja() + tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span>
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
-        <li>Un solo problema en 4 pasos con el sumador de 4 bits 74283, con números propios: 1 suma binaria; 2 resta con complemento a 2; 3 suma BCD: suma binaria; 4 suma BCD: corrección. Lo que respondes en el paso 3 se copia solo al paso 4. Puedes usar papel y lápiz como hoja auxiliar; no se entrega.</li>
+        <li>Un solo problema en 4 pasos: diseñar un <b>sumador/restador de 4 bits</b> con el 74283, con números propios: 1 la XOR y la línea M; 2 conexión del 74283; 3 comprobación restando; 4 suma, signo y acarreo. <b>Al terminar, dibuja a mano alzada en papel el circuito (74283, XOR y conexiones) y entrégalo al docente.</b> Puedes usar papel y lápiz como hoja auxiliar; no se entrega, salvo el circuito.</li>
         <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque.</li>
                 <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
         <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
@@ -249,7 +249,7 @@
     const P = RC.P[p];
     let h = tarjeta(`<span class="etq">${RC.TITULO[p]}; ${P.titulo}</span><div class="ex-func">${P.enunciado(d)}</div>`);
     P.pasos(d).forEach((ps) => {
-      const cuerpo = ps.grid ? tablaGrid(p, ps) : ps.mapas ? mapasHTML() : ps.multi ? tablaMulti(p, ps) : ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
+      const cuerpo = ps.grid ? tablaGrid(p, ps) + ps.items.filter((it) => it.tipo === 'op').map((it) => itemHTML(p, d, it)).join('') : ps.mapas ? mapasHTML() : ps.multi ? tablaMulti(p, ps) : ps.tabla || ps.mapa ? tablaY(p, ps) : `<div class="mp-celdas rc-celdas">${ps.items.map((it) => itemHTML(p, d, it)).join('')}</div>`;
       h += tarjeta(`<h3 class="rc-paso">${II.esc(ps.t)}</h3>${ps.html ? `<div class="pd-enun">${ps.html}</div>` : ''}${ps.nota ? `<p class="mp-nota">${ps.nota}</p>` : ''}
         ${ps.tex ? `<div class="ex-func rc-plantilla">\\[${ps.tex}\\]</div>` : ''}
         ${cuerpo}`, 'rc-tpaso');
@@ -288,8 +288,8 @@
   function tablaGrid(p, ps) {
     const G = ps.grid;
     const celda = (c) => (typeof c === 'string' ? `<td class="mono pd-gf">${c}</td>` : c && c.id ? `<td>${botonY(p, c, false)}</td>` : `<td class="pd-gn" colspan="${c.span || 1}">${c.t}</td>`);
-    const cuerpo = G.filas.map((f) => `<tr><th class="pd-gl">${f.etq}</th>${f.cel.map(celda).join('')}</tr>`).join('');
-    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-grid"><tr><th></th>${G.cab.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0.</p>`;
+    const cuerpo = G.filas.map((f) => `<tr>${G.sinEtq ? '' : `<th class="pd-gl">${f.etq}</th>`}${f.cel.map(celda).join('')}</tr>`).join('');
+    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-grid"><tr>${G.sinEtq ? '' : '<th></th>'}${G.cab.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0.</p>`;
   }
   function tablaY(p, ps) {
     const ceros = `<button type="button" class="boton pd-ceros" data-ceros="${p}|${ps.items.map((it) => it.id).join(',')}">Poner 0 en las casillas vacías</button>`;
