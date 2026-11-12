@@ -545,9 +545,9 @@
         return `<span class="mpp-cel ${c.r === 'vacio' ? '' : c.r}">${RC.etTxt(it)}${c.anulada ? ' (anulada, vale para todos)' : ''} <b>${esc(String(v).replace(/^-/, '−'))}</b> ${c.r === 'ok' ? '✓' : c.r === 'vacio' ? '—' : '✗'}</span>`;
       }).join('');
       let mapas = '';
-      if (p === 'p3') {
+      if (RC.ENTS[p]) {
         const dec = (t) => (t ? String(t).split(';').filter(Boolean).map((x) => x.split(',').map(Number)) : []);
-        mapas = '<div class="mpp-mapas" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px">' + CT.entradas(3).map((x, i) => {
+        mapas = '<div class="mpp-mapas" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px">' + RC.ENTS[p].map((x, i) => {
           const vv2 = RC.decMapa(vals['m' + i]) || Array(8).fill(0), gr = dec(vals['g' + i]);
           const vg = RC.vistaGrupos(gr), cls = (m) => (vg.some((g) => !g.cubo && g.cells.includes(m)) ? 'gx' : '');
           const sv = window.D2.k.svg(3, vv2, { nombres: CT.nombres(3), cls, grupos: vg.filter((g) => g.cubo).map((g) => g.cubo) });

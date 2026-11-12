@@ -11,7 +11,7 @@
 // Los números en binario se escriben tal cual (101) y se comparan como número.
 // ============================================================
 (function () {
-  const RC = (window.RC = window.RC || {});
+  const RC = (window.RCA = window.RCA || {});
   const CT = window.CT, K = window.D2.k;
   const SID = 'd2-ex1';
 

@@ -6,7 +6,7 @@
 // El circuito se dibuja a mano en papel. Puntajes provisionales.
 // ============================================================
 (function () {
-  const RC = (window.RC = window.RC || {});
+  const RC = (window.RCB = window.RCB || {});
   const CT = window.CT, K = window.D2.k;
   const SID = 'd2-ex2';
 

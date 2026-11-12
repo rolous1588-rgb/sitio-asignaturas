@@ -215,7 +215,7 @@
     CONT(franja() + tarjeta(`<span class="etq">Examen de Electrónica Digital 2</span>
       <h2>Espera a que el docente inicie el examen</h2>
       <ul class="ex-reglas">
-        <li>3 problemas sobre un mismo contador síncrono no secuencial con flip-flops JK, con datos propios: P1 tabla de transición; P2 tabla de J y K; P3 mapas de Karnaugh. <b>Tú armas todo</b>: lo que respondes en un paso se copia solo al siguiente. <b>Al terminar, dibuja a mano alzada en papel el circuito del contador (flip-flops JK y compuertas, según tus ecuaciones) y entrégalo al docente.</b> Puedes usar papel y lápiz como hoja auxiliar; no se entrega, salvo el circuito.</li>
+        <li>2 problemas, cada uno con datos propios y 3 o 4 pasos: <b>Problema 1</b>, un contador síncrono no secuencial con flip-flops JK (tabla de transición, tabla de J y K, mapas de Karnaugh); <b>Problema 2</b>, otro contador, con flip-flops D (tabla de activación del D, tabla de transición, tabla de D, mapas de Karnaugh). <b>Tú armas todo</b>: lo que respondes en un paso se copia solo al siguiente. <b>Al terminar, dibuja a mano alzada en papel el circuito de cada contador (flip-flops y compuertas, según tus ecuaciones) y entrégalos al docente.</b> Puedes usar papel y lápiz como hoja auxiliar; no se entrega, salvo los circuitos.</li>
         <li>Las tablas se llenan tocando cada casilla (? → 1 → 0 → X). Las opciones se eligen con un toque.</li>
                 <li>Toca <b>Enviar problema</b> cada vez que avances. Puedes corregir hasta el final; vale lo último enviado.</li>
         <li>Cuando acabes, toca <b>Terminar examen</b>.</li>
@@ -231,8 +231,8 @@
     vista = k;
     document.body.classList.add('examen');
     marcaDeAgua();
-    const tabs = RC.PROB.map((p) => `<button class="ex-tab ${p === pestana ? 'activa' : ''}" data-tab="${p}"><b>${RC.TITULO[p]}</b><small><span data-prog="${p}">${progreso(p)}</span></small></button>`).join('');
-    CONT(`${franja()}<div class="ex-tabs rc-tabs">${tabs}</div><div id="ex-met">${problemaHTML(pestana)}</div>
+    const tabs = RC.GRUPOS.map((g) => `<div class="ex-gl">${g.t}</div><div class="ex-tabs rc-tabs rc-t${g.ks.length}">${g.ks.map((p) => `<button class="ex-tab ${p === pestana ? 'activa' : ''}" data-tab="${p}"><b>${RC.TAB[p]}</b><small><span data-prog="${p}">${progreso(p)}</span></small></button>`).join('')}</div>`).join('');
+    CONT(`${franja()}<div class="rc-tabsg">${tabs}</div><div id="ex-met">${problemaHTML(pestana)}</div>
       <div class="tarjeta rc-fin"><button class="boton bloque rc-terminar" id="b-terminar">Terminar examen</button>
       <p class="mp-nota">Tus respuestas se guardan en tu celular y llegan al docente cuando tocas «Enviar problema» (y solas cada cierto tiempo). Vale lo último enviado.</p></div>`);
     enlazar();
@@ -267,12 +267,22 @@
   function tablaMulti(p, ps) {
     const filas = [];
     ps.items.forEach((it) => { (filas[it.fila] = filas[it.fila] || []).push(it); });
+    const sp = ps.multi.split3; // estado presente en tres columnas Q2 Q1 Q0, centradas
     const cuerpo = filas.map((its) => {
       const f = its[0];
-      return `<tr class="${f.fijo ? 'pd-fijo' : ''}"><td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2"> → ' + f.sig + '</span>' : ''}</td>` +
+      const est = sp
+        ? f.bits.split('').map((x) => `<td class="mono pd-b3">${x}</td>`).join('') + (f.sig ? f.sig.split('').map((x) => `<td class="mono pd-sg">${x}</td>`).join('') : '')
+        : `<td class="mono pd-est"><span class="pd-e1">${f.bits}</span>${f.sig ? '<span class="pd-e2"> → ' + f.sig + '</span>' : ''}</td>`;
+      return `<tr class="${f.fijo ? 'pd-fijo' : ''}">${est}` +
         its.map((it) => `<td>${it.fijo ? '<span class="pd-fx">X</span>' : botonY(p, it, true)}</td>`).join('') + '</tr>';
     }).join('');
-    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi"><tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
+    let cab;
+    if (sp) {
+      const nx = ps.multi.cols.length;
+      cab = `<tr class="pd-g1"><th colspan="3" class="pd-gh">Estado presente</th>${ps.multi.sigCol ? '<th colspan="3" class="pd-gh">Siguiente (tu tabla)</th>' : ''}<th colspan="${nx}" class="pd-gh">${ps.multi.grupo}</th></tr>` +
+        `<tr class="pd-g2"><th>Q<sub>2</sub></th><th>Q<sub>1</sub></th><th>Q<sub>0</sub></th>${ps.multi.sigCol ? '<th>Q<sub>2</sub><sup>+</sup></th><th>Q<sub>1</sub><sup>+</sup></th><th>Q<sub>0</sub><sup>+</sup></th>' : ''}${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
+    } else cab = `<tr>${ps.multi.cols.map((c) => `<th>${c}</th>`).join('')}</tr>`;
+    return `<div class="pd-tabla"><table class="tt tight pd-tt pd-multi${sp ? ' pd-sp' : ''}">${cab}${cuerpo}</table></div><p class="mp-nota">Toca cada casilla para cambiarla: ? → 1 → 0 → X.</p>`;
   }
   function tablaY(p, ps) {
     const ceros = `<button type="button" class="boton pd-ceros" data-ceros="${p}|${ps.items.map((it) => it.id).join(',')}">Poner 0 en las casillas vacías</button>`;
@@ -294,8 +304,8 @@
   const decGr = (t) => (t ? String(t).split(';').filter(Boolean).map((x) => x.split(',').map(Number)) : []);
   const encGr = (a) => a.map((g) => g.join(',')).join(';');
   function mapasHTML() {
-    const v = est.p3.vals;
-    const tabs = CT.entradas(3).map((x, i) => `<button type="button" class="ct-tab-b${i === mapaAct ? ' sel' : ''}${v['m' + i] != null || v['q' + i] ? ' ok' : ''}" data-mt="${i}">${x.nom}</button>`).join('');
+    const v = est[pestana].vals;
+    const tabs = RC.ENTS[pestana].map((x, i) => `<button type="button" class="ct-tab-b${i === mapaAct ? ' sel' : ''}${v['m' + i] != null || v['q' + i] ? ' ok' : ''}" data-mt="${i}">${x.nom}</button>`).join('');
     return `<div class="ct-tabs">${tabs}</div><div id="zona-mapa" class="pd-zona-mapa"></div>`;
   }
   function htmlExpr(ent, nom) {
@@ -313,7 +323,7 @@
   function pintarMapa() {
     const z = $('#zona-mapa');
     if (!z) return;
-    const i = mapaAct, x = CT.entradas(3)[i], v = est.p3.vals;
+    const i = mapaAct, x = RC.ENTS[pestana][i], v = est[pestana].vals;
     const vals = RC.decMapa(v['m' + i]) || Array(8).fill(0), grupos = decGr(v['g' + i]);
     const ent = RC.decEnt(v['q' + i]) || { c: null, p: [[]] };
     const vg = RC.vistaGrupos(grupos), GCs = window.D2.k.GC;
@@ -321,7 +331,7 @@
     const r = window.D2.k.svg(3, vals, { nombres: CT.nombres(3), cls, grupos: vg.filter((g) => g.cubo).map((g) => g.cubo) });
     const b3 = (n) => n.toString(2).padStart(3, '0');
     z.innerHTML = `<details class="ct-ayuda"><summary>¿Cómo se usa el mapa?</summary>
-        <p><b>1. Llenar:</b> toca cada celda para cambiarla: 0 → 1 → X → 0. Copia la columna ${x.nom} de tu tabla de J y K (el número pequeño de la esquina es el estado en decimal).</p>
+        <p><b>1. Llenar:</b> toca cada celda para cambiarla: 0 → 1 → X → 0. Copia la columna ${x.nom} de tu tabla de ${pestana === 'q4' ? 'D' : 'J y K'} (el número pequeño de la esquina es el estado en decimal).</p>
         <p><b>2. Agrupar:</b> toca las celdas que quieras juntar (se pintan de amarillo) y presiona «Marcar grupo». Para borrar un grupo, toca su etiqueta de abajo.</p>
         <p><b>3. Ecuación:</b> escribe con los botones la ecuación que corresponde a tus marcas: un término por grupo.</p></details>
       <div class="tarjeta"><p class="ct-tit">Mapa de ${x.nom}</p>
@@ -332,13 +342,13 @@
       <div class="ked-grupos">${vg.map((g, k) => { const c = g.cubo ? GCs[g.vi % GCs.length] : '#868e96'; return `<button type="button" class="ked-chip" data-gq="${k}" style="border-color:${c};color:${c}">Grupo ${k + 1}: ${g.cells.slice().sort((a, b) => a - b).map(b3).join(', ')} <span>✕</span></button>`; }).join('')}</div></div>` + htmlExpr(ent, x.nom);
   }
   function salvarP3() {
-    anotarCambio('p3'); guardarEst(); pintarGuardado(); programarAvance();
-    const pr = $('[data-prog="p3"]'); if (pr) pr.textContent = progreso('p3');
+    anotarCambio(pestana); guardarEst(); pintarGuardado(); programarAvance();
+    const pr = $(`[data-prog="${pestana}"]`); if (pr) pr.textContent = progreso(pestana);
     const t = $(`[data-mt="${mapaAct}"]`); if (t) t.classList.add('ok');
     pintarMapa();
   }
   function clickMapa(e) {
-    const i = mapaAct, v = est.p3.vals;
+    const i = mapaAct, v = est[pestana].vals;
     const c = e.target.closest('[data-m]');
     if (c) {
       const m = +c.dataset.m;
@@ -376,7 +386,7 @@
   }
   function montarEspeciales() {
     $$('[data-mt]').forEach((b) => { b.onclick = () => { mapaAct = +b.dataset.mt; selMapa = []; $$('[data-mt]').forEach((x) => x.classList.toggle('sel', x === b)); pintarMapa(); }; });
-    if (pestana === 'p3') { const z = $('#zona-mapa'); pintarMapa(); z.onclick = clickMapa; }
+    if (pestana === 'p3' || pestana === 'q4') { const z = $('#zona-mapa'); pintarMapa(); z.onclick = clickMapa; }
   }
 
   function itemHTML(p, d, it) {
@@ -403,7 +413,7 @@
   }
 
   function enlazar() {
-    $$('[data-tab]').forEach((b) => { b.onclick = () => { pestana = b.dataset.tab; vista = ''; vExamen(); window.scrollTo(0, 0); }; });
+    $$('[data-tab]').forEach((b) => { b.onclick = () => { pestana = b.dataset.tab; mapaAct = 0; modoMapa = 'llenar'; selMapa = []; vista = ''; vExamen(); window.scrollTo(0, 0); }; });
     const cambiar = (inp) => {
       const [p, id] = inp.dataset.c.split('|');
       est[p].vals[id] = inp.value;
@@ -489,7 +499,7 @@
     const sin = RC.PROB.filter((p) => Object.keys(est[p].vals).length && !(est.enviados[p] && est.enviados[p].f === firmaProb(p))).map((p) => RC.TITULO[p]);
     const vacios = RC.PROB.filter((p) => !Object.keys(est[p].vals).length).map((p) => RC.TITULO[p]);
     const extra = (sin.length ? `<br>Tienes cambios sin enviar en ${sin.join(', ')}: se enviarán al terminar.` : '') + (vacios.length ? `<br>Sin responder: ${vacios.join(', ')}.` : '');
-    const ok = await confirmar('¿Terminar el examen?', `Ya no podrás cambiar tus respuestas. Recuerda entregar al docente tu circuito dibujado a mano en papel.${extra}`, 'Cancelar y seguir trabajando', 'Sí, terminar');
+    const ok = await confirmar('¿Terminar el examen?', `Ya no podrás cambiar tus respuestas. Recuerda entregar al docente tus dos circuitos dibujados a mano en papel.${extra}`, 'Cancelar y seguir trabajando', 'Sí, terminar');
     if (!ok) return;
     RC.PROB.forEach((p) => { est.enviados[p] = { f: firmaProb(p), t: ahora() }; });
     est.final = true;
