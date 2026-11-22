@@ -5,8 +5,13 @@
 (function () {
   'use strict';
   const $ = (s, r) => (r || document).querySelector(s);
-  const CAP = 'electroiman', CANAL = 'me-capsula-' + CAP;
-  const PASOS = EM.PASOS, uid = CP.uid();
+  const pedida = (new URLSearchParams(location.search).get('c') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const CAPS = window.CAPSULAS || {};
+  const CAP = CAPS[pedida] ? pedida : 'electroiman', K = CAPS[CAP] || EM;
+  const CANAL = 'me-capsula-' + CAP;
+  const PASOS = K.PASOS, uid = CP.uid();
+  document.title = K.titulo;
+  { const t = document.querySelector('.tit-cap b'); if (t) t.textContent = K.titulo; }
   const cont = $('#cont');
 
   // Votos propios (en esta pestaña): clave sala|encuesta|ronda → opción
@@ -32,7 +37,7 @@
   let t0 = Date.now();
   function esperar() {
     if (ult) return;
-    $('#tit').textContent = EM.titulo;
+    $('#tit').textContent = K.titulo;
     $('#etq').textContent = '';
     cont.innerHTML = `<div class="espera card"><p><b>Conectando con la clase…</b></p><p class="lbl">${Date.now() - t0 > 8000 ? 'Todavía no llega la pantalla del presentador. Si la clase ya empezó, revisa tu conexión de datos.' : 'En unos segundos verás lo mismo que en la TV.'}</p></div>`;
   }
@@ -53,9 +58,9 @@
       vista = null; local = false; $('#local').hidden = true;
       cont.className = ''; cont.innerHTML = '';
       pasoPintado = e.paso; salaPintada = e.sala; firmaEnc = '';
-      $('#etq').textContent = EM.ETAPAS[p.et] + '; pantalla ' + (e.paso + 1) + ' de ' + PASOS.length;
+      $('#etq').textContent = K.ETAPAS[p.et] + '; pantalla ' + (e.paso + 1) + ' de ' + PASOS.length;
       $('#tit').textContent = p.tipo === 'enc' ? (p.pred ? 'Votemos: predicción' : 'Votemos') : p.t;
-      if (p.tipo !== 'enc') vista = EM.vista(cont, p, e.v, 'cel', cambioLocal);
+      if (p.tipo !== 'enc') vista = K.vista(cont, p, e.v, 'cel', cambioLocal);
       window.scrollTo(0, 0);
     } else if (p.tipo !== 'enc' && !local && vista && vista.act) {
       vista.act(e.v);

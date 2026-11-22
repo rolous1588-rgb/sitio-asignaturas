@@ -6,8 +6,12 @@
 (function () {
   'use strict';
   const $ = (s, r) => (r || document).querySelector(s);
-  const CAP = 'electroiman', CANAL = 'me-capsula-' + CAP, KEY = 'cp-panel-' + CAP;
-  const PASOS = EM.PASOS;
+  const pedida = (new URLSearchParams(location.search).get('c') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  const CAPS = window.CAPSULAS || {};
+  const CAP = CAPS[pedida] ? pedida : 'electroiman', K = CAPS[CAP] || EM;
+  const CANAL = 'me-capsula-' + CAP, KEY = 'cp-panel-' + CAP;
+  const PASOS = K.PASOS;
+  document.title = K.titulo + ' (panel)';
 
   const nuevaSala = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   function cargar() { try { const s = JSON.parse(sessionStorage.getItem(KEY) || 'null'); return s && s.sala ? s : null; } catch (e) { return null; } }
@@ -41,12 +45,12 @@
     pintarInfo();
   }
 
-  function predE1() {
-    const e = st.enc.E1; if (!e) return null;
+  function predDe(ref) {
+    const e = st.enc[ref]; if (!e) return null;
     const ronda = Object.keys(e.votos[2] || {}).length ? 2 : 1;
     const v = e.votos[ronda] || {}, n = Object.keys(v).length;
     if (!n) return null;
-    return { c: cuentas(PASOS.find((p) => p.id === 'E1'), v), n };
+    return { c: cuentas(PASOS.find((p) => p.id === ref), v), n };
   }
   function estado() {
     const p = PASOS[st.paso];
@@ -57,7 +61,7 @@
       if (e.fase === 'abierta') o.e.mis = vr;
       if (e.fase === 'mostrada') { o.e.c = cuentas(p, vr); if (e.ronda === 2) o.e.c1 = cuentas(p, e.votos[1]); }
     }
-    if (p.tipo === 'pred') o.v = { pred: predE1() };
+    if (p.tipo === 'pred') o.v = { pred: predDe(p.ref || 'E1') };
     return o;
   }
   function emitir() { if (canal) canal.emitir(estado()); }
@@ -75,7 +79,8 @@
   }
   function pintarEtapas() {
     const p = PASOS[st.paso];
-    $('#etapas').innerHTML = EM.ETAPAS.map((t, i) => `<button data-et="${i}" class="${i === p.et ? 'on' : ''}"><b>${i + 1}</b>${t}</button>`).join('');
+    $('#etapas').innerHTML = K.ETAPAS.map((t, i) => `<button data-et="${i}" class="${i === p.et ? 'on' : ''}"><b>${i + 1}</b>${t}</button>`).join('');
+    const on = $('#etapas .on'); if (on) { const n = $('#etapas'); n.scrollLeft = Math.max(0, on.offsetLeft - n.clientWidth / 2 + on.offsetWidth / 2); }
   }
   $('#etapas').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const i = PASOS.findIndex((p) => p.et === +b.dataset.et); if (i >= 0) ir(i); };
   function pintarInfo() {
@@ -98,7 +103,7 @@
     pintarEtapas(); pintarInfo();
     if (p.tipo === 'enc') pintarEnc(true);
     else {
-      vista = EM.vista(cont, p, p.tipo === 'pred' ? { pred: predE1() } : (st.v[p.id] || null), 'tv', cambioVista);
+      vista = K.vista(cont, p, p.tipo === 'pred' ? { pred: predDe(p.ref || 'E1') } : (st.v[p.id] || null), 'tv', cambioVista);
       $('#ctrl').innerHTML = '';
     }
     pasoPintado = st.paso;
@@ -185,7 +190,7 @@
   function cerrarCapas() { $('#qr-ov').hidden = true; $('#menu').hidden = true; }
   $('#bmenu').onclick = () => {
     const m = $('#menu');
-    m.querySelector('.lista').innerHTML = PASOS.map((p, i) => `<button data-i="${i}" class="${i === st.paso ? 'on' : ''}"><span>${i + 1}</span>${EM.ETAPAS[p.et]}: ${p.tipo === 'enc' ? 'votación ' + p.id : EM.esc(p.t)}</button>`).join('');
+    m.querySelector('.lista').innerHTML = PASOS.map((p, i) => `<button data-i="${i}" class="${i === st.paso ? 'on' : ''}"><span>${i + 1}</span>${K.ETAPAS[p.et]}: ${p.tipo === 'enc' ? 'votación ' + p.id : EM.esc(p.t)}</button>`).join('');
     m.hidden = false;
     const on = m.querySelector('.lista .on'); if (on) on.scrollIntoView({ block: 'center' });
   };

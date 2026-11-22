@@ -8,6 +8,8 @@
   const EM = window.EM = window.EM || {};
   const MU0 = 4e-7 * Math.PI, G = 9.81;
   EM.titulo = 'Electroimán en herradura';
+  window.CAPSULAS = window.CAPSULAS || {};
+  window.CAPSULAS.electroiman = EM;
   EM.DEF = { a: 17, l1: 32, l2: 22, h: 9, N: 220, u1: 1200, u2: 1030, w: 9, d: 12, m: 1.36 };
 
   // ---------------- física ----------------
