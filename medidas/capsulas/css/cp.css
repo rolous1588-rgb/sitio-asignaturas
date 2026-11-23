@@ -87,6 +87,12 @@ svg { display: block; overflow: visible; }
 .badge.no { background: var(--mal-claro); color: var(--mal); border: 1px solid var(--mal); }
 .alert { grid-column: 1 / 3; font-size: .75em; color: var(--mal); font-weight: 700; }
 .nota { font-weight: 600; }
+.selg { grid-column: 1 / 3; display: flex; flex-direction: column; gap: .15em; }
+.selg .sl { font-size: .72em; font-weight: 700; color: var(--texto2); }
+.selg .opts { display: flex; flex-wrap: wrap; gap: .25em; }
+.selg button { border: 1px solid var(--borde2); background: var(--sup); border-radius: .4em; padding: .15em .5em; font-size: .7em; font-weight: 700; color: var(--texto); }
+.selg button.on { background: var(--acento); border-color: var(--acento); color: #fff; }
+.cel .selg button { font-size: 13.5px; padding: 6px 10px; }
 
 /* ---------------- encuestas (TV y celular) ---------------- */
 .preg { font-weight: 700; line-height: 1.25; }
@@ -164,6 +170,11 @@ body.tv { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-d
 .tv .vista.panel .rd { flex: 1 1 36%; font-size: calc(4.6 * var(--u)); }
 .tv .chips { font-size: calc(3.8 * var(--u)); }
 .tv .ley { font-size: calc(3.4 * var(--u)); }
+.tv .vista.predv .txt { flex: 1 1 60%; }
+.tv .vista.predv .fig { flex: 1 1 40%; }
+.tv .vista.predv .big { font-size: calc(4.6 * var(--u)); }
+.tv .vista.predv .op { font-size: calc(3.7 * var(--u)); min-height: calc(6.4 * var(--u)); padding-top: calc(.2 * var(--u)); padding-bottom: calc(.2 * var(--u)); }
+.tv .vista.predv .txt { gap: calc(.8 * var(--u)); }
 .tv .vista.leyv .txt { flex: 1 1 56%; font-size: calc(3.9 * var(--u)); }
 .tv .vista.leyv .fig { flex: 1 1 44%; }
 .tv .vista.leyv .ley { font-size: calc(3.2 * var(--u)); }
