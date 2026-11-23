@@ -93,6 +93,15 @@ svg { display: block; overflow: visible; }
 .selg button { border: 1px solid var(--borde2); background: var(--sup); border-radius: .4em; padding: .15em .5em; font-size: .7em; font-weight: 700; color: var(--texto); }
 .selg button.on { background: var(--acento); border-color: var(--acento); color: #fff; }
 .cel .selg button { font-size: 13.5px; padding: 6px 10px; }
+/* botones de acción de un panel (refrigeración magnética) */
+.acc { display: flex; flex-direction: column; gap: .3em; width: 100%; }
+.acc .btn { font-size: .74em; text-align: left; padding: .3em .6em; }
+.acc .btn.ca { color: var(--mal); border-color: #e3a29a; }
+.acc .btn.fr { color: var(--acento); border-color: #9dbbe3; }
+.cel .acc .btn { font-size: 15px; padding: 10px 12px; }
+.badge.az { background: var(--acento-claro); color: var(--acento); border: 1px solid var(--acento); }
+.badge.neu { background: var(--sup2); color: var(--texto); border: 1px solid var(--borde2); }
+.alert.pista { color: var(--texto2); font-weight: 600; }
 
 /* ---------------- encuestas (TV y celular) ---------------- */
 .preg { font-weight: 700; line-height: 1.25; }
@@ -168,6 +177,9 @@ body.tv { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-d
 .tv .vista.panel .ctl-col { flex: 1 1 36%; font-size: calc(4.4 * var(--u)); }
 .tv .vista.panel .fig { flex: 1 1 28%; }
 .tv .vista.panel .rd { flex: 1 1 36%; font-size: calc(4.6 * var(--u)); }
+.tv .vista.panel.fg .ctl-col { flex: 1 1 27%; }
+.tv .vista.panel.fg .fig { flex: 1 1 44%; }
+.tv .vista.panel.fg .rd { flex: 1 1 29%; font-size: calc(4.2 * var(--u)); }
 .tv .chips { font-size: calc(3.8 * var(--u)); }
 .tv .ley { font-size: calc(3.4 * var(--u)); }
 .tv .vista.predv .txt { flex: 1 1 60%; }
