@@ -334,8 +334,8 @@
   }
 
   function bloqueRevision(a, r) {
-    const pegos = ((a.est && a.est.pegados) || []).map((x) => `<div class="aviso mal"><b>Pegado en la pregunta ${x.q}</b> (${x.n} caracteres; ${hora(x.t)}): descuento 30 pts<br><span class="mp-nota">${esc(String(x.texto || '').slice(0, 600))}</span></div>`).join('');
-    const preguntas = EX.RAZON.map((q, i) => `<div class="mpp-det"><b>Pregunta ${i + 1}; máximo ${q.pts} pts</b>
+    const pegos = ((a.est && a.est.pegados) || []).map((x) => `<div class="aviso mal"><b>Pegado en ${esc((EX.RAZON[x.q - 1] || {}).etq || 'la pregunta ' + x.q)}</b> (${x.n} caracteres; ${hora(x.t)}): descuento 30 pts<br><span class="mp-nota">${esc(String(x.texto || '').slice(0, 600))}</span></div>`).join('');
+    const preguntas = EX.RAZON.map((q, i) => `<div class="mpp-det"><b>${q.etq}; máximo ${q.pts} pts</b>
       <p class="mp-nota">${esc(String(q.t).replace(/\\\(|\\\)/g, ''))}</p>
       <p><b>Respuesta del estudiante:</b> ${esc((a.est && a.est.razon && a.est.razon[i]) || '(sin respuesta)')}</p>
       <label class="mpp-lab">Puntos (0 a ${q.pts})<input type="number" min="0" max="${q.pts}" step="0.5" data-rq="${i}" value="${r.rq && typeof r.rq[i] === 'number' ? r.rq[i] : ''}"></label></div>`).join('');
@@ -489,7 +489,7 @@
     const rev = (await leerNotasFila()).revision || {};
     const cel = (v) => { const s = String(v == null ? '' : v); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const num = (x) => (x == null ? '' : String(Math.round(x * 100) / 100).replace('.', ','));
-    const filas = [['C.U.', 'C.I.', 'Apellidos', 'Nombres', 'Carrera', 'Bisección (25)', 'Falsa posición (25)', 'Newton-Raphson (25)', 'Solución (75)', 'Pregunta 1 (8)', 'Pregunta 2 (9)', 'Pregunta 3 (8)', 'Razonamiento (25)', 'Pegados', 'Descuento', 'Nota final (100)', 'Salidas', 'Segundos fuera', 'Pérdidas de foco', 'Recargas', 'Celulares', 'Último guardado', 'Código', 'Observación'].map(cel).join(';')];
+    const filas = [['C.U.', 'C.I.', 'Apellidos', 'Nombres', 'Carrera', 'Bisección (25)', 'Falsa posición (25)', 'Newton-Raphson (25)', 'Solución (75)', 'Problema 1 interpretación (9)', 'Problema 2 interpretación (8)', 'Problema 3 interpretación (8)', 'Interpretación total (25)', 'Pegados', 'Descuento', 'Nota final (100)', 'Salidas', 'Segundos fuera', 'Pérdidas de foco', 'Recargas', 'Celulares', 'Último guardado', 'Código', 'Observación'].map(cel).join(';')];
     alumnos.forEach((a) => {
       const s = a.sal || {};
       const [ap, no] = String(a.nombre || '').split(', ');

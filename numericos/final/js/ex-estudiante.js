@@ -233,8 +233,8 @@
       <ul class="ex-reglas">
         <li>Calculadora simple. <b>4 decimales</b>, redondeando al más cercano; solo se redondea lo que anotas y sigues con el valor anotado.</li>
         <li>Puedes escribir con coma o con punto decimal.</li>
-        <li>Tres problemas de Física 1 con 3 iteraciones cada uno: bisección, falsa posición y Newton-Raphson, <b>25 puntos</b> cada uno.</li>
-        <li>Razonamiento: 3 preguntas, <b>25 puntos</b>. Pegar texto de otra fuente descuenta <b>30 puntos</b> por cada vez.</li>
+        <li>Tres problemas de Física 1 con 3 iteraciones cada uno: bisección, falsa posición y Newton-Raphson, <b>25 puntos</b> de solución cada uno.</li>
+        <li>Al final de cada problema hay una pregunta de <b>interpretación</b> del resultado: 9 + 8 + 8 = <b>25 puntos</b>. Pegar texto de otra fuente descuenta <b>30 puntos</b> por cada vez.</li>
         <li>Las filas <b>no se bloquean</b>: puedes corregir hasta el final. Toca <b>Guardar fila</b> cada vez; vale lo último guardado.</li>
         <li>En Newton eliges la derivada <b>una sola vez</b>.</li>
         <li><b>No salgas de esta página ni bloquees el celular:</b> cada salida queda registrada para el docente. La pantalla se mantiene encendida sola.</li>
@@ -249,17 +249,11 @@
     vista = 'curso-' + pestana;
     document.body.classList.add('examen');
     marcaDeAgua();
-    const tabs = EX.MET.map((m) => `<button class="ex-tab ${m === pestana ? 'activa' : ''}" data-tab="${m}"><b>${EX.TITULO[m]}</b><small>25 pts; <span data-prog="${m}">${progreso(m)}</span></small></button>`).join('')
-      + `<button class="ex-tab ${pestana === 'rz' ? 'activa' : ''}" data-tab="rz"><b>Razonamiento</b><small>25 pts; ${razonHecho()}</small></button>`;
-    CONT(`<div class="ex-tabs">${tabs}</div><div id="ex-met">${pestana === 'rz' ? razonHTML() : metodoHTML(pestana)}</div>
+    const tabs = EX.MET.map((m) => `<button class="ex-tab ${m === pestana ? 'activa' : ''}" data-tab="${m}"><b>${EX.TITULO[m]}</b><small>25 pts de solución + ${EX.razonPts(m)} de interpretación; <span data-prog="${m}">${progreso(m)}</span></small></button>`).join('');
+    CONT(`<div class="ex-tabs">${tabs}</div><div id="ex-met">${metodoHTML(pestana)}</div>
       <p class="mp-nota ex-pie">Código ${codigo()}. Tus respuestas se guardan en tu celular y se envían al docente cuando tocas «Guardar fila» (y solas cada cierto tiempo). Vale lo último guardado.</p>`);
     enlazar();
     pintarGuardado();
-  }
-
-  function razonHecho() {
-    const n = (est.razon || []).filter((t) => t && t.trim()).length;
-    return `${n}/3 escritas`;
   }
 
   function progreso(m) {
@@ -271,7 +265,10 @@
     const d = EX.datos(m, alumno.carnet);
     const tnum = (x) => String(x).replace('.', '{,}');
     const ini = m === 'nr' ? `\\(x_0 = ${tnum(d.x0)}\\)` : `\\(X_a = ${tnum(d.a)}\\);\\(\\;X_b = ${tnum(d.b)}\\)`;
-    let h = tarjeta(`<span class="etq">${EX.TITULO[m]}; 25 puntos</span>
+    // orden: enunciado → ecuación que resuelves → tabla → interpretación del resultado
+    let h = tarjeta(`<span class="etq">${EX.TITULO[m]}; 25 puntos de solución</span>
+      <p class="ex-datos">${EX.CONTEXTO(m, d)}</p>
+      <p>Ecuación que resuelves:</p>
       <div class="ex-func">\\[${d.tex}\\]</div>
       <p class="ex-datos">${m === 'nr' ? 'Valor inicial' : 'Intervalo inicial'}: ${ini}. Haz <b>3 iteraciones</b> con <b>4 decimales</b>.</p>`);
     const em = est[m];
@@ -288,19 +285,19 @@
     }
     if (listo) {
       for (let n = 1; n <= MP.FILAS; n++) h += filaHTML(m, d, n);
-      h += tarjeta(`<span class="etq">Enunciado</span><p class="ex-datos">${EX.CONTEXTO(m, d)}</p><p class="mp-nota">Las preguntas de razonamiento están en la pestaña «Razonamiento».</p>`);
+      h += razonHTML(m);
     }
     return h;
   }
 
-  // pestaña de razonamiento: tres preguntas (25 pts en total), revisadas por el docente
-  function razonHTML() {
-    let h = tarjeta(`<span class="etq">Razonamiento; 25 puntos</span>
-      <p class="ex-datos">Responde con <b>tus propios números</b> y con tus palabras.</p>
-      <div class="aviso duda"><b>Importante:</b> si pegas en estas casillas un texto de otra fuente (internet, IA, otro compañero), se descuentan <b>30 puntos</b> por cada vez.</div>`);
+  // interpretación de un problema (pregunta de razonamiento al final de su tabla), revisada por el docente
+  function razonHTML(m) {
+    let h = tarjeta(`<div class="aviso duda"><b>Importante:</b> si pegas en estas casillas un texto de otra fuente (internet, IA, otro compañero), se descuentan <b>30 puntos</b> por cada vez.</div>`);
     EX.RAZON.forEach((q, i) => {
-      h += tarjeta(`<label class="ex-razon"><b>Pregunta ${i + 1}; ${q.pts} pts.</b> ${q.t}
-        <textarea data-rz="${i}" rows="5" placeholder="Escribe tu razonamiento">${II.esc((est.razon && est.razon[i]) || '')}</textarea></label>`);
+      if (q.m !== m) return;
+      h += tarjeta(`<label class="ex-razon"><span class="etq">Interpretación; ${q.pts} puntos</span>
+        <span>${q.t}</span>
+        <textarea data-rz="${i}" rows="5" placeholder="Explica con tus propios números">${II.esc((est.razon && est.razon[i]) || '')}</textarea></label>`);
     });
     return h;
   }
@@ -485,7 +482,7 @@
       <div class="mp-res"><div class="grande">${II.fmt(mia.n, 2)}<small> / 100</small></div></div>
       <table class="mp-tabla"><tr><th>Solución (75 %)</th><th>Puntos</th></tr>${EX.MET.map((m) => `<tr><td>${EX.TITULO[m]}</td><td>${II.fmt(pSol(m), 2)} / 25</td></tr>`).join('')}
         <tr><th>Total de solución</th><th>${II.fmt(sol, 2)} / 75</th></tr></table>
-      <table class="mp-tabla"><tr><th>Razonamiento (25 pts)</th><th>Puntos</th></tr>${EX.RAZON.map((q, i) => `<tr><td>Pregunta ${i + 1}</td><td>${II.fmt(rq[i] || 0, 2)} / ${q.pts}</td></tr>`).join('')}
+      <table class="mp-tabla"><tr><th>Razonamiento (25 pts)</th><th>Puntos</th></tr>${EX.RAZON.map((q, i) => `<tr><td>${q.etq}</td><td>${II.fmt(rq[i] || 0, 2)} / ${q.pts}</td></tr>`).join('')}
         <tr><th>Total de razonamiento</th><th>${II.fmt(mia.razon || 0, 2)} / 25</th></tr></table>
       ${mia.pegados ? `<div class="aviso mal"><b>Descuento por pegado:</b> ${mia.pegados} vez(es) × 30 = −${II.fmt(mia.pen || 0, 0)} puntos.</div>` : ''}
       <p class="mp-nota"><b>Cuenta:</b> ${II.fmt(sol, 2)} + ${II.fmt(mia.razon || 0, 2)}${mia.pen ? ' − ' + II.fmt(mia.pen, 0) : ''} = <b>${II.fmt(mia.n, 2)} / 100</b></p>

@@ -76,16 +76,19 @@
     return `Un proyectil sale desde una altura \\(h_0 = ${tn(p.h0)}\\,\\mathrm{m}\\) con velocidad \\(v = ${tn(p.v)}\\,\\mathrm{m/s}\\). Su alcance horizontal es \\(R(\\theta)=\\frac{v\\cos\\theta}{g}\\left(v\\sin\\theta+\\sqrt{v^2\\sin^2\\theta+2gh_0}\\right)\\), con \\(\\theta\\) en radianes. Halla el ángulo \\(\\theta\\) para que el alcance sea \\(${tn(p.d)}\\,\\mathrm{m}\\).`;
   };
 
-  // Parte de razonamiento: tres preguntas (25 pts en total), revisadas por el docente
+  // Interpretación de cada problema (25 pts en total), revisada por el docente. «m» = método del problema.
+  // Va al final de su propio problema, después de la tabla. El índice (0, 1, 2) es el que se guarda en est.razon.
   EX.RAZON = [
-    { pts: 8, t: 'Tu raíz del Problema 2 da un tiempo \\(t\\). ¿Qué significa físicamente ese valor? ¿Qué pasaría con la cantidad de iteraciones de falsa posición si el intervalo inicial fuera mucho más grande? Explica con tus datos.' },
-    { pts: 9, t: 'En el Problema 3, ¿por qué un valor inicial cercano a un máximo de la función podría hacer divergir Newton-Raphson? Usa tu gráfica.' },
-    { pts: 8, t: 'Compara bisección y falsa posición con tus resultados de los Problemas 1 y 2: ¿cuál necesitó menos iteraciones y por qué?' }
+    { m: 'bis', etq: 'Problema 1 · interpretación', pts: 9, t: 'Con el instante \\(t\\) que obtuviste, calcula la velocidad \\(v(t)=v_t\\left(1-e^{-t/\\tau}\\right)\\). ¿Qué fracción de \\(v_t\\) alcanzó el cuerpo? Explica por qué no llegó a la velocidad terminal en ese tiempo. Comprueba tu \\(t\\) sustituyéndolo en \\(x(t)\\) y di si el resultado tiene sentido físico.' },
+    { m: 'fp', etq: 'Problema 2 · interpretación', pts: 8, t: 'Compara tu \\(t\\) con \\(d/v_t\\), el tiempo que tardaría el cuerpo si cayera a velocidad constante \\(v_t\\). ¿Tardó más o menos? Explica por qué, usando que la resistencia crece con la velocidad (término \\(\\ln\\cosh\\)).' },
+    { m: 'nr', etq: 'Problema 3 · interpretación', pts: 8, t: 'Tu ángulo \\(\\theta\\) da el alcance \\(d\\). ¿Es el ángulo que da el alcance máximo? Explica por qué, con \\(h_0 > 0\\), ese ángulo es menor que \\(45^\\circ\\). Usa tu gráfica: ¿qué pasaría con Newton-Raphson si el valor inicial estuviera cerca de un máximo de \\(R(\\theta)\\)?' }
   ];
   EX.RAZON_MAX = 25;
+  // puntos de interpretación de un método (suma de sus preguntas)
+  EX.razonPts = (m) => EX.RAZON.filter((q) => q.m === m).reduce((s, q) => s + q.pts, 0);
 
   EX.MET = ['bis', 'fp', 'nr'];
-  EX.TITULO = { bis: 'Bisección: caída con arrastre lineal', fp: 'Falsa posición: caída con arrastre cuadrático', nr: 'Newton-Raphson: ángulo de lanzamiento' };
+  EX.TITULO = { bis: 'Problema 1 · Bisección: caída con arrastre lineal', fp: 'Problema 2 · Falsa posición: caída con arrastre cuadrático', nr: 'Problema 3 · Newton-Raphson: ángulo de lanzamiento' };
   // puntos crudos del motor base; el examen los escala a EX.PESO_MET por método
   EX.MAX = { bis: 30, fp: 35, nr: 35 };
   EX.PESO_MET = 25;   // puntos de solución por método (3 × 25 = 75)
