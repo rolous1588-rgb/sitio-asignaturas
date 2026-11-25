@@ -547,13 +547,36 @@
     if (ahoraEsc && !e.ini) { e.n++; e.ini = Date.now(); guardarEst(); enviarAvance('escritorio'); }
     else if (!ahoraEsc && e.ini) { e.seg += Math.round((Date.now() - e.ini) / 1000); e.ini = null; guardarEst(); enviarAvance('escritorio fin'); }
   }
+  // Pantalla en blanco: cubre todo mientras el estudiante usa la vista de escritorio o una ventana flotante
+  // (p. ej., Gemini). Las preguntas no se ven; al volver a la pantalla normal, reaparecen con lo escrito.
+  const MSG_ESC = 'Este examen solo se puede resolver en la vista de celular: tienes activado «Sitio de escritorio».';
+  const MSG_FOCO = 'Saliste de la pantalla del examen: una ventana flotante (como Gemini) u otra app quedó encima.';
+  let blancoFoco = false;
+  function mostrarBlanco(motivo) {
+    let c = $('#capa-blanca');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'capa-blanca';
+      c.setAttribute('role', 'alert');
+      c.style.cssText = 'position:fixed;inset:0;background:#ffffff;color:#16202c;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:1.05rem;';
+      document.body.appendChild(c);
+    }
+    c.innerHTML = `<div style="max-width:420px"><h2 style="margin:0 0 12px">Vuelve a la pantalla normal</h2>
+      <p>${II.esc(motivo)}</p>
+      <p><b>Desactiva «Sitio de escritorio»</b> en el menú del navegador (los tres puntos) y cierra cualquier ventana flotante. Las preguntas vuelven solas, con lo que ya escribiste.</p>
+      <p>Este intento queda registrado para el docente y el reloj sigue corriendo.</p></div>`;
+    c.style.display = 'flex';
+  }
+  function quitarBlanco() {
+    const c = $('#capa-blanca');
+    if (c) c.style.display = 'none';
+  }
   function vBloqueoEscritorio() {
     if (vista === 'bloqueo-esc') return;
     vista = 'bloqueo-esc';
     document.body.classList.remove('examen');
-    CONT(tarjeta(`<span class="etq">Examen</span><h2>Vista de escritorio activada</h2>
-      <p>Este examen solo se puede resolver en la vista de celular. Las preguntas están ocultas.</p>
-      <p><b>Desactiva «Sitio de escritorio»</b> en el menú del navegador (los tres puntos) y las preguntas vuelven solas, con lo que ya escribiste. Este intento queda registrado para el docente y el reloj sigue corriendo.</p>`));
+    document.body.style.backgroundImage = '';
+    mostrarBlanco(MSG_ESC);
   }
   setInterval(() => { if (alumno && est && fase() === 'curso' && esEscritorio() !== escrAntes) pintar(); }, 1500);
   window.addEventListener('resize', () => { if (alumno && est && fase() === 'curso' && esEscritorio() !== escrAntes) pintar(); });
@@ -566,6 +589,7 @@
       anotarEscritorio(esc);
       if (esc !== escrAntes) { escrAntes = esc; vista = ''; }
       if (esc) return vBloqueoEscritorio();
+      if (!blancoFoco) quitarBlanco();
     } else if (alumno && est && est.sal && est.sal.escr && est.sal.escr.ini) anotarEscritorio(false);
     if (f === 'registro') return vEntrada();
     if (f === 'cargando') { if (vista !== 'cargando') { vista = 'cargando'; CONT(tarjeta('<p>Conectando con el examen…</p>')); } return; }
@@ -607,6 +631,7 @@
     }
     sincronizarHora();
     leerEstado();
+    volverDeFoco();
     if (est && est.sal && est.sal.abierta && !est.final) {
       const seg = cerrarSalidaAbierta();
       guardarEst();
@@ -619,9 +644,23 @@
       }
     }
   });
-  window.addEventListener('blur', (e) => { if (e.target === window && !document.hidden && vigilando()) blurT0 = Date.now(); });
+  // al perder el foco (ventana flotante encima) se cubre con la pantalla en blanco
+  window.addEventListener('blur', (e) => {
+    if (e.target !== window || document.hidden || !vigilando()) return;
+    blurT0 = Date.now();
+    blancoFoco = true;
+    mostrarBlanco(MSG_FOCO);
+  });
+  function volverDeFoco() {
+    if (!blancoFoco) return;
+    blancoFoco = false;
+    if (esEscritorio()) mostrarBlanco(MSG_ESC);
+    else quitarBlanco();
+  }
   window.addEventListener('focus', (e) => {
-    if (e.target !== window || !blurT0) return;
+    if (e.target !== window) return;
+    volverDeFoco();
+    if (!blurT0) return;
     const d = Date.now() - blurT0;
     const ocultaEnMedio = ultimoHidden >= blurT0 || Date.now() - salidaCerradaEn < 3000;
     blurT0 = 0;
