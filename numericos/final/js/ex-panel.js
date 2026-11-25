@@ -569,6 +569,7 @@
   }
 
   // ---------------- verificar en el aula (por código) ----------------
+  let claveVer = '';
   function pintarVer() {
     const box = $('#ver-res');
     if (!box) return;
@@ -576,8 +577,20 @@
     const a = alumnos.find((x) => codigoDe(x) === buscado);
     if (!a) { box.innerHTML = `<div class="aviso mal">Ningún registro con el código ${esc(buscado)}.</div>`; return; }
     const ya = verDe(a);
+    const obs = observadoDe(a);
+    const pen = (ex.pen || {})[a.carnet];
+    // solo se vuelve a dibujar si cambió algo (para no borrar lo que el docente escribe en la penalización)
+    const clave = JSON.stringify([buscado, ya, obs, pen || null, (ex.ver || {})[a.carnet] || null]);
+    if (clave === claveVer && box.children.length) return;
+    claveVer = clave;
     box.innerHTML = `<div class="rc-ver-res ${ya ? 'ok' : ''}"><b>${esc(a.nombre)}</b><small>C.U. ${esc(a.carnet)}; ${esc(a.info.carrera || '')}; código ${esc(codigoDe(a))}</small>
-      ${ya ? `<div class="aviso ok">Ya verificado a las ${hora(ex.ver[a.carnet].t)}.</div>` : '<button class="boton prim bloque" id="b-confirmar">Confirmar: está en el aula</button>'}</div>`;
+      ${ya ? `<div class="aviso ok">Ya verificado a las ${hora(ex.ver[a.carnet].t)}.</div>` : '<button class="boton prim bloque" id="b-confirmar">Confirmar: está en el aula</button>'}
+      <div class="exp-bt" style="margin-top:8px">${obs ? '<button class="boton" id="v-desobs">Quitar observación</button>' : '<button class="boton" id="v-obs" style="border-color:var(--mal);color:var(--mal)">Examen observado</button>'}</div>
+      <div class="mpp-det"><b>Penalizar${pen ? `: −${II.fmt(pen.pts, 2)}` : ''}</b>${pen ? `<div class="mp-nota">Motivo: ${esc(pen.motivo || '—')}</div>` : ''}
+        <label class="mpp-lab">Puntos a restar<input id="v-pts" inputmode="decimal" autocomplete="off" placeholder="por ejemplo, 30"></label>
+        <label class="mpp-lab">Motivo (lo verá el estudiante)<input id="v-mot" maxlength="300" autocomplete="off"></label>
+        <div class="fila-bt"><button class="boton prim" id="v-pen">Guardar penalización</button>${pen ? '<button class="boton" id="v-pen-quitar">Quitar</button>' : ''}</div>
+        <div id="v-msg" class="mp-nota"></div></div></div>`;
     const b = $('#b-confirmar');
     if (b) b.onclick = async () => {
       b.disabled = true;
@@ -586,6 +599,21 @@
       const i = $('#i-cod'); if (i) { i.value = ''; i.focus(); }
       pintarVer();
     };
+    const vo = $('#v-obs');
+    if (vo) dobleToque(vo, 'Toca otra vez: bloquear su examen', () => marcarObservado(a, true));
+    const vdo = $('#v-desobs');
+    if (vdo) dobleToque(vdo, 'Toca otra vez: quitar', () => marcarObservado(a, false));
+    const vp = $('#v-pen');
+    if (vp) vp.onclick = async () => {
+      const v = Number(String($('#v-pts').value).trim().replace(',', '.'));
+      const motivo = String($('#v-mot').value || '').trim().slice(0, 300);
+      if (!isFinite(v) || v <= 0 || v > 100) { $('#v-msg').textContent = 'Escribe los puntos a restar: un número entre 0 y 100 (por ejemplo, 30).'; return; }
+      vp.disabled = true;
+      await guardarPenalidad(a, v, motivo);
+      vp.disabled = false;
+    };
+    const vpq = $('#v-pen-quitar');
+    if (vpq) dobleToque(vpq, 'Toca otra vez: quitar', () => quitarPenalidad(a));
   }
 
   // ---------------- armado ----------------
