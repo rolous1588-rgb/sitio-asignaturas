@@ -112,7 +112,28 @@
     ex = data[0].extra || {};
     if (texto) aviso(texto, 'ok');
     pintarControl(true);
+    pintarListas();
     return true;
+  }
+  // examen observado: bloquea el celular del estudiante (extra.obs[carnet] = hora); se quita con «Quitar observación»
+  const observadoDe = (a) => !!(ex.obs && ex.obs[a.carnet]);
+  async function marcarObservado(a, on) {
+    await leerEstado();
+    const obs = { ...(ex.obs || {}) };
+    if (on) obs[a.carnet] = iso(ahora()); else delete obs[a.carnet];
+    return cambiar({ obs }, on ? `Examen observado: ${a.nombre}.` : `Observación quitada: ${a.nombre}.`);
+  }
+  // penalización del docente en puntos, con motivo que verá el estudiante (extra.pen[carnet] = { pts, motivo, hora })
+  async function guardarPenalidad(a, pts, motivo) {
+    await leerEstado();
+    const pen = { ...(ex.pen || {}), [a.carnet]: { pts: Math.round(pts * 100) / 100, motivo, hora: iso(ahora()) } };
+    return cambiar({ pen }, `Penalización guardada: ${a.nombre} (−${II.fmt(pts, 2)}).${ex.publicado ? ' Vuelve a publicar para que le llegue.' : ''}`);
+  }
+  async function quitarPenalidad(a) {
+    await leerEstado();
+    const pen = { ...(ex.pen || {}) };
+    delete pen[a.carnet];
+    return cambiar({ pen }, `Penalización quitada: ${a.nombre}.${ex.publicado ? ' Vuelve a publicar para que le llegue.' : ''}`);
   }
   // confirmación del docente: el código del panel coincide con el que muestra el celular del estudiante
   const verDe = (a) => !!(ex.ver && ex.ver[a.carnet] && ex.ver[a.carnet].c === codigoDe(a));
@@ -284,10 +305,12 @@
   const RQ_MAX = EX.RAZON.map((q) => q.pts);
   const PEN_PEGADO = 30;
   const pegadosDe = (a) => ((a.est && a.est.pegados) || []).length;
+  // penalización manual del docente (puntos), guardada en extra.pen
+  const penDocente = (a) => Number(((ex.pen || {})[a.carnet] || {}).pts) || 0;
   const NOTA_FINAL = (a, rq) => {
     const sol = EX.MET.reduce((s, m) => s + a.cal.res[m].pts, 0);
     const raz = (rq || []).reduce((s, v) => s + (Number(v) || 0), 0);
-    return Math.max(0, Math.round((sol + raz - PEN_PEGADO * pegadosDe(a)) * 100) / 100);
+    return Math.max(0, Math.round((sol + raz - PEN_PEGADO * pegadosDe(a) - penDocente(a)) * 100) / 100);
   };
   async function leerNotasFila() {
     const { data } = await II.sb.from('estado_sesion').select('extra').eq('sesion', SID + '-notas').maybeSingle();
@@ -309,6 +332,7 @@
   }
 
   async function publicar() {
+    await leerEstado();
     await cargarDatos(true);
     const extra = await leerNotasFila();
     const rev = extra.revision || {};
@@ -319,12 +343,15 @@
       const r = filaRevision(a, rev);
       const rq = r.rq || [0, 0, 0];
       const raz = Math.round(rq.reduce((s, v) => s + (Number(v) || 0), 0) * 100) / 100;
-      const pen = PEN_PEGADO * pegadosDe(a);
+      const manual = (ex.pen || {})[a.carnet];
+      const pen = PEN_PEGADO * pegadosDe(a) + penDocente(a);
       notas[a.carnet] = {
         n: NOTA_FINAL(a, rq), h: EX.firma(a.est),
         p: { bis: a.cal.res.bis.pts, fp: a.cal.res.fp.pts, nr: a.cal.res.nr.pts },
         sol: Math.round(a.cal.total * 100) / 100,
         rq, razon: raz, pegados: pegadosDe(a), pen,
+        penM: manual ? { pts: Math.round(penDocente(a) * 100) / 100, motivo: String(manual.motivo || ''), hora: manual.hora || null } : null,
+        obs: observadoDe(a) ? (ex.obs[a.carnet] || true) : null,
         fb: r.fb || ''
       };
     });
@@ -363,6 +390,17 @@
       const der = m === 'nr' ? `<div class="mpp-dfila"><span class="mpp-cel ${e.der ? (e.der.ok ? 'ok' : 'mal') : ''}">derivada ${e.der ? (e.der.ok ? '✓' : '✗') : 'sin elegir'}</span></div>` : '';
       return `<div class="mpp-det"><b>${EX.TITULO[m]}: ${pts(r.pts)}/25</b><div class="mp-nota mono">${esc(EX.datos(m, a.carnet).tex)}</div>${der}${filas}</div>`;
     }).join('');
+    const obsHora = (ex.obs || {})[a.carnet];
+    const pen = (ex.pen || {})[a.carnet];
+    const bloquePen = `<div class="mpp-det rc-pen"><b>Penalización del docente${pen ? `: −${II.fmt(pen.pts, 2)}` : ''}</b>
+        <p class="mp-nota">Puntos que se restan a la nota final (mínimo 0). El estudiante verá la penalización y el motivo. Si ya publicaste, vuelve a publicar.</p>
+        <label class="mpp-lab">Puntos a restar<input id="pen-pts" inputmode="decimal" autocomplete="off" value="${pen ? esc(String(pen.pts).replace('.', ',')) : ''}" placeholder="por ejemplo, 30"></label>
+        <label class="mpp-lab">Motivo (lo verá el estudiante)<textarea id="pen-mot" rows="2" maxlength="300" placeholder="por ejemplo, uso de IA durante el examen">${esc(pen ? pen.motivo || '' : '')}</textarea></label>
+        <div class="fila-bt"><button class="boton prim" id="pen-guardar">Guardar penalización</button>${pen ? '<button class="boton" id="pen-quitar">Quitar penalización</button>' : ''}</div>
+        <div id="pen-msg" class="mp-nota"></div></div>`;
+    const botonObs = obsHora
+      ? '<button class="boton" id="d-desobs">Quitar observación</button>'
+      : '<button class="boton" id="d-obs" style="border-color:var(--mal);color:var(--mal)">Examen observado</button>';
     const salidas = (s.lista || []).map((x) => `<span class="mpp-cel mal">min ${x.min}: ${x.seg} s${x.met ? ' (' + esc(EX.TITULO[x.met] || x.met) + ')' : ''}</span>`).join('') || '<span class="mp-nota">Ninguna.</span>';
     const escr = s.escr && (s.escr.n || s.escr.ini) ? `<span class="mpp-cel mal">Vista de escritorio: ${s.escr.n} vez/veces, ${s.escr.seg} s${s.escr.ini ? ' (activa al último envío)' : ''}</span>` : '';
     const cambios = (s.cambios || []).map((x) => `<span class="mpp-cel red">${esc(x.f)}: ${x.s} s después de volver</span>`).join('');
@@ -371,15 +409,30 @@
       <p class="mp-nota">C.U. ${esc(a.carnet)}; C.I. ${esc(a.info.ci || '—')}; ${esc(a.info.carrera || '')}<br>
         Código ${esc(codigoDe(a))}; ${a.ndisp} celular${a.ndisp === 1 ? '' : 'es'} (${esc(s.disp || a.info.tipo || '—')}); entró ${hora(a.primero)}; último guardado ${hora(a.snapT)} (${a.nsnap} envíos)</p>
       <div class="mpp-det ex-verif"><b>Código ${esc(codigoDe(a))}</b> — ${verificado ? 'confirmado: coincide con el que muestra su celular.' : 'mira su celular: ¿muestra el mismo número?'}<br><button class="boton ${verificado ? '' : 'prim'}" id="d-ver">${verificado ? 'Quitar confirmación' : 'Confirmar: coincide ✓'}</button></div>
+      ${bloquePen}
       <div class="mpp-det"><b>Salidas de la página: ${s.n || 0} (${s.seg || 0} s en total; la más larga ${s.max || 0} s)</b><div class="mpp-dfila">${salidas}${escr}</div>
         <p class="mp-nota">Pérdidas de foco sin salir: ${(s.foco && s.foco.n) || 0} (${(s.foco && s.foco.seg) || 0} s); recargas: ${s.recargas || 0}; pantalla encendida: ${esc(s.pantalla || '—')}${s.abierta ? '; <b>fuera de la página ahora</b>' : ''}</p>
         ${cambios ? `<p class="mp-nota">Cambió respuestas poco después de volver:</p><div class="mpp-dfila">${cambios}</div>` : ''}</div>
       <div class="mpp-det"><b>Solución (automática): ${pts(a.cal.total)}/75</b></div>${metodos}
       <div id="bloque-rev">${a.nsnap > 0 ? '<p class="mp-nota">Cargando revisión…</p>' : '<p class="mp-nota">Sin envíos: no requiere revisión (0).</p>'}</div>
-      <div class="fila-bt">${ex.abre && !a.hab ? `<button class="boton prim" id="d-hab">Habilitar</button>` : ''}<button class="boton prim" id="d-cerrar">Cerrar</button></div></div></div>`);
+      <div class="fila-bt">${ex.abre && !a.hab ? `<button class="boton prim" id="d-hab">Habilitar</button>` : ''}${botonObs}<button class="boton prim" id="d-cerrar">Cerrar</button></div></div></div>`);
     document.body.appendChild(capa);
     capa.onclick = (e) => { if (e.target === capa) capa.remove(); };
     $('#d-cerrar').onclick = () => capa.remove();
+    const bo = $('#d-obs');
+    if (bo) dobleToque(bo, 'Toca otra vez: bloquear su examen', async () => { await marcarObservado(a, true); capa.remove(); detalle(a); });
+    const bdo = $('#d-desobs');
+    if (bdo) dobleToque(bdo, 'Toca otra vez: quitar', async () => { await marcarObservado(a, false); capa.remove(); detalle(a); });
+    $('#pen-guardar').onclick = async () => {
+      const v = Number(String($('#pen-pts').value).trim().replace(',', '.'));
+      const motivo = String($('#pen-mot').value || '').trim().slice(0, 300);
+      if (!isFinite(v) || v <= 0 || v > 100) { $('#pen-msg').textContent = 'Escribe los puntos a restar: un número entre 0 y 100 (por ejemplo, 30).'; return; }
+      $('#pen-guardar').disabled = true;
+      const ok = await guardarPenalidad(a, v, motivo);
+      if (ok !== false) { capa.remove(); detalle(a); } else $('#pen-guardar').disabled = false;
+    };
+    const bq = $('#pen-quitar');
+    if (bq) dobleToque(bq, 'Toca otra vez: quitar', async () => { await quitarPenalidad(a); capa.remove(); detalle(a); });
     $('#d-ver').onclick = async (e) => { e.currentTarget.disabled = true; await marcarCodigo(a, !verificado); capa.remove(); detalle(a); };
     const dh = $('#d-hab');
     if (dh) dh.onclick = () => { capa.remove(); habilitar([a.carnet]); };
@@ -467,6 +520,8 @@
     $('#lista').innerHTML = alumnos.length ? alumnos.map((a, i) => {
       const s = a.sal || {};
       const chips = [];
+      if (observadoDe(a)) chips.push('<span class="mpp-c mal">OBSERVADO</span>');
+      if (penDocente(a)) chips.push(`<span class="mpp-c mal">penalización −${II.fmt(penDocente(a), 2)}</span>`);
       if (ex.abre) chips.push(`<span class="mpp-c ${a.hab ? '' : 'mal'}">${a.hab ? 'habilitado' : 'sin habilitar'}</span>`);
       if (verDe(a)) chips.push('<span class="mpp-c">en el aula ✓</span>');
       chips.push(`<span class="mpp-c">${a.filas}/9 filas</span>`);
@@ -489,7 +544,7 @@
     const rev = (await leerNotasFila()).revision || {};
     const cel = (v) => { const s = String(v == null ? '' : v); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const num = (x) => (x == null ? '' : String(Math.round(x * 100) / 100).replace('.', ','));
-    const filas = [['C.U.', 'C.I.', 'Apellidos', 'Nombres', 'Carrera', 'Bisección (25)', 'Falsa posición (25)', 'Newton-Raphson (25)', 'Solución (75)', 'Problema 1 interpretación (9)', 'Problema 2 interpretación (8)', 'Problema 3 interpretación (8)', 'Interpretación total (25)', 'Pegados', 'Descuento', 'Nota final (100)', 'Salidas', 'Segundos fuera', 'Pérdidas de foco', 'Recargas', 'Celulares', 'Último guardado', 'Código', 'Observación'].map(cel).join(';')];
+    const filas = [['C.U.', 'C.I.', 'Apellidos', 'Nombres', 'Carrera', 'Bisección (25)', 'Falsa posición (25)', 'Newton-Raphson (25)', 'Solución (75)', 'Problema 1 interpretación (9)', 'Problema 2 interpretación (8)', 'Problema 3 interpretación (8)', 'Interpretación total (25)', 'Pegados', 'Descuento', 'Nota final (100)', 'Salidas', 'Segundos fuera', 'Pérdidas de foco', 'Recargas', 'Celulares', 'Último guardado', 'Código', 'Observación', 'Observado', 'Penalización del docente', 'Motivo de la penalización'].map(cel).join(';')];
     alumnos.forEach((a) => {
       const s = a.sal || {};
       const [ap, no] = String(a.nombre || '').split(', ');
@@ -500,7 +555,9 @@
         pegadosDe(a), pegadosDe(a) ? num(PEN_PEGADO * pegadosDe(a)) : '',
         rev[a.carnet] && rev[a.carnet].rq ? num(NOTA_FINAL(a, rev[a.carnet].rq)) : '',
         s.n || 0, s.seg || 0, (s.foco && s.foco.n) || 0, s.recargas || 0, a.ndisp, hora(a.snapT),
-        codigoDe(a), (rev[a.carnet] && rev[a.carnet].obs) || ''].map(cel).join(';'));
+        codigoDe(a), (rev[a.carnet] && rev[a.carnet].obs) || '',
+        observadoDe(a) ? 'OBSERVADO ' + hora(ex.obs[a.carnet]) : '',
+        penDocente(a) ? '−' + num(penDocente(a)) : '', (ex.pen || {})[a.carnet] ? (ex.pen[a.carnet].motivo || '') : ''].map(cel).join(';'));
     });
     const blob = new Blob(['﻿' + filas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const el = document.createElement('a');

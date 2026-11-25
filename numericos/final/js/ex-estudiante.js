@@ -57,10 +57,13 @@
   // ---------------- fase ----------------
   const habilitado = () => !!(alumno && ex.hab && ex.hab[alumno.carnet]);
   const terminado = () => !!(ex.fin && ahora() >= Date.parse(ex.fin));
+  // examen observado por el docente: se bloquea y ya no puede seguir (lo enviado queda guardado)
+  const observado = () => !!(alumno && ex.obs && ex.obs[alumno.carnet]);
   function fase() {
     if (!alumno) return 'registro';
     if (!leida) return 'cargando';
     if (ex.publicado) return 'publicado';
+    if (observado()) return 'observado';
     if (!ex.abre) return 'espera';
     if (terminado()) return 'terminado';
     if (!habilitado()) return 'tarde';
@@ -434,6 +437,19 @@
     document.body.style.backgroundImage = `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
   }
 
+  // ---------------- observado ----------------
+  function vObservado() {
+    if (!est.final) { est.final = true; guardarEst(); enviarAvance('observado'); }
+    if (vista === 'observado') return;
+    vista = 'observado';
+    document.body.classList.remove('examen');
+    document.body.style.backgroundImage = '';
+    soltarPantalla();
+    CONT(tarjeta(`<span class="etq">Examen observado</span><h2>El docente observó tu examen</h2>
+      <div class="aviso mal">Ya no puedes continuar.</div>
+      <p>Lo que enviaste hasta ahora quedó guardado. Habla con el docente.</p>`));
+  }
+
   // ---------------- terminado ----------------
   function vTerminado() {
     if (!est.final) {
@@ -478,14 +494,18 @@
     const pSol = (m) => (mia.p && mia.p[m] != null ? mia.p[m] : local.res[m].pts);
     const sol = mia.sol != null ? mia.sol : EX.MET.reduce((a, m) => a + pSol(m), 0);
     const rq = mia.rq || [0, 0, 0];
+    const descPegado = (mia.pegados || 0) * 30;
+    const penM = mia.penM || null;
     let h = tarjeta(`<span class="etq">Examen final; nota publicada</span>
       <div class="mp-res"><div class="grande">${II.fmt(mia.n, 2)}<small> / 100</small></div></div>
       <table class="mp-tabla"><tr><th>Solución (75 %)</th><th>Puntos</th></tr>${EX.MET.map((m) => `<tr><td>${EX.TITULO[m]}</td><td>${II.fmt(pSol(m), 2)} / 25</td></tr>`).join('')}
         <tr><th>Total de solución</th><th>${II.fmt(sol, 2)} / 75</th></tr></table>
       <table class="mp-tabla"><tr><th>Razonamiento (25 pts)</th><th>Puntos</th></tr>${EX.RAZON.map((q, i) => `<tr><td>${q.etq}</td><td>${II.fmt(rq[i] || 0, 2)} / ${q.pts}</td></tr>`).join('')}
         <tr><th>Total de razonamiento</th><th>${II.fmt(mia.razon || 0, 2)} / 25</th></tr></table>
-      ${mia.pegados ? `<div class="aviso mal"><b>Descuento por pegado:</b> ${mia.pegados} vez(es) × 30 = −${II.fmt(mia.pen || 0, 0)} puntos.</div>` : ''}
-      <p class="mp-nota"><b>Cuenta:</b> ${II.fmt(sol, 2)} + ${II.fmt(mia.razon || 0, 2)}${mia.pen ? ' − ' + II.fmt(mia.pen, 0) : ''} = <b>${II.fmt(mia.n, 2)} / 100</b></p>
+      ${mia.obs ? '<div class="aviso duda"><b>El docente observó tu examen.</b> Habla con el docente.</div>' : ''}
+      ${mia.pegados ? `<div class="aviso mal"><b>Descuento por pegado:</b> ${mia.pegados} vez(es) × 30 = −${II.fmt(descPegado, 0)} puntos.</div>` : ''}
+      ${penM ? `<div class="aviso mal"><b>Penalización del docente:</b> −${II.fmt(penM.pts, 2)} puntos.<br>Motivo: ${II.esc(penM.motivo || '—')}</div>` : ''}
+      <p class="mp-nota"><b>Cuenta:</b> ${II.fmt(sol, 2)} + ${II.fmt(mia.razon || 0, 2)}${mia.pen ? ' − ' + II.fmt(mia.pen, 2) : ''} = <b>${II.fmt(mia.n, 2)} / 100</b></p>
       ${mia.fb ? `<div class="aviso info"><b>Comentario del docente:</b><br>${II.esc(mia.fb)}</div>` : ''}
       ${igual ? '' : '<div class="aviso duda">Tu nota se calculó con lo último que llegó al docente. El detalle de abajo es lo que quedó en tu celular y puede no coincidir.</div>'}
       <p class="mp-nota">Cada casilla se califica con <b>tus propios números</b>: ✓ completo; ≈ error de redondeo, mitad; ✗ o vacía, 0.</p>`);
@@ -597,6 +617,7 @@
     if (f === 'tarde') return vEspera(true);
     if (f === 'curso') { if (est.final) { est.final = false; guardarEst(); } pedirPantalla(); return vExamen(); }
     if (f === 'terminado') return vTerminado();
+    if (f === 'observado') return vObservado();
     if (f === 'publicado') return vPublicado();
   }
 
